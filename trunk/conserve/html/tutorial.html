@@ -1,0 +1,1185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Conserve - tutorial</title>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="ROBOTS" content="INDEX,FOLLOW">
+  <meta http-equiv="PRAGMA" content="NO-CACHE">
+  <meta name="KEYWORDS"
+ content="java, jdbc, orm, database, tutorial, conserve">
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+<!-- Piwik -->
+  <script type="text/javascript">
+			var pkBaseURL = (("https:" == document.location.protocol) ? "https://sourceforge.net/apps/piwik/conserve/" : "http://sourceforge.net/apps/piwik/conserve/");
+			document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+		</script>
+  <script type="text/javascript">
+			try {
+				var piwikTracker = Piwik.getTracker(pkBaseURL + "piwik.php", 1);
+				piwikTracker.trackPageView();
+				piwikTracker.enableLinkTracking();
+			} catch( err ) {
+			}
+		</script>
+  <style type="text/css">	
+			table.newcolor {
+				background-color: #e1ffe0;
+				width: 100%;
+				text-align: left;
+				border-width: 0px;
+				border-spacing: 0px;
+				border: 0px;
+				padding: 0px;
+			}
+			table.warningtable {
+				background-color: #e1e1e1;
+				width: 100%;
+				text-align: left;
+				border-width: 0px;
+				border-spacing: 0px;
+				border: 0px;
+				padding: 0px;
+			}
+		</style>
+</head>
+<body>
+<noscript>
+<p> <img
+ src="http://sourceforge.net/apps/piwik/conserve/piwik.php?idsite=1"
+ style="border: 0pt none ;" alt=""> </p>
+</noscript>
+<table summary=""
+ style="text-align: left; width: 900px; margin-left: auto; margin-right: auto;"
+ border="0" cellpadding="0" cellspacing="0">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"> <a
+ href="http://conserve.sourceforge.net/"> <img
+ style="border: 0px solid ; width: 238px; height: 76px;"
+ alt="Conserve logo" title="Conserve logo" src="img/logo.png"> </a>
+      <h2> <big> <span style="font-weight: bold;">Tutorial</span> </big>
+      </h2>
+The purpose of this tutorial is to get you up and running with Conserve
+in the shortest amount of time. <br>
+After completing this tutorial you should know the basics of using
+Conserve in your project. <br>
+      <br>
+The Advanced section is not really necessary for using Conserve, but if
+you decide to read it you'll gain <br>
+a better understanding of Conserve and learn to do some neat stuff. <br>
+      <hr style="width: 100%; height: 2px;">
+      <h3>Contents:</h3>
+      <a href="tutorial.html#whatyouneed">What you need</a> <br>
+      <a href="tutorial.html#gettingstarted">Getting started</a> <br>
+      <a href="tutorial.html#createmanager"> <span
+ style="text-decoration: underline;">Create a PersistenceManager</span>
+      </a> <br>
+      <a href="tutorial.html#save">Save an object</a> <br>
+      <a href="tutorial.html#search"> <span
+ style="text-decoration: underline;">Search for objects</span> </a> <br>
+      <a href="tutorial.html#sorting">Sorting and limits</a> <br>
+      <a href="tutorial.html#delete"> <span
+ style="text-decoration: underline;">Delete objects</span> </a> <br>
+      <a href="tutorial.html#updateobjects">Update objects</a> <br>
+      <a href="tutorial.html#advanced"> <span
+ style="text-decoration: underline;">Advanced: </span> </a> <br>
+      <div style="margin-left: 40px;"> <a
+ href="tutorial.html#forcerefresh">Forcing refresh of existing objects</a>
+      </div>
+      <div style="margin-left: 40px;"> <a
+ href="tutorial.html#droptables"> <span
+ style="text-decoration: underline;">Drop tables</span> </a> </div>
+      <div style="margin-left: 40px;"> <a
+ href="tutorial.html#duplicate">Duplicate database</a> <br>
+      <a href="tutorial.html#ignored">Ignored object properties</a> <br>
+      <a href="tutorial.html#customtablenames">Custom table names</a> <br>
+      <a href="tutorial.html#customcolumnnames">Custom column names</a>
+      <br>
+      <a href="tutorial.html#customstringlength">Custom string length</a>
+      <br>
+      <a href="tutorial.html#usingclobsandblobs">Using CLOBs and BLOBs</a>
+      <br>
+      <a href="tutorial.html#indexes">Indices</a> </div>
+      <hr style="width: 100%; height: 2px;">
+      <h3> <a id="whatyouneed">What you need: </a> </h3>
+      <ul>
+        <li> The Conserve .jar file. You can <a
+ href="http://sourceforge.net/projects/conserve/files/">download the
+latest binary from the SourceForge project page.</a>&nbsp; </li>
+        <li> An SQL database compatible with Conserve. The <a
+ href="http://conserve.sourceforge.net/#compability">list of compatible
+databases can be found here.</a> For this tutorial we will be using <a
+ href="http://www.sqlite.org/">SQLite</a>. </li>
+        <li> Read/Write permission to the database. </li>
+        <li> The <a href="http://en.wikipedia.org/wiki/JDBC_driver">JDBC
+
+driver</a> for your particular database. This should be available from
+the database vendor's website. If not, try googling "JDBC" + the name
+of your database engine. </li>
+        <li> If your database requires a login/password, you'll need
+that too. </li>
+      </ul>
+      <br>
+      <h3> <a id="gettingstarted">Getting started: </a> </h3>
+As mentioned above, we will be using SQLite. This is because its
+installation is so simple, which lets us concentrate on the important
+aspects of Conserve instead of how to install and configure the
+database engine. <br>
+      <br>
+Follow these steps: <br>
+1. Download the <a
+ href="http://sourceforge.net/projects/conserve/files/">Conserve .jar
+file</a> and the <a href="http://www.zentus.com/sqlitejdbc/">SQLite
+JDBC driver</a> jar file. <br>
+2. Add both jar files to the classpath. There are several ways of doing
+this, the simplest is to copy the files to the
+$JRE_HOME/lib/ext/folder. <br>
+      <br>
+That's it, you've now installed Conserve and SQLite. <br>
+      <br>
+      <h3> <a id="createmanager">Create a PersistenceManager: </a> </h3>
+Now that everything is installed, we're ready to start programming with
+Conserve. <br>
+Just fire up your favourite code editor and create a new Java class. <br>
+      <br>
+Then, import the Conserve library: <br>
+      <table class="newcolor" summary="">
+        <tbody>
+          <tr>
+            <td>
+            <pre><tt><b><font color="#000080">import</font></b> org<font
+ color="#990000">.</font>conserve<font color="#990000">.</font>PersistenceManager<font
+ color="#990000">;</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+Inside a method body, create an instance of the PersistenceManager: <br>
+      <table summary="" style="text-align: left;" class="newcolor"
+ border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">PersistenceManager</font> pm <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">PersistenceManager</font></b><font color="#990000">(</font><font
+ color="#ff0000">"org.sqlite.JDBC"</font><font color="#990000">,</font><font
+ color="#ff0000">"jdbc:sqlite:tutorial.db"</font><font color="#990000">,</font> <font
+ color="#ff0000">"myuser"</font><font color="#990000">,</font> <font
+ color="#ff0000">"mypassword"</font><font color="#990000">);</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+That's it! The <span style="font-family: monospace;">"org.sqlite.JDBC"</span>string
+is
+the class name of the JDBC driver. If you are using a JDBC version
+4.0 or better driver, you can omit this. We've only included it here
+because SQLite does not have a version 4.0 driver. <br>
+      <br>
+The string <span style="font-family: monospace;">"jdbc:sqlite:tutorial.db"</span>is
+the
+connection string. It contains the name of the database you wishto
+use. Connection strings are database dependent, so we won't go into
+detail about them here. You can find your connection string in
+thedocumentation for your JDBC driver. <br>
+      <br>
+The <span style="font-family: monospace;">"myuser"</span> and <span
+ style="font-family: monospace;">"mypassword"</span> strings are the
+user name and password, respectively, that you use to authenticate to
+the database. <br>
+      <br>
+      <span style="font-weight: bold;">Important! </span>When you are
+done with the PersistenceManager, make sure to close it. This cleans up
+any resources allocated to by the manager and ensures there are no
+uncommitted changes. This is done easily like this: <br>
+      <table summary="" class="newcolor" border="0" cellpadding="0"
+ cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>pm<font color="#990000">.</font><b><font
+ color="#000000">close</font></b><font color="#990000">();</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+The whole class looks like this:
+      <table summary="" class="newcolor" border="0" cellpadding="0"
+ cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><b><font color="#000080">import</font></b> java<font
+ color="#990000">.</font>sql<font color="#990000">.</font>SQLException<font
+ color="#990000">;</font><br><br><b><font color="#000080">import</font></b> org<font
+ color="#990000">.</font>conserve<font color="#990000">.</font>PersistenceManager<font
+ color="#990000">;</font><br><br><i><font color="#9a1900">/**</font></i><br><i><font
+ color="#9a1900"> * </font></i><font color="#009900">@author</font><i><font
+ color="#9a1900"> <span style="font-family: monospace;">Your Name</span></font></i><br><i><font
+ color="#9a1900"> *</font></i><br><i><font color="#9a1900"> */</font></i><br><b><font
+ color="#0000ff">public</font></b> <b><font color="#0000ff">class</font></b> <font
+ color="#008080">ConserveTutorial</font><br><font color="#ff0000">{</font><br><br>    <i><font
+ color="#9a1900">/**</font></i><br><i><font color="#9a1900">     * </font></i><font
+ color="#009900">@param</font><i><font color="#9a1900"> args</font></i><br><i><font
+ color="#9a1900">     * </font></i><font color="#009900">@throws</font><i><font
+ color="#9a1900"> SQLException </font></i><br><i><font color="#9a1900">     */</font></i><br>    <b><font
+ color="#0000ff">public</font></b> <b><font color="#0000ff">static</font></b> <font
+ color="#009900">void</font> <b><font color="#000000">main</font></b><font
+ color="#990000">(</font>String<font color="#990000">[]</font> args<font
+ color="#990000">)</font> <b><font color="#0000ff">throws</font></b> SQLException<br>    <font
+ color="#ff0000">{</font><br>        <font color="#008080">PersistenceManager</font> pm <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">PersistenceManager</font></b><font color="#990000">(</font><font
+ color="#ff0000">"org.sqlite.JDBC"</font><font color="#990000">,</font><font
+ color="#ff0000">"jdbc:sqlite:tutorial.db"</font><font color="#990000">,</font> <font
+ color="#ff0000">"myuser"</font><font color="#990000">,</font> <font
+ color="#ff0000">"mypassword"</font><font color="#990000">);</font><br>        pm<font
+ color="#990000">.</font><b><font color="#000000">close</font></b><font
+ color="#990000">();</font><br>    <font color="#ff0000">}</font><br><font
+ color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+If you paste this code into a .java file, compile and run it you should
+find a file named "tutorial.db" in the current directory. <br>
+That's the file SQLite uses for permanent storage of your database. <br>
+If you open the file you'll see the tables Conserve has created for its
+internal book-keeping. <br>
+      <br>
+Note that the <span style="font-family: monospace;">main()</span>method
+throws <span style="font-family: monospace;">SQLException</span>.
+Normally you'd want to catch and handle this exception in your
+application. <br>
+      <br>
+In the rest of the tutorial we will omit complete code listings and
+instead focus on just the parts of the code we're interested in. <br>
+      <h3> <a id="save">Save an object:</a> </h3>
+Now that you have a PersistenceManager object, you can save objects.
+Let's create an instance of a simple data class and store it. We'll use
+an object of a class called <a href="TextObject.java" target="_blank">TextObject.</a>
+      <br>
+      <br>
+All we have to do is create the object, fill in some data and save it:
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">TextObject</font> a <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">TextObject</font></b><font color="#990000">();</font><br>a<font
+ color="#990000">.</font><b><font color="#000000">setText</font></b><font
+ color="#990000">(</font><font color="#ff0000">"The quick brown fox"</font><font
+ color="#990000">);</font><br>a<font color="#990000">.</font><b><font
+ color="#000000">setKeyWords</font></b><font color="#990000">(</font>a<font
+ color="#990000">.</font><b><font color="#000000">getText</font></b><font
+ color="#990000">().</font><b><font color="#000000">split</font></b><font
+ color="#990000">(</font><font color="#ff0000">" "</font><font
+ color="#990000">));</font><br>pm<font color="#990000">.</font><b><font
+ color="#000000">saveObject</font></b><font color="#990000">(</font>a<font
+ color="#990000">);</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+      <span style="font-weight: bold;"> </span>That's all there is to
+it, really. Conserve handles creating a connection, checking if the
+table exists, creating a transaction and committing the transaction
+when you're done. If you want to handle transactions yourself, you can
+do that also: <br>
+      <table class="newcolor" style="text-align: left; width: 100%;"
+ summary="" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">ConnectionWrapper</font> cw <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getConnectionWrapper</font></b><font color="#990000">();</font><br><font
+ color="#008080">TextObject</font> a <font color="#990000">=</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">TextObject</font></b><font
+ color="#990000">();</font><br>a<font color="#990000">.</font><b><font
+ color="#000000">setText</font></b><font color="#990000">(</font><font
+ color="#ff0000">"The quick brown fox"</font><font color="#990000">);</font><br>a<font
+ color="#990000">.</font><b><font color="#000000">setKeyWords</font></b><font
+ color="#990000">(</font>a<font color="#990000">.</font><b><font
+ color="#000000">getText</font></b><font color="#990000">().</font><b><font
+ color="#000000">split</font></b><font color="#990000">(</font><font
+ color="#ff0000">" "</font><font color="#990000">));</font><br>pm<font
+ color="#990000">.</font><b><font color="#000000">saveObject</font></b><font
+ color="#990000">(</font>cw<font color="#990000">,</font>a<font
+ color="#990000">);</font><br>cw<font color="#990000">.</font><b><font
+ color="#000000">commitAndDiscard</font></b><font color="#990000">();</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+Here, we request a <span style="font-family: monospace;">ConnectionWrapper</span>
+object from the <span style="font-family: monospace;">PersistenceManager</span>.
+
+This lets us tell Conserve that we do not want any changes to be
+committed until we call <span style="font-family: monospace;">commit()</span>
+or, as in this example, <span style="font-family: monospace;">commitAndDiscard()</span>.<br>
+This is sometimes faster, especially if you are doing several similar
+insert operations in a row.
+      <p> After a <span style="font-family: monospace;">ConnectionWrapper</span>
+is discarded, it returns to the <span style="font-family: monospace;">PersistenceManager</span>'s
+
+connection pool and should not be used again.</p>
+      <p> Note that we are here calling a different version of the <span
+ style="font-family: monospace;">saveObject</span> method, one that
+accepts a <span style="font-family: monospace;">ConnectionWrapper</span>
+as the first parameter.<br>
+You'll find that most of the <span style="font-family: monospace;">PersistenceManager</span>
+methods follows this pattern: One version that takes a <span
+ style="font-family: monospace;">ConnectionWrapper</span> as an
+argument and lets you handle committing, and another version that does
+not take a <span style="font-family: monospace;">ConnectionWrapper</span>
+argument because it handles committing for you. <br>
+      <br>
+      </p>
+      <h3> <a id="search">Search for objects: </a> </h3>
+Conserve uses a technique called search-by-example. This means that
+instead of manipulating strings, you work with objects. <br>
+If you want to find, for example, all objects of a given class
+thatshare one particular property, all you have to do is create an
+object of this class, set the desired property, and ask Conserve to
+find allsimilar objects. <br>
+Conserve will match <span style="font-weight: bold;">all non-null
+properties</span> of the example object. <br>
+      <br>
+It might be unfamiliar at first (especially if you're used to
+concatenating string literals to get the object you want), so it might
+be simpler to show an example. <br>
+Let's say that we want to retrieve the object we saved earlier. All we
+do is create an 'example' object and compose an <span
+ style="font-family: monospace;">Equal</span> clause with it
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">TextObject</font> example <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">TextObject</font></b><font color="#990000">();</font><br>example<font
+ color="#990000">.</font><b><font color="#000000">setText</font></b><font
+ color="#990000">(</font><font color="#ff0000">"The quick brown fox"</font><font
+ color="#990000">);</font><br>List<font color="#990000">&lt;</font>TextObject<font
+ color="#990000">&gt;</font>res  <font color="#990000">=</font> pm<font
+ color="#990000">.</font><b><font color="#000000">getObjects</font></b><font
+ color="#990000">(</font>TextObject<font color="#990000">.</font><b><font
+ color="#0000ff">class</font></b><font color="#990000">,</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Equal</font></b><font
+ color="#990000">(</font>example<font color="#990000">));</font><br>System<font
+ color="#990000">.</font>out<font color="#990000">.</font><b><font
+ color="#000000">println</font></b><font color="#990000">(</font>res<font
+ color="#990000">.</font><b><font color="#000000">get</font></b><font
+ color="#990000">(</font><font color="#993399">0</font><font
+ color="#990000">).</font><b><font color="#000000">getKeyWords</font></b><font
+ color="#990000">());</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+The above code will print out the string "[The, fox, quick, brown]",
+which was retrieved from the database. <br>
+Note that Conserve did not match up the keywords when selecting, as the
+example's keywords were empty. <br>
+      <br>
+Speaking of keywords: The <span style="font-family: monospace;">getKeyWords()</span>
+method returns a <span style="font-family: monospace;">Set</span>, and
+      <span style="font-family: monospace;">Sets</span> are unordered.
+This means that Conserve will return any object that has all the
+keywords that the example has, no matter what order they are given in: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>example<font color="#990000">.</font><b><font
+ color="#000000">setText</font></b><font color="#990000">(</font><b><font
+ color="#0000ff">null</font></b><font color="#990000">);</font><br>example<font
+ color="#990000">.</font><b><font color="#000000">setKeyWords</font></b><font
+ color="#990000">(</font><b><font color="#0000ff">new</font></b> String<font
+ color="#990000">[]</font><font color="#ff0000">{</font><font
+ color="#ff0000">"brown"</font><font color="#ff0000">}</font><font
+ color="#990000">);</font><br>res  <font color="#990000">=</font> pm<font
+ color="#990000">.</font><b><font color="#000000">getObjects</font></b><font
+ color="#990000">(</font>TextObject<font color="#990000">.</font><b><font
+ color="#0000ff">class</font></b><font color="#990000">,</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Equal</font></b><font
+ color="#990000">(</font>example<font color="#990000">));</font><br>System<font
+ color="#990000">.</font>out<font color="#990000">.</font><b><font
+ color="#000000">println</font></b><font color="#990000">(</font>res<font
+ color="#990000">.</font><b><font color="#000000">get</font></b><font
+ color="#990000">(</font><font color="#993399">0</font><font
+ color="#990000">).</font><b><font color="#000000">getText</font></b><font
+ color="#990000">());</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+This will print out the string "The quick brown fox". <br>
+      <br>
+There are several clause classes besides <span
+ style="font-family: monospace;">Equal</span>, and they all pretty much
+do what they say on the tin. <span style="font-family: monospace;">Different</span>,
+
+for example, finds all objects that do not match the given example
+object: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>res <font color="#990000">=</font> pm<font
+ color="#990000">.</font><b><font color="#000000">getObjects</font></b><font
+ color="#990000">(</font>TextObject<font color="#990000">.</font><b><font
+ color="#0000ff">class</font></b><font color="#990000">,</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Different</font></b><font
+ color="#990000">(</font>a<font color="#990000">));</font><br><b><font
+ color="#0000ff">if</font></b><font color="#990000">(</font>res<font
+ color="#990000">.</font><b><font color="#000000">size</font></b><font
+ color="#990000">()==</font><font color="#993399">0</font><font
+ color="#990000">)</font><br><font color="#ff0000">{</font><br>	System<font
+ color="#990000">.</font>out<font color="#990000">.</font><b><font
+ color="#000000">println</font></b><font color="#990000">(</font><font
+ color="#ff0000">"No matches found."</font><font color="#990000">);</font><br><font
+ color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+You can combine several clauses using the <span
+ style="font-family: monospace;">And</span> and <span
+ style="font-family: monospace;">Or</span> classes. There is a special
+clause called <span style="font-family: monospace;">All</span>, which
+simply returns all objects of a given class. <br>
+      <br>
+Using the search-by-example approach makes it very simple to create
+complex queries - Conserve will generate the appropriate joins and
+sub-queries for you. Here is how you find all books by authors that
+have written about crime (The <span style="font-family: monospace;">Author
+      </span>and <span style="font-family: monospace;">Book</span>
+classes are from the Conserve test suite): </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">Author</font> crimeAuthor <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Author</font></b><font color="#990000">();</font><br><font
+ color="#008080">Book</font> crimeBook <font color="#990000">=</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Book</font></b><font
+ color="#990000">();</font><br>crimeBook<font color="#990000">.</font><b><font
+ color="#000000">addKeyWord</font></b><font color="#990000">(</font><font
+ color="#ff0000">"crime"</font><font color="#990000">);</font><br>crimeAuthor<font
+ color="#990000">.</font><b><font color="#000000">addBook</font></b><font
+ color="#990000">(</font>crimeBook<font color="#990000">);</font><br><font
+ color="#008080">Book</font> seekBook <font color="#990000">=</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Book</font></b><font
+ color="#990000">();</font><br>seekBook<font color="#990000">.</font><b><font
+ color="#000000">addAuthor</font></b><font color="#990000">(</font>crimeAuthor<font
+ color="#990000">);</font><br><font color="#008080">List&lt;Book&gt;</font> crimeAuthorBooks <font
+ color="#990000">=</font> persist<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>Book<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Equal</font></b><font color="#990000">(</font>seekBook<font
+ color="#990000">));</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+Conserve also lets you search class hierarchies. <br>
+      <br>
+Let's say we have two classes, <span style="font-family: monospace;">FooTextObject
+      </span>and <span style="font-family: monospace;">BarTextObject</span>,
+who are both direct subclasses of <span style="font-family: monospace;">TextObject</span>.
+
+      <br>
+We insert one object each of <span style="font-family: monospace;">FooTextObject</span>,
+
+      <span style="font-family: monospace;">BarTextObject</span> and <span
+ style="font-family: monospace;">TextObject</span> into the database: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">TextObject</font> a <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">TextObject</font></b><font color="#990000">();</font><br>a<font
+ color="#990000">.</font><b><font color="#000000">setText</font></b><font
+ color="#990000">(</font><font color="#ff0000">"The quick brown fox"</font><font
+ color="#990000">);</font><br>a<font color="#990000">.</font><b><font
+ color="#000000">setKeyWords</font></b><font color="#990000">(</font>a<font
+ color="#990000">.</font><b><font color="#000000">getText</font></b><font
+ color="#990000">().</font><b><font color="#000000">split</font></b><font
+ color="#990000">(</font><font color="#ff0000">" "</font><font
+ color="#990000">));</font><br>pm<font color="#990000">.</font><b><font
+ color="#000000">saveObject</font></b><font color="#990000">(</font>a<font
+ color="#990000">);</font><br><font color="#008080">FooTextObject</font> foo <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">FooTextObject</font></b><font color="#990000">();</font><br>foo<font
+ color="#990000">.</font><b><font color="#000000">setKeyWords</font></b><font
+ color="#990000">(</font><b><font color="#0000ff">new</font></b> String<font
+ color="#990000">[]</font> <font color="#ff0000">{</font> <font
+ color="#ff0000">"The"</font><font color="#990000">,</font> <font
+ color="#ff0000">"quick"</font><font color="#990000">,</font> <font
+ color="#ff0000">"brown"</font><font color="#990000">,</font> <font
+ color="#ff0000">"dog"</font> <font color="#ff0000">}</font><font
+ color="#990000">);</font><br>pm<font color="#990000">.</font><b><font
+ color="#000000">saveObject</font></b><font color="#990000">(</font>foo<font
+ color="#990000">);</font><br><font color="#008080">BarTextObject</font> bar <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">BarTextObject</font></b><font color="#990000">();</font><br>bar<font
+ color="#990000">.</font><b><font color="#000000">setKeyWords</font></b><font
+ color="#990000">(</font><b><font color="#0000ff">new</font></b> String<font
+ color="#990000">[]</font> <font color="#ff0000">{</font> <font
+ color="#ff0000">"The"</font><font color="#990000">,</font> <font
+ color="#ff0000">"quick"</font><font color="#990000">,</font> <font
+ color="#ff0000">"brown"</font><font color="#990000">,</font> <font
+ color="#ff0000">"rabbit"</font> <font color="#ff0000">}</font><font
+ color="#990000">);</font><br>pm<font color="#990000">.</font><b><font
+ color="#000000">saveObject</font></b><font color="#990000">(</font>bar<font
+ color="#990000">);</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+Now we can find all instances of <span style="font-family: monospace;">TextObject</span>
+or any of its subclasses that contain the keyword "brown": </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">TextObject</font> example <font
+ color="#990000">=</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">TextObject</font></b><font color="#990000">();</font><br>example<font
+ color="#990000">.</font><b><font color="#000000">setKeyWords</font></b><font
+ color="#990000">(</font><b><font color="#0000ff">new</font></b> String<font
+ color="#990000">[]</font> <font color="#ff0000">{</font> <font
+ color="#ff0000">"brown"</font> <font color="#ff0000">}</font><font
+ color="#990000">);</font><br><font color="#008080">List&lt;TextObject&gt;</font> list <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>TextObject<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Equal</font></b><font color="#990000">(</font>example<font
+ color="#990000">));</font><br>System<font color="#990000">.</font>out<font
+ color="#990000">.</font><b><font color="#000000">println</font></b><font
+ color="#990000">(</font>list<font color="#990000">.</font><b><font
+ color="#000000">size</font></b><font color="#990000">());</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+This code should output "3". <br>
+      <br>
+We can find all instances of <span style="font-family: monospace;">FooTextObject</span>
+that contain the keyword "brown": </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">List&lt;FooTextObject&gt;</font> fooList <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>FooTextObject<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Equal</font></b><font color="#990000">(</font>example<font
+ color="#990000">));</font><br>System<font color="#990000">.</font>out<font
+ color="#990000">.</font><b><font color="#000000">println</font></b><font
+ color="#990000">(</font>fooList<font color="#990000">.</font><b><font
+ color="#000000">size</font></b><font color="#990000">());</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+This code should output "1". <br>
+      <br>
+We can also find all instances of <span style="font-family: monospace;">TextObject</span>
+that contain the keyword "rabbit": </span>
+      <table summary=""
+ style="text-align: left; width: 896px; height: 73px;" class="newcolor"
+ border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>example<font color="#990000">.</font><b><font
+ color="#000000">setKeyWords</font></b><font color="#990000">(</font><b><font
+ color="#0000ff">new</font></b> String<font color="#990000">[]</font> <font
+ color="#ff0000">{</font> <font color="#ff0000">"rabbit"</font> <font
+ color="#ff0000">}</font><font color="#990000">);</font><br><font
+ color="#008080">List&lt;TextObject&gt;</font> rabbitList <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>TextObject<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Equal</font></b><font color="#990000">(</font>example<font
+ color="#990000">));</font><br>System<font color="#990000">.</font>out<font
+ color="#990000">.</font><b><font color="#000000">println</font></b><font
+ color="#990000">(</font>rabbitList<font color="#990000">.</font><b><font
+ color="#000000">size</font></b><font color="#990000">());</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+This code should output "1". <br>
+      <br>
+We've barely scratched the surface of what Conserve can achieve with
+searches. For example, the inheritance-based search demonstrated above
+also works with interfaces. <br>
+There are also relational classes for relations besides <span
+ style="font-family: monospace;">Equal</span>: <span
+ style="font-family: monospace;">All</span>, <span
+ style="font-family: monospace;">Different</span>, <span
+ style="font-family: monospace;">Greater</span>, <span
+ style="font-family: monospace;">GreaterOrEqual</span>, <span
+ style="font-family: monospace;">Less</span>, <span
+ style="font-family: monospace;">LessOrEqual</span>, <span
+ style="font-family: monospace;">Null</span>, and <span
+ style="font-family: monospace;">NotNull</span>. They can be combined
+in anyway you like with the <span style="font-family: monospace;">And</span>
+and <span style="font-family: monospace;">Or</span> classes.<br>
+Instead of boring you with lots of examples, we'll leave you to
+experiment. Have fun! <br>
+      <h3> <span> <a id="sorting">Sorting and limits:</a> </span> </h3>
+      <span> Sorting is done by passing objects of the type <span
+ style="font-family: monospace;">Order</span> <span
+ style="font-weight: bold;"> </span>to the <span
+ style="font-family: monospace;">getObjects</span> method. There are
+two to choose from: <span style="font-family: monospace;">Ascending</span>
+(which sorts ascending) and <span style="font-family: monospace;">Descending</span>
+      <span style="font-weight: bold;"> </span>(which -- surprise --
+sorts descending).&nbsp; These objects sort based on the non-null
+properties of the example object you pass to them, just like the
+relational classes discussed in the previous section. <br>
+This example shows you how to sort <a href="Person.java">Person</a>
+objects descending by last name:
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><i><font color="#9a1900">// create the sorting object</font></i>
+<font color="#008080">Person</font> lastNameSort <font color="#990000">=</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Person</font></b><font
+ color="#990000">();</font>
+
+<i><font color="#9a1900">// the value of LastName does not matter, only that it is not null</font></i>
+lastNameSort<font
+ color="#990000">.</font><b><font color="#000000">setLastName</font></b><font
+ color="#990000">(</font><font color="#ff0000">"foo"</font><font
+ color="#990000">);</font>
+
+<i><font color="#9a1900">// sort descending by last name</font></i>
+<font color="#008080">List&lt;Person&gt;</font> res <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>Person<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">All</font></b><font color="#990000">(),</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Descending</font></b><font
+ color="#990000">(</font>lastNameSort<font color="#990000">));</font>
+
+<i><font color="#9a1900">// print the results</font></i>
+<b><font color="#0000ff">for</font></b> <font color="#990000">(</font><font
+ color="#008080">Person</font> p <font color="#990000">:</font> res<font
+ color="#990000">)</font>
+	System<font color="#990000">.</font>out<font
+ color="#990000">.</font><b><font color="#000000">println</font></b><font
+ color="#990000">(</font>p<font color="#990000">.</font><b><font
+ color="#000000">getLastName</font></b><font color="#990000">()</font> <font
+ color="#990000">+</font> <font color="#ff0000">", "</font> <font
+ color="#990000">+</font> p<font color="#990000">.</font><b><font
+ color="#000000">getFirstName</font></b><font color="#990000">());</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+Any number of <span style="font-family: monospace;">Ascending</span> <span
+ style="font-weight: bold;"> </span>or <span
+ style="font-family: monospace;">Descending</span> <span
+ style="font-weight: bold;"> </span>objects can be grouped in an <span
+ style="font-family: monospace;">Order</span> <span
+ style="font-weight: bold;"> </span>object. This snippet shows you how
+to sort <a href="Person.java">Person</a> objects descending according
+to lastname, then ascending according to firstname: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><i><font color="#9a1900">//create the sorting objects</font></i>
+<font color="#008080">Person</font> lastNameSort <font color="#990000">=</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Person</font></b><font
+ color="#990000">();</font>
+<font color="#008080">Person</font> firstNameSort <font color="#990000">=</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Person</font></b><font
+ color="#990000">();</font>
+
+<i><font color="#9a1900">//the values of LastName and FirstName do not matter, only that they are not null</font></i>
+lastNameSort<font
+ color="#990000">.</font><b><font color="#000000">setLastName</font></b><font
+ color="#990000">(</font><font color="#ff0000">"foo"</font><font
+ color="#990000">);</font>
+firstNameSort<font color="#990000">.</font><b><font
+ color="#000000">setFirstName</font></b><font color="#990000">(</font><font
+ color="#ff0000">"bar"</font><font color="#990000">);</font>
+
+<i><font color="#9a1900">//sort descending by last name, then ascending by first name</font></i>
+<font color="#008080">List&lt;Person&gt;</font> res <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>Person<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">All</font></b><font color="#990000">(),</font> <br>	<b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Order</font></b><font
+ color="#990000">(</font><b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Descending</font></b><font color="#990000">(</font>lastNameSort<font
+ color="#990000">),</font><b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Ascending</font></b><font color="#990000">(</font>firstNameSort<font
+ color="#990000">)));</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+      <span> An <span style="font-family: monospace;">Order</span> <span
+ style="font-weight: bold;"> </span>object can also impose limit and
+offset constraints. Limit means that you only get a limited number of
+results. This is how you get only the first three results: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">List&lt;Person&gt;</font> res <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>Person<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">All</font></b><font color="#990000">(),</font> <br>	<b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Order</font></b><font
+ color="#990000">(</font> <font color="#993399">3</font><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Ascending</font></b><font color="#990000">(</font>firstNameSort<font
+ color="#990000">),</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Ascending</font></b><font color="#990000">(</font>lastNameSort<font
+ color="#990000">)));</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+Offset means that you skip a number of results at the beginning. This
+is how you skip the first 3 results and get the next 2: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#008080">List&lt;Person&gt;</font> res <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">getObjects</font></b><font color="#990000">(</font>Person<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">All</font></b><font color="#990000">(),</font> <br>	<b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">Order</font></b><font
+ color="#990000">(</font><font color="#993399">2</font><font
+ color="#990000">,</font> <font color="#993399">3</font><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Ascending</font></b><font color="#990000">(</font>firstNameSort<font
+ color="#990000">),</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">Ascending</font></b><font color="#990000">(</font>lastNameSort<font
+ color="#990000">)));</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+      <h3> <a id="delete">Delete objects:</a> </h3>
+Deleting works exactly like searching, but instead of returning a list
+of found objects, the <span style="font-family: monospace;">deleteObjects</span>
+family of methods return an integer indicating how many records were
+deleted: <br>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt><font color="#009900">int</font> deleted <font
+ color="#990000">=</font> pm<font color="#990000">.</font><b><font
+ color="#000000">deleteObjects</font></b><font color="#990000">(</font>TextObject<font
+ color="#990000">.</font><b><font color="#0000ff">class</font></b><font
+ color="#990000">,</font> <b><font color="#0000ff">new</font></b> <b><font
+ color="#000000">All</font></b><font color="#990000">());</font><br>System<font
+ color="#990000">.</font>out<font color="#990000">.</font><b><font
+ color="#000000">println</font></b><font color="#990000">(</font><font
+ color="#ff0000">"Deleted "</font> <font color="#990000">+</font> deleted <font
+ color="#990000">+</font> <font color="#ff0000">" record(s)"</font><font
+ color="#990000">);</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+The above example will output "Deleted 1 record(s)", provided there was
+one TextObject stored in your database. <br>
+      <h3> <a id="updateobjects">Update objects: </a> </h3>
+Updating an object simply consists of changing its attribute(s) and
+saving it again. Conserve will detect that the object already exists
+and update the database accordingly. <br>
+      <br>
+Please note that this only works if the <span
+ style="font-family: monospace;">PersistenceManager</span> you re-save
+the object with is the same that you originally loaded it with. If you
+re-save the object with a different <span
+ style="font-family: monospace;">PersistenceManager</span>, a new
+object will be created in the database. <br>
+      <h3> <a id="advanced">Advanced:&nbsp;</a> </h3>
+      <h3 style="margin-left: 40px;"> <a id="forcerefresh">Forcing
+refresh of existing objects: </a> </h3>
+      <div style="margin-left: 40px;"> <span>Sometimes you want to get
+the latest copy of an object from the
+database. Conserve's instance consistency feature means that if you
+simply execute a new search forthe object, you'll get the copy stored
+in memory. If you want to make sure you get the latest version in the
+database, you must use <span style="font-family: monospace;">PersistenceManager.refresh()</span>.
+
+This method takes one object as argument, and returns the same object. <br>
+Thanks to Java's generics you do not need to manually cast the return
+value. </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>List<font color="#990000">&lt;</font>TextObject<font
+ color="#990000">&gt;</font>objects <font color="#990000">=</font> persistTwo<font
+ color="#990000">.</font><b><font color="#000000">getObjects</font></b><font
+ color="#990000">(</font>TextObject<font color="#990000">.</font><b><font
+ color="#0000ff">class</font></b><font color="#990000">,</font> <b><font
+ color="#0000ff">new</font></b> <b><font color="#000000">All</font></b><font
+ color="#990000">());</font><br><font color="#008080">TextObject</font> copy <font
+ color="#990000">=</font> simpleObjects<font color="#990000">.</font><b><font
+ color="#000000">get</font></b><font color="#990000">(</font><font
+ color="#993399">0</font><font color="#990000">);</font><br><br><i><font
+ color="#9a1900">//...lots of operations</font></i><br><br><i><font
+ color="#9a1900">//get the latest version from the database</font></i><br><font
+ color="#008080">TextObject</font> copy2 <font color="#990000">=</font> persistTwo<font
+ color="#990000">.</font><b><font color="#000000">refresh</font></b><font
+ color="#990000">(</font>copy<font color="#990000">);</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+Note that after this both <span style="font-family: monospace;">copy</span>
+and <span style="font-family: monospace;">copy2</span> will reference
+the same object. If you do not want to create a new reference, simply
+do this <span style="font-family: monospace;">:</span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>copy <font color="#990000">=</font> persistTwo<font
+ color="#990000">.</font><b><font color="#000000">refresh</font></b><font
+ color="#990000">(</font>copy<font color="#990000">);</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <span> <br>
+If the object you are refreshing have been deleted, the return value
+will equal <span style="font-family: monospace;">null</span>. </span>
+      </span> <span> </span> </div>
+      <h3 style="margin-left: 40px;"> <a id="droptables">Drop tables:</a>
+      </h3>
+      <div style="margin-left: 40px;">
+      <table summary="" class="warningtable">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;"> <img
+ style="width: 48px; height: 48px;" alt="warning" title="warning"
+ src="img/warning.png"> </td>
+            <td style="vertical-align: middle;">If
+you drop the tables for a class, all objects of that class will be
+deleted. All objects of its subclasses will be deleted. All objects of
+all classes that contain references to the deleted class will be
+deleted.</td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+The <span style="font-family: monospace;">PersistenceManager.dropTable(Class
+
+c)</span> method takes a <span style="font-family: monospace;">Class </span>as
+its
+only argument. When the method completes successfully the tables
+that make up the given class and all tables that depend on it will have
+been deleted. This method is extremely powerful and should be used with
+great care. </div>
+      <h3 style="margin-left: 40px;"> <a id="duplicate">Duplicate
+database: </a> </h3>
+      <div style="margin-left: 40px;"> <span> <span
+ style="font-family: monospace;">PersistenceManager</span> offers a
+convenience method that duplicates a database, <span
+ style="font-family: monospace;">PersistenceManager.duplicate(PersistenceManager
+
+target).</span> This method is called on the source <span
+ style="font-family: monospace;">PersistenceManager</span>, and takes a
+target <span style="font-family: monospace;">PersistenceManager</span>
+as its only argument. When the method call completes, the target will
+contain an exact copy of the source. </span> </div>
+      <h3 style="margin-left: 40px;"> <a id="ignored">Ignored object
+properties: </a> </h3>
+      <div style="margin-left: 40px;"> <span> Sometimes you do not
+want Conserve to store a particular property of an object. This can be
+achieved by using the <span style="font-family: monospace;">Transient </span>annotation
+
+on the accessor of the property you wish to ignore, like this: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@Transient<br><b><font color="#0000ff">public</font></b> <font
+ color="#009900">int</font> <b><font color="#000000">getSomeValue</font></b><font
+ color="#990000">()</font><br><font color="#ff0000">{</font><br>	<b><font
+ color="#0000ff">return</font></b> <font color="#993399">42</font><font
+ color="#990000">;</font><br><font color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+This tells conserve to ignore the <span style="font-family: monospace;">getSomeValue</span>
+accessor and treat it as if it does not exist. This is useful if your
+class has a property that does is derived from other properties, or if
+using a property's mutatorwould overwrite another property. <br>
+      </span> </div>
+      <h3 style="margin-left: 40px;"> <a id="customtablenames">Custom
+tablenames:</a> </h3>
+      <div style="margin-left: 40px;"> <span>Conserve generates unique
+table names </span>from the canonical class name, but if you wish you
+can override this name by using the <span
+ style="font-family: monospace;">TableName</span> annotation. The <span
+ style="font-family: monospace;">TableName</span> annotation is applied
+to the class, like this: <br>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@<b><font color="#000000">TableName</font></b><font
+ color="#990000">(</font><font color="#ff0000">"MyTable"</font><font
+ color="#990000">)</font><br><b><font color="#0000ff">public</font></b> <b><font
+ color="#0000ff">class</font></b> <font color="#008080">BarTextObject</font> extends TextObject<br><font
+ color="#ff0000">{</font><br> <i><font color="#9a1900">//...</font></i><br><font
+ color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+Note that whether table name case is preserved and respected is up to
+the underlying RDBMS, but in general it is safe to assume that case
+will <span style="font-style: italic;">not</span> be preserved. <br>
+      </div>
+      <h3 style="margin-left: 40px;"> <a id="customcolumnnames">Custom
+column names:</a> </h3>
+      <div style="margin-left: 40px;"> <span>Conserve generates unique
+column names </span>from the accessor method name, but if you wish you
+can override this name by using the <span
+ style="font-family: monospace;">ColumnName</span> annotation. The <span
+ style="font-family: monospace;">ColumnName</span> annotation is
+applied to the accessor method, like this: <br>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@<b><font color="#000000">ColumnName</font></b><font
+ color="#990000">(</font><font color="#ff0000">"MyTable"</font><font
+ color="#990000">)</font><br><b><font color="#0000ff">public</font></b> int </tt><span><span><span><tt><b><font
+ color="#000000">getFoo</font></b><font color="#990000">()</font></tt></span></span></span><span><span><span><br><tt><font
+ color="#ff0000">{</font><br> <i><font color="#9a1900">//...</font></i><br><font
+ color="#ff0000">}</font></tt></span></span></span></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+Note that whether column name case is preserved and respected is up to
+the underlying RDBMS, but in general it is safe to assume that case
+will <span style="font-style: italic;">not</span> be preserved. <br>
+      </div>
+      <h3 style="margin-left: 40px;"> <a id="customstringlength">Custom
+
+String length: </a> </h3>
+      <div style="margin-left: 40px;"> <span>Some databases have
+limits on the length of String entries. In these
+cases Conserve selects the largest legal size. If this is not what you
+desire for practical orperformance reasons, use the <span
+ style="font-family: monospace;">MaxLength</span> annotation on the
+appropriate accessor method, like this: </span> <br>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@<span
+ style="font-family: monospace; font-weight: bold;">MaxLength</span><font
+ color="#990000">(</font></tt><tt><font color="#993399">1024</font></tt><span><font
+ color="#990000">)</font></span><br><span><span><span><tt><b><font
+ color="#0000ff">public</font></b> String <b><font color="#000000">getFoo</font></b><font
+ color="#990000">()</font><br><font color="#ff0000">{</font><br>	<b><font
+ color="#0000ff">return</font></b> </tt><tt><font color="#ff0000">"Bar"</font></tt><span><span><tt><font
+ color="#990000">;</font><br><font color="#ff0000">}</font></tt></span></span></span></span></span></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+      </div>
+      <h3 style="margin-left: 40px;"> <a id="usingclobsandblobs">Using
+CLOBs and BLOBs: </a> </h3>
+      <div style="margin-left: 40px;"> <span> Conserve will store byte
+and character arrays as arrays, but you can choose to have them stored
+as BLOBs and CLOBs, respectively. <br>
+If the underlying RDBMS does not support CLOBs and/or BLOBs Conserve
+will emulate the functionality seamlessly. <br>
+      <br>
+Just apply the <span style="font-family: monospace;">AsClob</span> or <span
+ style="font-family: monospace;">AsBlob</span> annotations to an
+accessor that returns a character array or byte array, respectively: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@<b>AsClob<br><font color="#0000ff">public</font></b> <font
+ color="#009900">char</font><font color="#990000">[]</font> <b><font
+ color="#000000">getBar</font></b><font color="#990000">()</font><br><font
+ color="#ff0000">{</font><br>	<b><font color="#0000ff">return</font></b> <b><font
+ color="#0000ff">new</font></b> <font color="#009900">char</font><font
+ color="#990000">[]</font><font color="#ff0000">{</font><font
+ color="#ff0000">'4'</font><font color="#990000">,</font><font
+ color="#ff0000">'2'</font><font color="#ff0000">}</font><font
+ color="#990000">;</font><br><font color="#ff0000">}</font><br><br>@<b>AsBlob<br><font
+ color="#0000ff">public</font></b> byte<font color="#990000">[]</font> <b><font
+ color="#000000">getBaz</font></b><font color="#990000">()</font><br><font
+ color="#ff0000">{</font><br>	<b><font color="#0000ff">return</font></b> <b><font
+ color="#0000ff">new</font></b> byte<font color="#990000">[]</font><font
+ color="#ff0000">{</font><font color="#993399">42</font><font
+ color="#ff0000">}</font><font color="#990000">;</font><br><font
+ color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <br>
+These annotations are ignored if they are applied to methods that do
+not return the correct type of array. <br>
+      </div>
+      <h3 style="margin-left: 40px;"> <a id="indexes">Indices:</a> </h3>
+      <div style="margin-left: 40px;"> <span>Indices are useful for
+speeding up searches, which is why Conserve allows you to add indices
+on properties. </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@<b><font color="#000000">Indexed</font></b><font
+ color="#990000">(</font><font color="#ff0000">"MyIndex"</font><font
+ color="#990000">)</font><br><b><font color="#0000ff">public</font></b> <font
+ color="#009900">int</font> <b><font color="#000000">getFoo</font></b><font
+ color="#990000">()</font><br><font color="#ff0000">{</font><br>	<b><font
+ color="#0000ff">return</font></b> <font color="#993399">42</font><font
+ color="#990000">;</font><br><font color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <br>
+If you want to add more than one column to the same index, just use the
+same index name: </span>
+      <table summary="" style="text-align: left; width: 100%;"
+ class="newcolor" border="0" cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="vertical-align: top;">
+            <pre><tt>@<b><font color="#000000">Indexed</font></b><font
+ color="#990000">(</font><font color="#ff0000">"MyIndex"</font><font
+ color="#990000">)</font><br><b><font color="#0000ff">public</font></b> <font
+ color="#009900">int</font> <b><font color="#000000">getFoo</font></b><font
+ color="#990000">()</font><br><font color="#ff0000">{</font><br>	<b><font
+ color="#0000ff">return</font></b> <font color="#993399">42</font><font
+ color="#990000">;</font><br><font color="#ff0000">}</font><br><br>@<b><font
+ color="#000000">Indexed</font></b><font color="#990000">(</font><font
+ color="#ff0000">"MyIndex"</font><font color="#990000">)</font><br><b><font
+ color="#0000ff">public</font></b> <font color="#009900">long</font> <b><font
+ color="#000000">getTime</font></b><font color="#990000">()</font><br><font
+ color="#ff0000">{</font><br>	<b><font color="#0000ff">return</font></b> System<font
+ color="#990000">.</font><b><font color="#000000">currentTimeMillis</font></b><font
+ color="#990000">();</font><br><font color="#ff0000">}</font></tt></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span> <span> <br>
+Please note that some RDBMSs will truncate strings that are used in
+indices. </span> </span> </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<hr style="width: 100%; height: 2px; margin-left: 0px;">
+<table summary="" style="text-align: left; width: 100%;" border="0"
+ cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"> <small> <small> Last updated:
+2012-01-02<br>
+      <br>
+Hosted by: <br>
+      <a href="http://sourceforge.net/projects/conserve"> <img
+ src="http://sflogo.sourceforge.net/sflogo.php?group_id=268666&amp;type=10"
+ alt="Get Conserve at SourceForge.net. Fast, secure and Free Open Source software downloads"
+ style="border: 0px solid ; width: 80px; height: 15px;"> </a> </small>
+      </small> </td>
+      <td style="vertical-align: top; text-align: right;"> <a
+ href="http://sourceforge.net/donate/index.php?group_id=268666"> <img
+ src="http://images.sourceforge.net/images/project-support.jpg"
+ alt="Support This Project"
+ style="border: 0px solid ; width: 88px; height: 32px;"> </a> </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

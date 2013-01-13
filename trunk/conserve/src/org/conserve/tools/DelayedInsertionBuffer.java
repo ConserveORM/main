@@ -1,0 +1,269 @@
+/*******************************************************************************
+ * Copyright (c) 2009, 2012 Erik Berglund.
+ *   
+ *      This file is part of Conserve.
+ *   
+ *       Conserve is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *   
+ *       Conserve is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *   
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with Conserve.  If not, see <http://www.gnu.org/licenses/>.
+ *******************************************************************************/
+package org.conserve.tools;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import org.conserve.Persist;
+import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.protection.ProtectionManager;
+
+/**
+ * Maintains a list of objects to be inserted at a later time, with the
+ * associated
+ * 
+ * @author Erik Berglund
+ * 
+ */
+public class DelayedInsertionBuffer
+{
+	private ArrayList<InsertionObject> buffer = new ArrayList<InsertionObject>();
+	private ArrayList<Long> idBuffer = new ArrayList<Long>();
+	private Persist persist;
+
+
+	public DelayedInsertionBuffer(Persist persist)
+	{
+		this.persist = persist;
+	}
+
+	public boolean isKnown(Long id)
+	{
+		return idBuffer.contains(id);
+	}
+
+	public void addId(Long id)
+	{
+		idBuffer.add(id);
+	}
+
+	/**
+	 * Insert a new object to be added later.
+	 * 
+	 * @param tableName
+	 *            the name of the table the object is referred from.
+	 * @param columnName
+	 *            the name of the column that references the object.
+	 * @param parentId
+	 *            the C__ID value of the referring object.
+	 * @param insertionObject
+	 *            the referred object.
+	 * @param referencetype
+	 *            the type to cast the reference to.
+	 * @param hash
+	 *            the result of the System.identityHash code for the owning
+	 *            object.
+	 */
+	public void add(String tableName, String columnName, Long parentId,
+			Object insertionObject, Class<?> referencetype, long hash)
+	{
+		buffer.add(new InsertionObject(tableName, columnName, parentId, insertionObject,
+				referencetype, hash));
+	}
+
+	/**
+	 * Insert a new object to be added later. The parent id of the inserting
+	 * object is undefined.
+	 * 
+	 * @param tableName
+	 *            the name of the table the object is referred from.
+	 * @param columnName
+	 *            the name of the column that references the object.
+	 * @param insertionObject
+	 *            the referred object.
+	 * @param referencetype
+	 *            the type to cast the reference to.
+	 * @param hash
+	 *            the result of the System.identityHash code for the owning
+	 *            object.
+	 */
+	public void add(String tableName, String columnName, Object insertionObject,
+			Class<?> referencetype, long hash)
+	{
+
+		buffer.add(new InsertionObject(tableName, columnName, null, insertionObject,
+				referencetype, hash));
+	}
+
+	/**
+	 * Set the parent-id for all entries that do not have it set.
+	 * 
+	 * @param id
+	 */
+	public void setUndefinedIds(Long id,long hash)
+	{
+
+		for (InsertionObject i : buffer)
+		{
+			if (i.getParentId() == null && i.getParentHash()==hash)
+			{
+				i.setParentId(id);
+			}
+		}
+	}
+
+	public void insertObjects(ConnectionWrapper cw, ProtectionManager protectionManager)
+			throws SQLException
+	{
+		ArrayList<InsertionObject> toRemove = new ArrayList<InsertionObject>();
+		for (InsertionObject i : buffer)
+		{
+			// insert the object
+			Long id = persist.saveObjectUnprotected(cw, i.getInsertionObject(), this);
+			// get the object id
+			if (id != null)
+			{
+				// cast the id to the right reference type
+				id = persist.getCastId(i.getReferenceType(), i.getInsertionObject()
+						.getClass(), id, cw);
+				// update the referring table entry
+				StringBuilder sb = new StringBuilder("UPDATE ");
+				sb.append(i.getTableName());
+				sb.append(" SET ");
+				sb.append(i.getColumnName());
+				sb.append(" = ?");
+				sb.append(" WHERE ");
+				sb.append(Defaults.ID_COL);
+				sb.append(" = ?");
+				PreparedStatement ps = cw.prepareStatement(sb.toString());
+				ps.setLong(1, id);
+				ps.setLong(2, i.getParentId());
+				Tools.logFine(ps);
+				try
+				{
+					int updated = ps.executeUpdate();
+					// make sure only one object was updated.
+					if (updated != 1)
+					{
+						throw new SQLException("Updated " + updated + ", not 1.");
+					}
+					// add a protection entry
+					String tableName = null;
+					if (i.getReferenceType().isArray())
+					{
+						tableName = Defaults.ARRAY_TABLE_NAME;
+					}
+					else
+					{
+						tableName = NameGenerator.getTableName(i.getReferenceType(),
+								persist.getAdapter());
+					}
+					protectionManager.protectObjectInternal(i.getTableName(), i
+							.getParentId(), i.getColumnName(), tableName, id,
+							ObjectTools.getSystemicName(i.getInsertionObject()
+									.getClass()), cw);
+
+					// if the object was successfully inserted, remove it
+					// from the buffer.
+					toRemove.add(i);
+				}
+				finally
+				{
+					ps.close();
+				}
+			}
+		}
+		for (InsertionObject i : toRemove)
+		{
+			buffer.remove(i);
+		}
+
+	}
+
+	/**
+	 * Check if the buffer is empty.
+	 * 
+	 * @return true if there are no more delayed insertion objects in the
+	 *         buffer.
+	 */
+	public boolean isEmpty()
+	{
+		return buffer.isEmpty();
+	}
+
+	private static class InsertionObject
+	{
+		private String tableName;
+		private String columnName;
+		private Object insertionObject;
+		private Long parentId;
+		private long parentHash;
+		private Class<?> referenceType;
+
+		public InsertionObject(String tableName, String columnName, Long parentId,
+				Object insertionObject, Class<?> referenceType, Long parentHash)
+		{
+			this.tableName = tableName;
+			this.columnName = columnName;
+			this.setParentId(parentId);
+			this.insertionObject = insertionObject;
+			this.referenceType = referenceType;
+			this.setParentHash(parentHash);
+		}
+
+		public String getTableName()
+		{
+			return tableName;
+		}
+
+		public String getColumnName()
+		{
+			return columnName;
+		}
+
+		public Object getInsertionObject()
+		{
+			return insertionObject;
+		}
+
+		public Class<?> getReferenceType()
+		{
+			return referenceType;
+		}
+
+		public void setParentId(Long parentId)
+		{
+			this.parentId = parentId;
+		}
+
+		public Long getParentId()
+		{
+			return parentId;
+		}
+
+		/**
+		 * @return the parentHash
+		 */
+		public long getParentHash()
+		{
+			return parentHash;
+		}
+
+		/**
+		 * @param parentHash
+		 *            the parentHash to set
+		 */
+		public void setParentHash(long parentHash)
+		{
+			this.parentHash = parentHash;
+		}
+	}
+}

@@ -1,0 +1,503 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Conserve - an open source persistence API</title>
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <meta name="ROBOTS" content="INDEX,FOLLOW">
+  <meta http-equiv="PRAGMA" content="NO-CACHE">
+  <meta name="KEYWORDS" content="java, jdbc, orm, database, conserve">
+  <meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+<!-- Piwik -->
+  <script type="text/javascript">
+			var pkBaseURL = (("https:" == document.location.protocol) ? "https://sourceforge.net/apps/piwik/conserve/" : "http://sourceforge.net/apps/piwik/conserve/");
+			document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+		</script>
+  <script type="text/javascript">
+			try {
+				var piwikTracker = Piwik.getTracker(pkBaseURL + "piwik.php", 1);
+				piwikTracker.trackPageView();
+				piwikTracker.enableLinkTracking();
+			} catch( err ) {
+			}
+		</script>
+</head>
+<body>
+<noscript>
+<p> <img
+ src="http://sourceforge.net/apps/piwik/conserve/piwik.php?idsite=1"
+ style="border: 0pt none ;" alt=""> </p>
+<!-- End Piwik Tag --> </noscript>
+<table summary="main content"
+ style="text-align: left; width: 900px; margin-left: auto; margin-right: auto;"
+ border="0" cellpadding="0" cellspacing="0">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"> <a
+ href="http://conserve.sourceforge.net/"> <img
+ style="border: 0px solid ; width: 238px; height: 76px;"
+ alt="Conserve logo" title="Conserve logo" src="img/logo.png"> </a> <br>
+Conserve is an open source persistence API. It features automatic
+Object-Relational Mapping (ORM). <br>
+Conserve lets you do more with less. <br>
+      <br>
+      <hr style="width: 100%; height: 2px;">
+      <h3>Contents: </h3>
+      <a href="index.html#status">Status</a> <br>
+      <a href="#featurereq">Feature requests and bug reports</a> <br>
+      <a href="index.html#download">Download</a> <br>
+      <a href="index.html#documentation">Documentation</a> <br>
+      <a href="index.html#features">Features</a> <br>
+      <a href="index.html#faq">FAQ</a> <br>
+      <a href="index.html#compability">Compatibility matrix</a> <br>
+      <a href="index.html#links">Links</a> <br>
+      <a href="index.html#license">License</a> <br>
+      <hr style="width: 100%; height: 2px;">
+      <h3> <a id="status">Status:</a> </h3>
+Conserve is currently in beta. <br>
+      <h3> <a id="featurereq">Feature requests and bug reports:</a> </h3>
+      <a href="https://sourceforge.net/projects/conserve/support">Source
+Forge
+forums
+for Conserve.</a> Please submit bug reports here. <br>
+      <h3> <a id="download">Download:</a> </h3>
+      <table summary="downloadtable" style="width: 100%;" border="0"
+ cellpadding="0" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="width: 48px;"> <a
+ href="https://sourceforge.net/projects/conserve/files/"> <img
+ title="download" alt="download" src="img/download.png"> </a> </td>
+            <td> <a
+ href="https://sourceforge.net/projects/conserve/files/">Download
+latest.</a> </td>
+          </tr>
+        </tbody>
+      </table>
+      <a href="http://conserve.svn.sourceforge.net/viewvc/conserve/">Browse
+source
+code.</a> <br>
+      <a href="https://sourceforge.net/scm/?type=svn&amp;group_id=268666">Check
+
+out
+latest
+source version.</a> <br>
+      <h3> <a id="documentation">Documentation:</a> </h3>
+      <a href="tutorial.html">Tutorial.</a> <br>
+      <a href="doc">Browse JavaDoc generated documentation.</a> <br>
+      <a href="https://sourceforge.net/projects/conserve/files/">Download
+JavaDoc
+generated
+documentation.</a> <br>
+      <h3> <a id="features">Features:</a> </h3>
+      <ul style="margin-left: 0px;">
+        <li> Search-by-example. </li>
+        <li> Object-oriented search. <br>
+        </li>
+        <li> No SQL knowledge required. </li>
+        <li> Very simple configuration. <br>
+        </li>
+        <li> No annotation required. </li>
+        <li> Inheritance is preserved. </li>
+        <li> Transitive persistence. </li>
+        <li> Instance consistency. </li>
+        <li> Automatic database schema creation. </li>
+        <li> Persist complex objects, i.e. objects that contain
+Collections, Maps, Sets and arrays, self-referencing objects etc. </li>
+        <li> Eliminates SQL injection. <br>
+        </li>
+        <li> Persist objects without changing your existing code or
+object model. </li>
+        <li> Handle objects that contain direct and indirect references
+to themselves. <br>
+        </li>
+        <li> No external dependencies. </li>
+        <li> Database-neutral. </li>
+        <li> ACID compliant. </li>
+        <li> Universal support for CLOB and BLOB datatypes. </li>
+        <li> Small binary size. <br>
+        </li>
+      </ul>
+      <h3> <a id="faq">FAQ:</a> </h3>
+Q: <span style="font-weight: bold;">Why not use <a
+ href="https://www.hibernate.org/">Hibernate</a>?</span> <br>
+A: Hibernate requires XML configuration or specialised tags and it does
+not respect class inheritance relations. <br>
+      <br>
+Q: <span style="font-weight: bold;"> Why not use JPA 2.0 ( <a
+ href="http://www.jcp.org/en/jsr/detail?id=317">JSR 317</a>) which
+preserves class inheritance relations? </span> <br>
+A: JPA is needlessly complex. For example, the user is required
+to specify if inter-class relations are OneToOne, OneToMany, ManyToOne
+or ManyToMany using annotations, despite the fact that this
+informationcan be deduced using introspection on the class definition
+itself. <br>
+Conserve aims to give the user the same power as JPA 2.0 without
+the complexity. <br>
+      <br>
+Q: <span style="font-weight: bold;">What is Transitive Persistence?</span>
+      <br>
+A: If object A refers to object B and A is persisted, B isautomatically
+persisted. If a third object, C, also references B and C is persisted,
+the record of object B is not duplicated. This means thatif you
+retrieve A and C at a later time, B will be automatically retrieved and
+A and C will both reference the same object. <br>
+      <br>
+Q: <span style="font-weight: bold;"> What is Instance Consistency? <br>
+      </span>A: Objects are not retrieved from storage if they are
+already in memory, instead a reference to the existing object is
+returned. This prevents the problem where two references to the same
+database entity are modified separately by application code.<br>
+      <br>
+Q: <span style="font-weight: bold;"> Why is search-by-example a good
+thing?</span> <br>
+A: There are four reasons: <br>
+      <ol>
+        <li> It moves some of the validation checks from run-time to
+build-time, allowing you to detect and correct a problem earlier. </li>
+        <li> It allows dynamically building queries without string
+concatenation. </li>
+        <li> It makes it difficult for your colleagues to accidentally
+put in an SQL injection bug.</li>
+        <li>It is more intuitive than stringing together joins on
+several tables manually.<br>
+        </li>
+      </ol>
+Q: <span style="font-weight: bold;">Can I still enter raw SQL commands?</span>
+      <br>
+A: Yes, we don't encourage it but it is simple to do so, have a look at
+the <span style="font-family: monospace;">ConnectionWrapper.getConnection()</span>method,
+it
+lets
+you access a raw connection. <br>
+      <br>
+Q: <span style="font-weight: bold;">Why isn't database engine X
+supported?</span> <br>
+A: We're adding support for database engines as fast as we can. If you
+would
+like us to add support for a particular DB engine, please drop us
+a note (if it's an open source DB) or send a message to the
+manufacturer (if it's a proprietary DB).<br>
+      <br>
+Q: <span style="font-weight: bold;">Why is database neutrality a good
+thing?</span> <br>
+A: Database neutrality means you can easily switch between different
+database vendors - just by changing a single line. <br>
+This makes it easier to find the optimal database for your application
+- there's no need to rely on general performance measures and
+guesswork. <br>
+It also means you can easily migrate from one database to another,
+should your needs change. <br>
+Most importantly it means you can forget about implementation-specific
+SQL variations and dialects.<br>
+      <br>
+Q: <span style="font-weight: bold;"> Can I help? <br>
+      </span>A: Yes, we're grateful for any help. We welcome
+graphic designers (we need a logo), web designers, Java programmers, SQL
+gurus and anyone who wants to make a better, simpler ORM library. See
+the <a href="http://sourceforge.net/projects/conserve/">project page </a>for
+
+details.
+
+      <br>
+      <h3> <a id="compability">Compatibility matrix:</a> </h3>
+Conserve is compatible with the following RDBMS: <br>
+      <table summary="comabilitymatrix"
+ style="text-align: left; width: 664px; height: 491px;" border="0"
+ cellpadding="2" cellspacing="2">
+        <tbody>
+          <tr>
+            <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Name
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Implemented
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Planned
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; background-color: rgb(204, 204, 204);">Test
+suite
+runtime <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.h2database.com/html/main.html">H2</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> 14s <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.mysql.com/">MySQL</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;">28s&nbsp;
+
+
+            <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.postgresql.org/">PostgreSQL</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> 24s <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.microsoft.com/sqlserver">Microsoft SQL Server</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.oracle.com/database/">Oracle</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.sqlite.org/">SQLite</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> 17s <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://db.apache.org/derby/">Apache Derby</a>/ <a
+ href="http://developers.sun.com/javadb/">SUN Java DB</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;">1m,
+57s&nbsp; <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://ibm.com/software/data/informix/">Informix</a> <br>
+            </td>
+            <td style="vertical-align: top; text-align: center;"> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://ibm.com/software/data/db2/">DB2</a> <br>
+            </td>
+            <td style="vertical-align: top; text-align: center;"> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://office.microsoft.com/en-us/access/default.aspx">MS Access</a>
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: center;"> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.firebirdsql.org/">FireBird</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔</td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: white;">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> 1m, 29s
+            <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://hsqldb.org/">HSQLDB</a> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(102, 255, 153);">✔
+
+            <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 255);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> 37s <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="http://www.ingres.com/">Ingres</a> <br>
+            </td>
+            <td style="vertical-align: top; text-align: center;"> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+          <tr>
+            <td style="vertical-align: top;"> <a
+ href="https://www.sdn.sap.com/irj/sdn/maxdb">MaxDB</a> <br>
+            </td>
+            <td style="vertical-align: top;"> <br>
+            </td>
+            <td
+ style="vertical-align: top; text-align: center; background-color: rgb(255, 255, 102);">
+            <br>
+            </td>
+            <td style="vertical-align: top; text-align: left;"> <br>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <small> </small><br>
+      <h3> <a id="links">Links:</a> </h3>
+      <a href="http://troels.arvin.dk/db/rdbms/"></a> <a
+ href="http://cayenne.apache.org/">Apache Cayenne</a> <br>
+      <a href="http://beankeeper.netmind.hu/index.php">BeanKeeper</a> <br>
+      <a href="http://carbonado.sourceforge.net/">Carbonado</a> <br>
+      <a href="http://troels.arvin.dk/db/rdbms/">Comparison of
+different SQL implementations</a> <br>
+      <a href="http://www.easierjava.com/">EJP</a> <br>
+      <a href="http://incubator.apache.org/empire-db/">Empire-db</a> <a
+ href="http://incubator.apache.org/empire-db/"> <br>
+      </a> <a href="https://www.hibernate.org/">Hibernate</a> <br>
+      <a href="http://jor.sourceforge.net/">jor</a> <br>
+      <a href="http://jorm.ow2.org/">JORM</a> <br>
+      <a href="http://www.jcp.org/en/jsr/detail?id=220">JPA 1.0</a> <br>
+      <a href="http://www.jcp.org/en/jsr/detail?id=317">JPA 2.0 </a> <br>
+      <a href="http://www.jpersist.org/">jPersist</a> <br>
+      <a href="http://pbeans.sourceforge.net/"> pBeans <sup> 2 </sup>
+      </a> <br>
+      <a
+ href="http://www.oracle.com/technology/products/ias/toplink/index.html">Toplink</a>
+      <span style="font-weight: bold;"> <br>
+      <br>
+      </span>
+      <h3> <a id="license">License:</a> </h3>
+Conserve is licensed under LGPL v.3. <br>
+      <a href="http://www.gnu.org/licenses/lgpl-3.0.txt"> <img
+ alt="LGPL3 logo" title="LGPL3 logo" src="img/lgpl3.png"
+ style="border: 0px solid ; width: 147px; height: 51px;"> </a> <br>
+This means, in practical terms, that you can include Conserve in your
+commercial application. </td>
+    </tr>
+  </tbody>
+</table>
+<div style="text-align: left; margin-left: 40px;">
+<hr style="width: 100%; height: 2px; margin-left: 0px;">
+<table summary="footer" style="text-align: left; width: 100%;"
+ border="0" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"> <small> <small> Last updated:
+2012-05-16 <br>
+      <br>
+Hosted by: <br>
+      <a href="http://sourceforge.net/projects/conserve"> <img
+ src="http://sflogo.sourceforge.net/sflogo.php?group_id=268666&amp;type=10"
+ alt="Get Conserve at SourceForge.net. Fast, secure and Free Open Source software downloads"
+ style="border: 0px solid ; width: 80px; height: 15px;"> </a> </small>
+      </small> </td>
+      <td style="vertical-align: top; text-align: right;"> <a
+ href="http://sourceforge.net/donate/index.php?group_id=268666"> <img
+ src="http://images.sourceforge.net/images/project-support.jpg"
+ alt="Support This Project"
+ style="border: 0px solid ; width: 88px; height: 32px;"> </a> </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</body>
+</html>

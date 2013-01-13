@@ -1,0 +1,405 @@
+/*******************************************************************************
+ * Copyright (c) 2009, 2012 Erik Berglund.
+ *   
+ *      This file is part of Conserve.
+ *   
+ *       Conserve is free software: you can redistribute it and/or modify
+ *       it under the terms of the GNU Lesser General Public License as published by
+ *       the Free Software Foundation, either version 3 of the License, or
+ *       (at your option) any later version.
+ *   
+ *       Conserve is distributed in the hope that it will be useful,
+ *       but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *       GNU Lesser General Public License for more details.
+ *   
+ *       You should have received a copy of the GNU Lesser General Public License
+ *       along with Conserve.  If not, see <http://www.gnu.org/licenses/>.
+ *******************************************************************************/
+package org.conserve.tools;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.conserve.adapter.AdapterBase;
+import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.generators.IdStatementGenerator;
+import org.conserve.tools.generators.RelationDescriptor;
+
+/**
+ * A prototype to a PreparedStatement, that can convert itself to a
+ * PreparedStatement.
+ * 
+ * @author Erik Berglund
+ * 
+ */
+public class StatementPrototype
+{
+	private List<Object> newValues = new ArrayList<Object>();
+	private Class<?> queryClass;
+	private AdapterBase adapter;
+	private String prePend = "";
+	private String append = "";
+	private Integer offset;
+	private Integer limit;
+
+	private List<String> sortStatements = new ArrayList<String>();
+	private List<Object> conditionalValues = new ArrayList<Object>();
+	private StatementContainer statementStackPointer;
+	private StatementContainer statementStack;
+
+	private IdStatementGenerator idGen;
+
+	public StatementPrototype(AdapterBase adapter, ObjectStack oStack, Class<?> resultClass, boolean addJoins)
+	{
+		this.adapter = adapter;
+		this.queryClass = resultClass;
+
+		idGen = new IdStatementGenerator(adapter,oStack,addJoins);
+		// initialise the statement stack
+		push("AND");
+		statementStack = statementStackPointer;
+	}
+
+
+
+
+	public PreparedStatement toPreparedStatement(ConnectionWrapper cw, String prePend) throws SQLException
+	{
+		this.setPrepend(prePend);
+		return this.toPreparedStatement(cw);
+	}
+
+	private PreparedStatement toPreparedStatement(ConnectionWrapper cw) throws SQLException
+	{
+		PreparedStatement ps = cw.prepareStatement(createString());
+		// set the values
+		int index = 0;
+		for (Object o : newValues)
+		{
+			if (ObjectTools.isPrimitive(o.getClass()))
+			{
+				index++;
+				addValue(ps, index, o);
+			}
+		}		
+		for (RelationDescriptor o : idGen.getRelationDescriptors())
+		{
+			if(o.isRequiresvalue())
+			{
+				index++;
+				addValue(ps,index,o.getValue());
+			}
+		}
+		for (Object o : conditionalValues)
+		{
+			if (ObjectTools.isPrimitive(o.getClass()))
+			{
+				index++;
+				addValue(ps, index, o);
+			}
+		}
+
+		Tools.logFine(ps);
+		return ps;
+	}
+
+	/**
+	 * Add an object to the PreparedStatement. Which of the setXXX objects are
+	 * called depends on the type of o.
+	 * 
+	 * @param ps
+	 * @param index
+	 * @param o
+	 * @throws SQLException
+	 */
+	private void addValue(PreparedStatement ps, int index, Object o) throws SQLException
+	{
+		Tools.setParameter(ps, o.getClass(), index,o);
+	}
+
+	/**
+	 * Get a string representation of the query.
+	 */
+	private String createString()
+	{
+
+		// create the statement
+		StringBuilder sb = new StringBuilder(prePend);
+		String idStatement = idGen.generate(0);
+		sb.append(idGen.generateAsStatement());
+
+		boolean whereAdded = false;
+
+		if (idStatement.length() > 0)
+		{
+			whereAdded = true;
+			sb.append(" WHERE ");
+			// add the statement that joins the inheritance levels together
+			sb.append(idStatement);
+		}
+		if (statementStack.getSize() > 0)
+		{
+			if (!whereAdded)
+			{
+				whereAdded = true;
+				sb.append(" WHERE ");
+			}
+			else
+			{
+				sb.append(" AND ");
+			}
+			// depth-first traversal of the statement tree
+			StatementContainer pointer = this.statementStack;
+			addStatements(sb, pointer);
+
+		}
+		if (this.sortStatements.size() > 0)
+		{
+			sb.append(" ORDER BY ");
+			for (int x = 0; x < sortStatements.size(); x++)
+			{
+				sb.append(sortStatements.get(x));
+				if (x < sortStatements.size() - 1)
+				{
+					sb.append(",");
+				}
+			}
+		}
+		if (adapter.isSupportsLimitOffsetKeywords() && (limit != null || offset != null))
+		{
+			StringBuilder limitOffsetBuffer = new StringBuilder();
+			StringBuilder limitBuffer = new StringBuilder(" ");
+			if (limit != null)
+			{
+				String limitString = adapter.getLimitString();
+				limitString = limitString.replaceAll("\\?", limit.toString());
+				limitBuffer.append(limitString);
+			}
+			StringBuilder offsetBuffer = new StringBuilder(" ");
+			if (offset != null)
+			{
+				String offsetString = adapter.getOffsetString();
+				offsetString = offsetString.replaceAll("\\?", offset.toString());
+				offsetBuffer.append(offsetString);
+			}
+			if (adapter.isPutLimitBeforeOffset())
+			{
+				limitOffsetBuffer.append(limitBuffer);
+				limitOffsetBuffer.append(offsetBuffer);
+			}
+			else
+			{
+				limitOffsetBuffer.append(offsetBuffer);
+				limitOffsetBuffer.append(limitBuffer);
+			}
+			if (adapter.isPutLimitOffsetBeforeColumns())
+			{
+				// insert the limit/offset string after "select"
+				sb.insert(6, limitOffsetBuffer);
+			}
+			else
+			{
+				sb.append(limitOffsetBuffer);
+			}
+		}
+		sb.append(append);
+		String queryString = sb.toString();
+		return queryString;
+	}
+
+	private void addStatements(StringBuilder sb, StatementContainer container)
+	{
+
+		for (int x = 0; x < container.getSize(); x++)
+		{
+			StatementContainer statement = container.get(x);
+			if (statement.isSql())
+			{
+				sb.append(statement.getKeyWord());
+			}
+			else
+			{
+				sb.append("(");
+				addStatements(sb, statement);
+				sb.append(")");
+			}
+			if (x < container.getSize() - 1)
+			{
+				sb.append(" ");
+				sb.append(container.getKeyWord());
+				sb.append(" ");
+			}
+		}
+	}
+
+	public void addEqualsClause(String col, Object value)
+	{
+		col += " = ?";
+		this.addConditionalStatement(col, value);
+	}
+
+
+	public Class<?> getQueryClass()
+	{
+		return this.queryClass;
+	}
+
+	/**
+	 * Set a string that will be prepended to the start of the SQL statement.
+	 * 
+	 * @param string
+	 */
+	public void setPrepend(String string)
+	{
+		this.prePend = string;
+	}
+
+	public void setAppend(String append)
+	{
+		this.append = append;
+	}
+
+	public void setOffset(Integer offset)
+	{
+		this.offset = offset;
+	}
+
+	public void setLimit(Integer limit)
+	{
+		this.limit = limit;
+	}
+
+	public Integer getLimit()
+	{
+		return limit;
+	}
+
+	public Integer getOffset()
+	{
+		return offset;
+	}
+
+	/**
+	 * Add a statement indicating the sort order of the results.
+	 * 
+	 * @param subStatement
+	 */
+	public void addSortStatement(String subStatement)
+	{
+		sortStatements.add(subStatement);
+	}
+
+	public void addConditionalStatement(String conditional, Object value)
+	{
+		addConditionalStatement(conditional);
+		this.conditionalValues.add(value);
+	}
+
+	public void addConditionalValues(ArrayList<Object> values)
+	{
+		this.conditionalValues.addAll(values);
+	}
+
+	/**
+	 * Generate the start of the SELECT * FROM type query. * will be replaced
+	 * with A.*, B.* or whatever is appropriate from the join tables.
+	 * 
+	 * @return a String representing the the start of a selection query.
+	 */
+	public String getSelectStartQuery()
+	{
+		String firstAsName = idGen.getJoinRepresentations().get(0).getAsName();
+		StringBuilder statement = new StringBuilder(200);
+		statement.append("SELECT ");
+		if (adapter.handlesDistinctWithClobsAndBlobsCorrectly())
+		{
+			statement.append("DISTINCT(");
+		}
+		statement.append(firstAsName);
+		statement.append(".");
+		statement.append(Defaults.ID_COL);
+		if (adapter.handlesDistinctWithClobsAndBlobsCorrectly())
+		{
+			statement.append(")");
+		}
+		if (!idGen.getJoinRepresentations().get(0).isArray())
+		{
+			statement.append(",");
+			statement.append(firstAsName);
+			statement.append(".");
+			statement.append(Defaults.REAL_CLASS_COL);
+			statement.append(",");
+			statement.append(firstAsName);
+			statement.append(".");
+			statement.append(Defaults.REAL_ID_COL);
+		}
+		for (int x = 0; x < idGen.getJoinTables().size(); x++)
+		{
+			ObjectRepresentation rep = idGen.getJoinRepresentations().get(x);
+			if (rep.hasNonDummyProperty())
+			{
+				if (rep.getPropertyCount() > 0)
+				{
+					statement.append(",");
+				}
+				for (int prop = 0; prop < rep.getPropertyCount(); prop++)
+				{
+					statement.append(idGen.getJoinTableIds().get(x));
+					statement.append(".");
+					statement.append(rep.getPropertyName(prop));
+					if (prop < rep.getPropertyCount() - 1)
+					{
+						statement.append(",");
+					}
+				}
+			}
+		}
+		statement.append(" FROM ");
+		return statement.toString();
+	}
+
+	public void addConditionalStatement(String conditional)
+	{
+		this.statementStackPointer.add(new StatementContainer(conditional, true));
+	}
+
+	/**
+	 * Push a new statement container on the stack.
+	 * 
+	 * @param keyWord
+	 */
+	public void push(String keyWord)
+	{
+		StatementContainer sc = new StatementContainer(keyWord);
+		if (statementStackPointer != null)
+		{
+			statementStackPointer.add(sc);
+		}
+		statementStackPointer = sc;
+	}
+
+	/**
+	 * Pop the top statement container of the stack.
+	 */
+	public void pop()
+	{
+		StatementContainer oldPointer = statementStackPointer;
+		statementStackPointer = statementStackPointer.getParent();
+		if (!oldPointer.isSql() && oldPointer.getSize() == 0)
+		{
+			statementStackPointer.remove(oldPointer);
+		}
+	}
+
+	/**
+	 * @return
+	 */
+	public IdStatementGenerator getIdStatementGenerator()
+	{
+		return this.idGen;
+	}
+
+}

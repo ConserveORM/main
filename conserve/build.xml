@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<project name="conserve" default="compile" basedir=".">
+
+	<property name="src" value="src" />
+	<property name="test" value="test" />
+	<property name="bin" value="bin" />
+	<property name="dist" value="dist" />
+	<property name="version" value="0.5beta" />
+
+	<path id="classpath.def">
+		<pathelement location="${bin}" />
+		<pathelement location="libs/junit.jar" />
+		<pathelement location="libs/hsqldb.jar" />
+	</path>
+
+
+	<target name="init">
+		<mkdir dir="${bin}" />
+		<mkdir dir="${dist}" />
+	</target>
+
+	<!-- compile the basic executables -->
+	<target name="compile" depends="init">
+		<!-- Compile the java code -->
+		<javac srcdir="${src}" destdir="${bin}" includeantruntime="false" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${bin}" />
+		<delete dir="${dist}" />
+	</target>
+
+	<!-- create the distribution jar -->
+	<target name="jar" depends="clean,compile">
+		<!-- create a jar file -->
+		<jar destfile="${dist}/conserve-${version}.jar" basedir="${bin}" />
+	</target>
+
+
+	<target name="compile-test" depends="compile">
+		<!-- Compile the test code -->
+		<javac srcdir="${test}" destdir="${bin}" includeantruntime="false">
+			<classpath refid="classpath.def" />
+		</javac>
+	</target>
+
+	<!-- compile and execute the JUnit unit and integration tests.
+	Tests will fail if libs/unit.jar and libs/hsqldb.jar are not present. -->
+	<target name="test" depends="compile-test">
+		<junit fork="true">
+			<classpath refid="classpath.def" />
+			<formatter type="brief" usefile="false" />
+			<test name="org.conserve.tools.ObjectToolsTest" />
+			<test name="org.conserve.tools.UniqueIdGeneratorTest" />
+			<test name="org.conserve.HsqldbPersistTest" />
+		</junit>
+	</target>
+</project>

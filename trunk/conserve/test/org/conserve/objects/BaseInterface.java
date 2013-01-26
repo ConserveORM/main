@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2012 Erik Berglund.
+ * Copyright (c) 2009, 2013 Erik Berglund.
  *   
  *      This file is part of Conserve.
  *   

@@ -1249,7 +1249,7 @@ public class TableManager
 				// database
 				if (!superClasses.contains(superClass))
 				{
-					//klass has been moved, it now has a new superclass.
+					// klass has been moved, it now has a new superclass.
 					SubclassMover sm = new SubclassMover(adapter);
 					ObjectStack oldObjectStack = getObjectStackFromDatabase(klass, cw);
 					sm.move(oldObjectStack, nuObjectStack, nuObjectStack.getActualRepresentation(), cw);
@@ -1262,7 +1262,8 @@ public class TableManager
 
 				}
 
-				// make sure each entry in superClasses is still in the current list
+				// make sure each entry in superClasses is still in the current
+				// list
 				// get a list of implemented interfaces
 				Class<?>[] interfaces = klass.getInterfaces();
 				for (Class<?> dbSuperClass : superClasses)
@@ -1301,7 +1302,6 @@ public class TableManager
 					}
 				}
 
-
 				// Check if any property has been moved up or down
 				for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
 				{
@@ -1314,16 +1314,18 @@ public class TableManager
 					{
 						String colName = en.getKey();
 						int correctLevel = nuObjectStack.getRepresentationLevel(colName);
-						if(correctLevel != level && correctLevel >=0)
+						if (correctLevel != level && correctLevel >= 0)
 						{
-							moveField(nuObjectStack,colName,level,correctLevel,cw);
+							moveField(nuObjectStack, colName, level, correctLevel, cw);
 						}
 					}
 
 				}
-				
-				//we have to re-aquire the database columns, they may have been altered by the property moving algorithm
-				Map<String, String> valueTypeMap = getDatabaseColumns(nuObjectStack.getActualRepresentation().getTableName(), cw);
+
+				// we have to re-aquire the database columns, they may have been
+				// altered by the property moving algorithm
+				Map<String, String> valueTypeMap = getDatabaseColumns(nuObjectStack.getActualRepresentation()
+						.getTableName(), cw);
 				// find the list of name-type pairs for this class
 				ObjectRepresentation objRes = nuObjectStack.getActualRepresentation();
 				// check if any columns have been removed
@@ -1340,17 +1342,20 @@ public class TableManager
 	}
 
 	/**
-	 * Move the field colName from the table at level fromLevel to the table at level toLevel
+	 * Move the field colName from the table at level fromLevel to the table at
+	 * level toLevel
+	 * 
 	 * @param nuObjectStack
 	 * @param colName
 	 * @param fromLevel
 	 * @param toLevel
 	 * @param cw
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	private void moveField(ObjectStack nuObjectStack, String colName, int fromLevel, int toLevel, ConnectionWrapper cw) throws SQLException
+	private void moveField(ObjectStack nuObjectStack, String colName, int fromLevel, int toLevel, ConnectionWrapper cw)
+			throws SQLException
 	{
-		//generate aliases
+		// generate aliases
 		UniqueIdTree idTree = new UniqueIdTree(new UniqueIdGenerator());
 		idTree.nameStack(nuObjectStack);
 
@@ -1358,11 +1363,10 @@ public class TableManager
 		String fromTableAs = nuObjectStack.getRepresentation(fromLevel).getAsName();
 		String toTable = nuObjectStack.getRepresentation(toLevel).getTableName();
 		String toTableAs = nuObjectStack.getRepresentation(toLevel).getAsName();
-		
-		
-		//create a new field of the right type in toTable
+
+		// create a new field of the right type in toTable
 		ensureColumnExists(toTable, colName, nuObjectStack.getRepresentation(toLevel).getReturnType(colName), cw);
-		
+
 		IdStatementGenerator idGen = new IdStatementGenerator(adapter, nuObjectStack, true);
 		int minLevel = Math.min(fromLevel, toLevel);
 		String idStatement = idGen.generate(minLevel);
@@ -1379,25 +1383,25 @@ public class TableManager
 		sb.append(".");
 		sb.append(colName);
 		sb.append(" FROM ");
-		sb.append(idGen.generateAsStatement(new String[]{toTable}));
+		sb.append(idGen.generateAsStatement(new String[] { toTable }));
 		sb.append(" WHERE ");
-		sb.append(idStatement);		
+		sb.append(idStatement);
 		sb.append(")");
 		PreparedStatement ps = cw.prepareStatement(sb.toString());
 		int index = 0;
 		for (RelationDescriptor o : idGen.getRelationDescriptors())
 		{
-			if(o.isRequiresvalue())
+			if (o.isRequiresvalue())
 			{
 				index++;
-				Tools.setParameter(ps, o.getValue().getClass(), index,o.getValue());
+				Tools.setParameter(ps, o.getValue().getClass(), index, o.getValue());
 			}
 		}
 		Tools.logFine(ps);
 		ps.executeUpdate();
 		ps.close();
-		
-		//drop the field in fromTable
+
+		// drop the field in fromTable
 		try
 		{
 			dropColumn(fromTable, colName, cw);
@@ -1788,12 +1792,21 @@ public class TableManager
 			String propertyTable = rs.getString(2);
 			Long propertyId = rs.getLong(3);
 			String propertyClassName = rs.getString(4);
-			// remove protection
-			pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
-			// if entity is unprotected,
-			if (!pm.isProtected(propertyClassName, propertyId, cw))
+			if (propertyClassName != null)
 			{
-				// then delete the entity
+				// remove protection
+				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
+				// if entity is unprotected,
+				if (!pm.isProtected(propertyClassName, propertyId, cw))
+				{
+					// then delete the entity
+					Class<?> c = ObjectTools.lookUpClass(propertyClassName);
+					adapter.getPersist().deleteObject(c, propertyId, cw);
+				}
+			}
+			else
+			{
+				// we're dealing with an array, delete it especially
 				adapter.getPersist().deleteObject(propertyTable, propertyId, cw);
 			}
 		}

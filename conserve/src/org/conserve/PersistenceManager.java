@@ -915,7 +915,7 @@ public class PersistenceManager
 	}
 
 	/**
-	 * Get a wrapped SQL connection to the database used by this Persist
+	 * Get a wrapped SQL connection to the database used by this PersistenceManager
 	 * instance. To use the connection, call the getConnection() method on the
 	 * returned object.
 	 * 

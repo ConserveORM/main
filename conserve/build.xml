@@ -6,6 +6,10 @@
 	<property name="bin" value="bin" />
 	<property name="dist" value="dist" />
 	<property name="version" value="0.6" />
+	<tstamp>
+		<format property="ISODATE" pattern="yyyy-MM-dd" />
+	</tstamp>
+
 
 	<path id="classpath.def">
 		<pathelement location="${bin}" />
@@ -34,6 +38,12 @@
 	<target name="jar" depends="clean,compile">
 		<!-- create a jar file -->
 		<jar destfile="${dist}/conserve-${version}.jar" basedir="${bin}" />
+	</target>
+
+	<!-- create the nightly build jar -->
+	<target name="nightly" depends="jar">
+		<!-- create a jar file -->
+		<jar destfile="${dist}/conserve-nightly-${ISODATE}.jar" basedir="${bin}" />
 	</target>
 
 

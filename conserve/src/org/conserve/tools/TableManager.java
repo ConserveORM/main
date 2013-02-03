@@ -1259,7 +1259,6 @@ public class TableManager
 					String oldSuperClass = oldObjectStack.getRepresentation(oldObjectStack.getLevel(klass) - 1)
 							.getSystemicName();
 					deleteClassRelation(oldSuperClass, klassName, cw);
-
 				}
 
 				// make sure each entry in superClasses is still in the current

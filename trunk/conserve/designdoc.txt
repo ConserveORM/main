@@ -94,3 +94,40 @@ For example:
 This will write all SQL statements to the console, provided that the database engine's JDBC driver ovverrides the 
 PreparedStatement.toString() method in a way that outpust the statement.
 
+Schema update:
+The following schema changes are supported and automatic:
+ - Adding a column.
+ - Removing a column.
+ - Adding an interface to a class.
+ - Removing an interface from a class.
+ - Moving a subclass from one class to another. 
+ - Adding a class. 
+ - Removing a class.
+ - Changing the type of a column. 
+   - Integer type to larger integer type: 
+     Data preserved.
+   - Integer type to smaller integer type, floating point, boolean, string, or reference type: 
+     Data cleared.
+   - Floating point to larger floating point type:
+     Data preserved.
+   - Floating point to smaller floating point type, integer type, boolean, string, or reference type:
+     Data cleared.
+   - Boolean to integer type:  
+     Data preserved.
+   - Boolean to any other type: 
+     Data cleared. 
+   - String to any other type: 
+     Data cleared.  
+   - Reference type to superclass: 
+     Data preserved.  
+   - Reference type to subclass:  
+     Data preserved where compatible, cleared otherwise.
+   - Reference type to interface:  
+     Data preserved where compatible, cleared otherwise.
+   - Reference type to any other type:
+     Data cleared.
+     
+   For example, changing a column from int to long will leave the values unchanged. Changing the column back to int will clear all values. 
+   Changing a column from String to Long will result in an empty column. 
+   If a Number column is changed to an Integer column, all values that are int, short, or byte are preserved, all values that are long are dropped.
+   

@@ -103,6 +103,8 @@ The following schema changes are supported and automatic:
  - Moving a subclass from one class to another. 
  - Adding a class. 
  - Removing a class.
+ - Moving a column from a subclass or subinterface to a superclass or an interface.
+ - Moving a column from class or interface to a subclass or subinterface.
  - Changing the type of a column. 
    - Integer type to larger integer type: 
      Data preserved.

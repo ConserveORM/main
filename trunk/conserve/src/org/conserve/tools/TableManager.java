@@ -1453,9 +1453,9 @@ public class TableManager
 	{
 		String tableName = objRes.getTableName();
 		// check if any column in the database is obsolete
-		for (Entry<String, String> en : valueTypeMap.entrySet())
+		for (Entry<String, String> valueType : valueTypeMap.entrySet())
 		{
-			String colName = en.getKey();
+			String colName = valueType.getKey();
 			if (!colName.equals(Defaults.ID_COL) && !colName.equals(Defaults.DUMMY_COL_NAME)
 					&& !colName.equals(Defaults.REAL_CLASS_COL) && !colName.equals(Defaults.REAL_ID_COL))
 			{
@@ -1484,10 +1484,11 @@ public class TableManager
 					{
 						// check that the type is the same
 						String columnType = adapter.getColumnType(objRes.getReturnType(colName), null);
-						if (!adapter.columnTypesEqual(columnType, en.getValue()))
+						if (!adapter.columnTypesEqual(columnType, valueType.getValue()))
 						{
-							// column have changed type
+							// column has changed type
 							// drop column
+							//TODO: Don't drop compatible column types
 							dropColumn(tableName, colName, cw);
 							// create new column with the new type
 							createColumn(tableName, colName, columnType, cw);

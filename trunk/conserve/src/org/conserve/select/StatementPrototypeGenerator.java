@@ -342,7 +342,7 @@ public class StatementPrototypeGenerator
 		ObjectRepresentation objRep = propertyStack.getRepresentation(maxLevel);
 		if (objRep.isArray())
 		{
-			sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLE_NAME, objRep.getAsName());
+			sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, objRep.getAsName());
 		}
 		else
 		{
@@ -490,7 +490,7 @@ public class StatementPrototypeGenerator
 			throws SQLException
 	{
 		ObjectRepresentation rep = oStack.getActualRepresentation();
-		sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLE_NAME, rep.getAsName());
+		sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
 		// iterate over all non-null array entries
 		// satisfy all the non-null members of the array
 		int length = Array.getLength(sel.getSelectionObject());

@@ -280,8 +280,8 @@ public class ObjectRepresentation implements Iterable<Integer>
 		else
 		{
 			// add the entries of the array
-			id = adapter.getPersist().getLastId(cw, Defaults.ARRAY_TABLE_NAME);
-			protectionStack.save(Defaults.ARRAY_TABLE_NAME, id, cw);
+			id = adapter.getPersist().getLastId(cw, Defaults.ARRAY_TABLENAME);
+			protectionStack.save(Defaults.ARRAY_TABLENAME, id, cw);
 			adapter.getPersist().getArrayEntryWriter()
 					.addArrayEntries(cw, id, object, delayBuffer);
 		}
@@ -453,7 +453,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 		if (this.clazz.isArray())
 		{
 			columnDescriptions.add(Defaults.ARRAY_MEMBER_ID + " "
-					+ adapter.getReferenceType(Defaults.ARRAY_TABLE_NAME));
+					+ adapter.getReferenceType(Defaults.ARRAY_TABLENAME));
 			columnDescriptions.add(Defaults.ARRAY_POSITION + " int ");
 			columnDescriptions.add(Defaults.COMPONENT_CLASS_COL +" "
 					+ adapter.getVarCharIndexed());
@@ -543,7 +543,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 		StringBuilder statement = new StringBuilder("INSERT INTO ");
 		if (this.clazz.isArray())
 		{
-			statement.append(Defaults.ARRAY_TABLE_NAME);
+			statement.append(Defaults.ARRAY_TABLENAME);
 			statement.append(" (");
 			statement.append(Defaults.COMPONENT_TABLE_COL);
 			statement.append(",");
@@ -617,7 +617,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 					clazz.getComponentType(), adapter));
 			if (clazz.getComponentType().isArray())
 			{
-				ps.setString(1, Defaults.ARRAY_TABLE_NAME);
+				ps.setString(1, Defaults.ARRAY_TABLENAME);
 			}
 			// the table also contains the actual name of the class
 			ps.setString(2, ObjectTools.getSystemicName(clazz));
@@ -676,7 +676,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 							if (value.getClass().isArray())
 							{
 								protectionStack.addEntry(new ProtectionEntry(
-										Defaults.ARRAY_TABLE_NAME,null, id, props.get(x)));
+										Defaults.ARRAY_TABLENAME,null, id, props.get(x)));
 							}
 							else
 							{

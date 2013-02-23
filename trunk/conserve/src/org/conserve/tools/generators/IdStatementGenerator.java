@@ -183,7 +183,7 @@ public class IdStatementGenerator
 			if (objRep.isArray())
 			{
 				// arrays have a different tablename
-				addRelationDescriptor(new RelationDescriptor(from, Defaults.ARRAY_TABLE_NAME));
+				addRelationDescriptor(new RelationDescriptor(from, Defaults.ARRAY_TABLENAME));
 			}
 			else
 			{
@@ -224,7 +224,7 @@ public class IdStatementGenerator
 			{
 				if (rep.isArray())
 				{
-					addPropertyTableToJoin(Defaults.ARRAY_TABLE_NAME, rep.getAsName());
+					addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
 				}
 				else
 				{
@@ -253,7 +253,7 @@ public class IdStatementGenerator
 			this.joinRepresentations.add(rep);
 			if (rep.isArray())
 			{
-				addTableToJoin(Defaults.ARRAY_TABLE_NAME, rep.getAsName());
+				addTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
 			}
 			else
 			{

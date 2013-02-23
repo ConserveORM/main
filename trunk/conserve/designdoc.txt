@@ -120,6 +120,10 @@ The following schema changes are supported and automatic:
      Data cleared. 
    - String to any other type: 
      Data cleared.  
+   - Enumeration to String:
+     Data preserved.
+   - Enumeration to any other data type:
+     Data cleared.
    - Reference type to superclass: 
      Data preserved.  
    - Reference type to subclass:  
@@ -127,6 +131,8 @@ The following schema changes are supported and automatic:
    - Reference type to interface:  
      Data preserved where compatible, cleared otherwise.
    - Reference type to any other type:
+     Data cleared.
+   - Arrays to any other data type, including arrays of a different type:
      Data cleared.
      
    For example, changing a column from int to long will leave the values unchanged. Changing the column back to int will clear all values. 

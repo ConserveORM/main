@@ -184,18 +184,18 @@ public class TableManager
 				ps.execute();
 				ps.close();
 			}
-			if (!tableExists(Defaults.ARRAY_TABLE_NAME, cw))
+			if (!tableExists(Defaults.ARRAY_TABLENAME, cw))
 			{
 				if (!this.createSchema)
 				{
-					throw new SchemaPermissionException(Defaults.ARRAY_TABLE_NAME
+					throw new SchemaPermissionException(Defaults.ARRAY_TABLENAME
 							+ " does not exist, but can't create it.");
 				}
 				if (adapter.isSupportsIdentity())
 				{
 					PreparedStatement ps = cw
 
-					.prepareStatement("CREATE TABLE " + Defaults.ARRAY_TABLE_NAME + " (" + Defaults.ID_COL + " "
+					.prepareStatement("CREATE TABLE " + Defaults.ARRAY_TABLENAME + " (" + Defaults.ID_COL + " "
 							+ adapter.getIdentity() + " PRIMARY KEY, " + Defaults.COMPONENT_TABLE_COL + " "
 							+ adapter.getVarCharIndexed() + ", " + Defaults.COMPONENT_CLASS_COL + " "
 							+ adapter.getVarCharIndexed() + " )");
@@ -211,7 +211,7 @@ public class TableManager
 					if (adapter.isSupportsTriggers())
 					{
 						// create the table as usual
-						PreparedStatement ps = cw.prepareStatement("CREATE TABLE " + Defaults.ARRAY_TABLE_NAME + " ("
+						PreparedStatement ps = cw.prepareStatement("CREATE TABLE " + Defaults.ARRAY_TABLENAME + " ("
 								+ Defaults.ID_COL + " " + adapter.getLongTypeKeyword() + " PRIMARY KEY, "
 								+ Defaults.COMPONENT_TABLE_COL + " " + adapter.getVarCharIndexed() + ", "
 								+ Defaults.COMPONENT_CLASS_COL + " " + adapter.getVarCharIndexed() + " )");
@@ -219,7 +219,7 @@ public class TableManager
 						Tools.logFine(ps);
 						ps.execute();
 						ps.close();
-						createTriggeredSequence(cw, Defaults.ARRAY_TABLE_NAME);
+						createTriggeredSequence(cw, Defaults.ARRAY_TABLENAME);
 
 					}
 					else
@@ -230,8 +230,8 @@ public class TableManager
 				}
 				// create an index on the id, as this is the one we
 				// will be searching for most frequently
-				String commandString = "CREATE INDEX " + Defaults.ARRAY_TABLE_NAME + "_INDEX on "
-						+ Defaults.ARRAY_TABLE_NAME + "(" + Defaults.ID_COL + ")";
+				String commandString = "CREATE INDEX " + Defaults.ARRAY_TABLENAME + "_INDEX on "
+						+ Defaults.ARRAY_TABLENAME + "(" + Defaults.ID_COL + ")";
 				PreparedStatement ps = cw.prepareStatement(commandString);
 				Tools.logFine(ps);
 				ps.execute();
@@ -269,7 +269,7 @@ public class TableManager
 					create.append(", FOREIGN KEY(");
 					create.append(Defaults.ARRAY_MEMBER_ID);
 					create.append(") REFERENCES ");
-					create.append(Defaults.ARRAY_TABLE_NAME);
+					create.append(Defaults.ARRAY_TABLENAME);
 					create.append("(");
 					create.append(Defaults.ID_COL);
 					create.append("))");
@@ -310,7 +310,7 @@ public class TableManager
 						create.append(", FOREIGN KEY(");
 						create.append(Defaults.ARRAY_MEMBER_ID);
 						create.append(") REFERENCES ");
-						create.append(Defaults.ARRAY_TABLE_NAME);
+						create.append(Defaults.ARRAY_TABLENAME);
 						create.append("(");
 						create.append(Defaults.ID_COL);
 						create.append("))");
@@ -356,12 +356,12 @@ public class TableManager
 			// update schema from version 0 to version 1
 
 			// C__ARRAY
-			if (tableExists(Defaults.ARRAY_TABLE_NAME, cw))
+			if (tableExists(Defaults.ARRAY_TABLENAME, cw))
 			{
 				// rename COMPONENT_TYPE TO COMPONENT_TABLE
-				this.renameColumn(Defaults.ARRAY_TABLE_NAME, "COMPONENT_TYPE", Defaults.COMPONENT_TABLE_COL, cw);
+				this.renameColumn(Defaults.ARRAY_TABLENAME, "COMPONENT_TYPE", Defaults.COMPONENT_TABLE_COL, cw);
 				// rename COMPONENT_CLASS_NAME TO COMPONENT_TYPE
-				this.renameColumn(Defaults.ARRAY_TABLE_NAME, "COMPONENT_CLASS_NAME", Defaults.COMPONENT_CLASS_COL, cw);
+				this.renameColumn(Defaults.ARRAY_TABLENAME, "COMPONENT_CLASS_NAME", Defaults.COMPONENT_CLASS_COL, cw);
 			}
 			// C__HAS_A
 			if (tableExists(Defaults.HAS_A_TABLENAME, cw))
@@ -1483,17 +1483,25 @@ public class TableManager
 					else
 					{
 						// check that the type is the same
-						String columnType = adapter.getColumnType(objRes.getReturnType(colName), null);
-						if (!adapter.columnTypesEqual(columnType, valueType.getValue()))
+						Class<?> newColumnClass = objRes.getReturnType(colName);
+						String newColumnType = adapter.getColumnType(newColumnClass, null);
+						if (!adapter.columnTypesEqual(newColumnType, valueType.getValue()))
 						{
 							// column has changed type
-							// drop column
-							//TODO: Don't drop compatible column types
-							dropColumn(tableName, colName, cw);
-							// create new column with the new type
-							createColumn(tableName, colName, columnType, cw);
+							if (columnIsCompatible(tableName,colName,newColumnClass,cw))
+							{
+								// TODO: Change the column type 
+
+							}
+							else
+							{
+								// drop column
+								dropColumn(tableName, colName, cw);
+								// create new column with the new type
+								createColumn(tableName, colName, newColumnType, cw);
+							}
 						}
-						else if (columnType.equalsIgnoreCase(adapter.getReferenceType(objRes.getReturnType(colName))))
+						else if (newColumnType.equalsIgnoreCase(adapter.getReferenceType(objRes.getReturnType(colName))))
 						{
 							// compare contents to HAS_A table.
 							boolean wasReference = checkIfColumnWasReference(tableName, colName, cw);
@@ -1532,7 +1540,7 @@ public class TableManager
 									// Drop column, add new column, all
 									// references are null
 									dropColumn(tableName, colName, cw);
-									createColumn(tableName, colName, columnType, cw);
+									createColumn(tableName, colName, newColumnType, cw);
 								}
 							}
 
@@ -1544,6 +1552,52 @@ public class TableManager
 					throw new SQLException(e);
 				}
 			}
+		}
+	}
+
+	/**
+	 * @param columnType
+	 * @param value
+	 * @return
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	private boolean columnIsCompatible(String tableName, String columnName, Class<?>toClass,ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	{
+		//get the corresponding java types
+		Class<?> fromClass = lookupType(tableName,columnName,cw);
+		return CompabilityCalculator.calculate(fromClass,toClass);
+	}
+
+	/**
+	 * @param tableName
+	 * @param columnName
+	 * @return
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	private Class<?> lookupType(String tableName, String columnName,ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	{
+
+		StringBuilder statement = new StringBuilder("SELECT ");
+		statement.append("COLUMN_CLASS FROM ");
+		statement.append(Defaults.TYPE_TABLENAME);
+		statement.append(" WHERE OWNER_TABLE=? AND COLUMN_NAME=?");
+
+		PreparedStatement ps = cw.prepareStatement(statement.toString());
+		ps.setString(1, tableName);
+		ps.setString(2, columnName);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		ProtectionManager pm = adapter.getPersist().getProtectionManager();
+		if (rs.next())
+		{
+			String value = rs.getString(1);
+			return ObjectTools.lookUpClass(value);			
+		}
+		else
+		{
+			throw new SQLException("Could not find type for "+tableName+"."+columnName);
 		}
 	}
 
@@ -1869,7 +1923,7 @@ public class TableManager
 				setTableName(oldTableName, newTableName, cw);
 
 				// change the array tables
-				updateAllRelations(Defaults.ARRAY_TABLE_NAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName,
+				updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName,
 						cw);
 				setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter), newArrayMemberTable, cw);
 
@@ -1898,7 +1952,7 @@ public class TableManager
 					}
 				}
 				// update array tables
-				updateAllRelations(Defaults.ARRAY_TABLE_NAME, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName,
+				updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName,
 						cw);
 				if (tableExists(newArrayMemberTable, cw))
 				{

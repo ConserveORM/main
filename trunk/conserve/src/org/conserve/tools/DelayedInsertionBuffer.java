@@ -159,7 +159,7 @@ public class DelayedInsertionBuffer
 					String tableName = null;
 					if (i.getReferenceType().isArray())
 					{
-						tableName = Defaults.ARRAY_TABLE_NAME;
+						tableName = Defaults.ARRAY_TABLENAME;
 					}
 					else
 					{

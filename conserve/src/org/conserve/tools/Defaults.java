@@ -24,12 +24,19 @@ package org.conserve.tools;
  */
 public class Defaults
 {
+	/**
+	 * Default table names.
+	 */
 	public static final String IS_A_TABLENAME = "C__IS_A";
 	public static final String HAS_A_TABLENAME = "C__HAS_A";
-	public static final String ARRAY_TABLE_NAME = "C__ARRAY";
-	public static final String ARRAY_MEMBER_TABLE_NAME = "C__ARRAY_MEMBER_";
+	public static final String ARRAY_TABLENAME = "C__ARRAY";
+	public static final String ARRAY_MEMBER_TABLENAME = "C__ARRAY_MEMBER_";
 	public static final String SCHEMA_VERSION_TABLENAME = "C__SCHEMA_VERSION";
+	public static final String TYPE_TABLENAME = "C__TYPE_TABLE";
 
+	/**
+	 * Default columns.
+	 */
 	public static final String REAL_CLASS_COL = "C__REALCLASS";
 	public static final String REAL_ID_COL = "C__REALID";
 	public static final String ID_COL = "C__ID";
@@ -43,6 +50,9 @@ public class Defaults
 	public static final String COMPONENT_CLASS_COL = "COMPONENT_TYPE";
 	public static final String RELATION_NAME_COL = "RELATION_NAME";
 	
+	/**
+	 * Placeholders.
+	 */
 	public static final String SUBQUERY_PLACEHOLDER = "<<SUBQUERY>>";
 	public static final String TABLENAME_PLACEHOLDER = "<<TABLENAME>>";
 	public static final String OLD_COLUMN_NAME_PLACEHOLDER = "<<OLD_COLUMN_NAME>>";
@@ -53,5 +63,5 @@ public class Defaults
 	/**
 	 * Composite defaults.
 	 */
-	public static final String ARRAY_MEMBER_TABLE_NAME_ARRAY = ARRAY_MEMBER_TABLE_NAME+ARRAY_TABLE_NAME;
+	public static final String ARRAY_MEMBER_TABLE_NAME_ARRAY = ARRAY_MEMBER_TABLENAME+ARRAY_TABLENAME;
 }

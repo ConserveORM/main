@@ -80,7 +80,7 @@ public class ArrayLoader
 		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(Defaults.COMPONENT_CLASS_COL);
 		statement.append(" FROM ");
-		statement.append(Defaults.ARRAY_TABLE_NAME);
+		statement.append(Defaults.ARRAY_TABLENAME);
 		statement.append(" WHERE ");
 		statement.append(Defaults.ID_COL);
 		statement.append(" = ? ");
@@ -112,7 +112,7 @@ public class ArrayLoader
 			SQLException, ClassNotFoundException
 	{
 		setDimensions(className);
-		Object tmpObject = cache.getObject(Defaults.ARRAY_TABLE_NAME, dbId);
+		Object tmpObject = cache.getObject(Defaults.ARRAY_TABLENAME, dbId);
 		if (tmpObject == null)
 		{
 			relationalIds = new ArrayList<Long>();
@@ -157,7 +157,7 @@ public class ArrayLoader
 					}
 				}
 			}
-			cache.storeObject(Defaults.ARRAY_TABLE_NAME, array, dbId);
+			cache.storeObject(Defaults.ARRAY_TABLENAME, array, dbId);
 		}
 		else
 		{

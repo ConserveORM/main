@@ -131,7 +131,7 @@ public class NameGenerator
 		}
 		else if (c.isArray())
 		{
-			res = Defaults.ARRAY_TABLE_NAME;
+			res = Defaults.ARRAY_TABLENAME;
 		}
 		else
 		{
@@ -157,12 +157,12 @@ public class NameGenerator
 		else
 		{
 			String tableName = getTableName(compType,adapter);
-			res = Defaults.ARRAY_MEMBER_TABLE_NAME + tableName;
+			res = Defaults.ARRAY_MEMBER_TABLENAME + tableName;
 			// make sure the name is not too long
 			int count = 1;
 			while (res.length() > adapter.getMaximumNameLength())
 			{
-				res = Defaults.ARRAY_MEMBER_TABLE_NAME
+				res = Defaults.ARRAY_MEMBER_TABLENAME
 						+ tableName.substring(count);
 				count++;
 			}

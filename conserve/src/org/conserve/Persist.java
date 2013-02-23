@@ -379,14 +379,14 @@ public class Persist
 			throws SQLException
 	{
 		boolean isArray = false;
-		if (tableName.equals(Defaults.ARRAY_TABLE_NAME))
+		if (tableName.equals(Defaults.ARRAY_TABLENAME))
 		{
 			// this means the object is an array, delete the array
 			// delete all the array's members before deleting the array itself
 			deletePropertiesOf(tableName, id, cw);
 			// all arrays also have an entry in the java.lang.Object table, so
 			// we must delete this as well
-			deleteObject(java.lang.Object.class, Defaults.ARRAY_TABLE_NAME, id,
+			deleteObject(java.lang.Object.class, Defaults.ARRAY_TABLENAME, id,
 					cw);
 			isArray = true;
 		}
@@ -476,9 +476,9 @@ public class Persist
 				// delete the property itself
 				try
 				{
-					if (propertyTable.equals(Defaults.ARRAY_TABLE_NAME)
+					if (propertyTable.equals(Defaults.ARRAY_TABLENAME)
 							|| propertyTable
-									.startsWith(Defaults.ARRAY_MEMBER_TABLE_NAME)
+									.startsWith(Defaults.ARRAY_MEMBER_TABLENAME)
 							|| propertyClassName.contains("["))
 					{
 						deleteObject(propertyTable, propertyId, cw);
@@ -565,7 +565,7 @@ public class Persist
 			ConnectionWrapper cw) throws ClassNotFoundException, SQLException
 	{
 		HashMap<Class<?>, ArrayList<Long>> res = new HashMap<Class<?>, ArrayList<Long>>();
-		if (className != null && className.equals(Defaults.ARRAY_TABLE_NAME))
+		if (className != null && className.equals(Defaults.ARRAY_TABLENAME))
 		{
 			// can't load array classes, so ignore
 			return res;
@@ -758,7 +758,7 @@ public class Persist
 		String tableName = null;
 		if (object.getClass().isArray())
 		{
-			tableName = Defaults.ARRAY_TABLE_NAME;
+			tableName = Defaults.ARRAY_TABLENAME;
 		}
 		else
 		{
@@ -1113,7 +1113,7 @@ public class Persist
 				// get the real class and id
 				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				String className = (String) map.get(Defaults.REAL_CLASS_COL);
-				if (className.equals(Defaults.ARRAY_TABLE_NAME))
+				if (className.equals(Defaults.ARRAY_TABLENAME))
 				{
 					// arrays are not loaded in response to WHERE queries,
 					// only as members of specific objects.
@@ -1267,7 +1267,7 @@ public class Persist
 				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				// get the real class and id
 				className = (String) map.get(Defaults.REAL_CLASS_COL);
-				if (!className.equals(Defaults.ARRAY_TABLE_NAME))
+				if (!className.equals(Defaults.ARRAY_TABLENAME))
 				{
 					// load the real class
 					clazz = (Class<T>) ClassLoader.getSystemClassLoader()
@@ -1281,12 +1281,12 @@ public class Persist
 			}
 
 			// check if the object is an array
-			if (clazz.isArray() || className.equals(Defaults.ARRAY_TABLE_NAME))
+			if (clazz.isArray() || className.equals(Defaults.ARRAY_TABLENAME))
 			{
 
 				// the referenced object is an array, so load it
 				Object cachedObject = cache.getObject(
-						Defaults.ARRAY_TABLE_NAME, dbId);
+						Defaults.ARRAY_TABLENAME, dbId);
 
 				if (cachedObject == null)
 				{

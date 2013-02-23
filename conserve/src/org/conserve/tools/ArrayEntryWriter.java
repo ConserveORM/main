@@ -101,7 +101,7 @@ public class ArrayEntryWriter
 				long memberId = adapter.getPersist().getLastId(cw, tableName);
 				// add a protection entry for the __ARRAY table
 				protectionManager.protectObjectInternal(
-						Defaults.ARRAY_TABLE_NAME, arrayId,null, NameGenerator
+						Defaults.ARRAY_TABLENAME, arrayId,null, NameGenerator
 								.getArrayMemberTableName(compType, adapter),
 						memberId, ObjectTools.getSystemicName(Array.get(array,
 								x).getClass()), cw);
@@ -146,7 +146,7 @@ public class ArrayEntryWriter
 				}
 
 				String valueClassName = null;
-				String propertyName = Defaults.ARRAY_TABLE_NAME;
+				String propertyName = Defaults.ARRAY_TABLENAME;
 				// add a protection entry for the __ARRAY table
 				if (!compType.isArray())
 				{
@@ -164,7 +164,7 @@ public class ArrayEntryWriter
 				}
 				// protect the array-member with array as owner
 				protectionManager.protectObjectInternal(
-						Defaults.ARRAY_TABLE_NAME, arrayId, null,tableName,
+						Defaults.ARRAY_TABLENAME, arrayId, null,tableName,
 						memberId, valueClassName, cw);
 
 			}

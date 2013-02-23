@@ -313,7 +313,7 @@ public class ObjectStack
 			rep.save(cw, className, id);
 			if (rep.isArray())
 			{
-				className = Defaults.ARRAY_TABLE_NAME;
+				className = Defaults.ARRAY_TABLENAME;
 			}
 			else
 			{

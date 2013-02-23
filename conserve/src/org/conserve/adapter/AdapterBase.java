@@ -265,7 +265,7 @@ public class AdapterBase
 	{
 		if (c.isArray())
 		{
-			return getReferenceType(Defaults.ARRAY_TABLE_NAME);
+			return getReferenceType(Defaults.ARRAY_TABLENAME);
 		}
 		else
 		{

@@ -1126,7 +1126,7 @@ public class Persist
 							.loadClass(className);
 					// primitives are not loaded in response to queries, only as
 					// parts of other objects
-					if (!ObjectTools.isPrimitive(clazz)
+					if (!ObjectTools.isDatabasePrimitive(clazz)
 							&& !(clazz.equals(MapEntry.class))
 							&& !(clazz.equals(Number.class)))
 					{

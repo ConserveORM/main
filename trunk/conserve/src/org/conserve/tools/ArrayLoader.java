@@ -217,7 +217,7 @@ public class ArrayLoader
 		ps.close();
 
 		array = Array.newInstance(c, tmpList.size());
-		if (ObjectTools.isPrimitive(c))
+		if (ObjectTools.isDatabasePrimitive(c))
 		{
 			for (int x = 0; x < tmpList.size(); x++)
 			{

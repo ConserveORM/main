@@ -332,6 +332,19 @@ public class TableManager
 
 				}
 			}
+			
+			if(!tableExists(Defaults.TYPE_TABLENAME, cw))
+			{
+				//create the type table
+
+				String createString = "CREATE TABLE " + Defaults.TYPE_TABLENAME + " (OWNER_TABLE "
+						+ adapter.getVarCharIndexed() + ",COLUMN_NAME " + adapter.getVarCharIndexed() + ",COLUMN_CLASS " + adapter.getVarCharIndexed() +")";
+				PreparedStatement ps = cw.prepareStatement(createString);
+				Tools.logFine(ps);
+				ps.execute();
+				ps.close();
+				
+			}
 
 			// commit, return connection to pool
 			cw.commitAndDiscard();
@@ -531,7 +544,7 @@ public class TableManager
 			}
 		}
 		return res;
-	}
+	} 
 
 	private void createTable(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException,
 			SchemaPermissionException
@@ -1235,7 +1248,7 @@ public class TableManager
 		if (this.createSchema)
 		{
 			// check that this class is not an array or primitive
-			if (!klass.isArray() && !ObjectTools.isPrimitive(klass))
+			if (!klass.isArray() && !ObjectTools.isDatabasePrimitive(klass))
 			{
 
 				// get info on the superclass

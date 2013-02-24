@@ -543,7 +543,7 @@ public class StatementPrototypeGenerator
 					sb.append(".");
 					sb.append(Defaults.VALUE_COL);
 					sb.append(" ");
-					if (ObjectTools.isPrimitive(o.getClass()) && ObjectTools.isPrimitive(propertyClass))
+					if (ObjectTools.isDatabasePrimitive(o.getClass()) && ObjectTools.isDatabasePrimitive(propertyClass))
 					{
 						sb.append(sel.getRelationalRepresentation());
 						if (sel.takesPlaceholder())

@@ -97,7 +97,7 @@ public class Updater
 					Class<?> referenceType = rep.getReturnType(index);
 					updateStatement.append(name);
 					updateStatement.append(" = ? ");
-					if (ObjectTools.isPrimitive(referenceType))
+					if (ObjectTools.isDatabasePrimitive(referenceType))
 					{
 						// put the new value in the statement
 						values.add(value);
@@ -200,7 +200,7 @@ public class Updater
 		ArrayList<String> refNames = new ArrayList<String>();
 		for (int x = 0; x < rep.getPropertyCount(); x++)
 		{
-			if (!ObjectTools.isPrimitive(rep.getReturnType(x)))
+			if (!ObjectTools.isDatabasePrimitive(rep.getReturnType(x)))
 			{
 				refNames.add(rep.getPropertyName(x));
 			}
@@ -276,7 +276,7 @@ public class Updater
 	{
 		// if the new objects are non-primitve, save them and keep their ids
 		ArrayList<TableId> nuIds = new ArrayList<TableId>();
-		if (!ObjectTools.isPrimitive(nuValues.getClass().getComponentType()))
+		if (!ObjectTools.isDatabasePrimitive(nuValues.getClass().getComponentType()))
 		{
 			int length = Array.getLength(nuValues);
 			for (int x = 0; x < length; x++)
@@ -306,7 +306,7 @@ public class Updater
 		{
 			Object component = arrayLoader.getEntry(x);
 			// if they are non-primitive
-			if (!ObjectTools.isPrimitive(component.getClass()))
+			if (!ObjectTools.isDatabasePrimitive(component.getClass()))
 			{
 				// unprotect them
 				Long ownerId = arrayLoader.getRelationalIds().get(x);

@@ -3,6 +3,7 @@
 
 	<property name="src" value="src" />
 	<property name="test" value="test" />
+	<property name="nightly" value="nightly" />
 	<property name="bin" value="bin" />
 	<property name="dist" value="dist" />
 	<property name="version" value="0.6" />
@@ -40,10 +41,16 @@
 		<jar destfile="${dist}/conserve-${version}.jar" basedir="${bin}" />
 	</target>
 
+	<!-- delete the old nightly -->
+	<target name="nightlyclean">
+		<delete dir="${nightly}"  />
+		<mkdir dir="${nightly}" />
+	</target>
+	
 	<!-- create the nightly build jar -->
-	<target name="nightly" depends="jar">
+	<target name="nightly" depends="nightlyclean,compile">
 		<!-- create a jar file -->
-		<jar destfile="${dist}/conserve-nightly-${ISODATE}.jar" basedir="${bin}" />
+		<jar destfile="${nightly}/conserve-nightly-${ISODATE}.jar" basedir="${bin}" />
 	</target>
 
 

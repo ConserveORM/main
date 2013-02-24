@@ -60,7 +60,7 @@ public class ObjectFactory
 	{
 		try
 		{
-			if (ObjectTools.isPrimitive(resultClass))
+			if (ObjectTools.isDatabasePrimitive(resultClass))
 			{
 				return resultClass.cast(map.get(Defaults.VALUE_COL));
 			}

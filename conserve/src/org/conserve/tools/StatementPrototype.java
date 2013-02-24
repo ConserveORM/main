@@ -79,7 +79,7 @@ public class StatementPrototype
 		int index = 0;
 		for (Object o : newValues)
 		{
-			if (ObjectTools.isPrimitive(o.getClass()))
+			if (ObjectTools.isDatabasePrimitive(o.getClass()))
 			{
 				index++;
 				addValue(ps, index, o);
@@ -95,7 +95,7 @@ public class StatementPrototype
 		}
 		for (Object o : conditionalValues)
 		{
-			if (ObjectTools.isPrimitive(o.getClass()))
+			if (ObjectTools.isDatabasePrimitive(o.getClass()))
 			{
 				index++;
 				addValue(ps, index, o);

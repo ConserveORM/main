@@ -87,7 +87,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 			tableName = NameGenerator.getArrayMemberTableName(
 					c.getComponentType(), adapter);
 		}
-		else
+		else 
 		{
 			tableName = NameGenerator.getTableName(c, adapter);
 		}
@@ -164,7 +164,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 				}
 			}
 		}
-		if (ObjectTools.isPrimitive(c))
+		if (ObjectTools.isDatabasePrimitive(c))
 		{
 			props.add(Defaults.VALUE_COL);
 			returnTypes.add(c);
@@ -390,7 +390,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 	public boolean isReferenceType(int index)
 	{
 		Class<?> c = getReturnType(index);
-		return !ObjectTools.isPrimitive(c);
+		return !ObjectTools.isDatabasePrimitive(c);
 
 	}
 
@@ -505,7 +505,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 		ArrayList<Class<?>> containedClasses = new ArrayList<Class<?>>();
 		if (this.clazz.isArray())
 		{
-			if (!ObjectTools.isPrimitive(clazz.getComponentType()))
+			if (!ObjectTools.isDatabasePrimitive(clazz.getComponentType()))
 			{
 				// make sure the component type exists
 				containedClasses.add(clazz.getComponentType());
@@ -635,7 +635,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 				{
 					index++;
 					// find the type that best describes the object to store
-					if (ObjectTools.isPrimitive(c))
+					if (ObjectTools.isDatabasePrimitive(c))
 					{
 						Tools.setParameter(ps, c, index, value);
 					}
@@ -736,7 +736,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 	 */
 	public boolean isPrimitive()
 	{
-		return ObjectTools.isPrimitive(clazz);
+		return ObjectTools.isDatabasePrimitive(clazz);
 	}
 
 	/**
@@ -747,7 +747,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 	 */
 	public boolean isPrimitive(int index)
 	{
-		return ObjectTools.isPrimitive(getReturnType(index));
+		return ObjectTools.isDatabasePrimitive(getReturnType(index));
 	}
 
 	/**
@@ -759,7 +759,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 	 */
 	public boolean isPrimitive(String name)
 	{
-		return ObjectTools.isPrimitive(getReturnType(name));
+		return ObjectTools.isDatabasePrimitive(getReturnType(name));
 	}
 
 	/**

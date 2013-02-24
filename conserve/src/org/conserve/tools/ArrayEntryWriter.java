@@ -89,7 +89,7 @@ public class ArrayEntryWriter
 			ps.setLong(1, arrayId);
 			ps.setInt(2, x);
 			Object value = Array.get(array, x);
-			if (ObjectTools.isPrimitive(compType))
+			if (ObjectTools.isDatabasePrimitive(compType))
 			{
 				// The array entry is a primitive type, add it directly
 				Tools.setParameter(ps, compType, 3, value);

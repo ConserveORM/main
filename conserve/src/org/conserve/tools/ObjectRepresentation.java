@@ -483,6 +483,8 @@ public class ObjectRepresentation implements Iterable<Integer>
 							getAccessor(x));
 				}
 				columnDescriptions.add(mName);
+				//add info to type table
+				adapter.getPersist().getTableManager().addTypeInfo(getTableName(),getPropertyName(x),getReturnType(x),cw);
 			}
 		}
 		for (int x = 0; x < columnDescriptions.size(); x++)

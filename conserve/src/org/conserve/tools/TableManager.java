@@ -1602,7 +1602,6 @@ public class TableManager
 		ps.setString(2, columnName);
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
-		ProtectionManager pm = adapter.getPersist().getProtectionManager();
 		if (rs.next())
 		{
 			String value = rs.getString(1);
@@ -1943,7 +1942,9 @@ public class TableManager
 				// Update ownership relations
 				updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
 				updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", oldTableName, newTableName, cw);
-
+				
+				//update type info table
+				updateAllRelations(Defaults.TYPE_TABLENAME,"OWNER_TABLE",oldTableName,newTableName,cw);
 			}
 			// check if the class name has changed
 			if (!newClassName.equals(oldClassName))
@@ -2063,4 +2064,45 @@ public class TableManager
 			ps.close();
 		}
 	}
+
+	/**
+	 * Add information about the return type of a given property of a given table.
+	 * @param tableName
+	 * @param propertyName
+	 * @param returnType
+	 * @throws SQLException 
+	 */
+	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType,ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("INSERT INTO ");
+		stmt.append(Defaults.TYPE_TABLENAME);
+		stmt.append(" (OWNER_TABLE ,COLUMN_NAME ,COLUMN_CLASS) VALUES (?,?,?)");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		ps.setString(2, propertyName);
+		ps.setString(3, ObjectTools.getSystemicName(returnType));
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+	}
+	/**
+	 * Remove information about the return type of a given property of a given table.
+	 * @param tableName
+	 * @param propertyName
+	 * @throws SQLException 
+	 */
+	public void removeTypeInfo(String tableName, String propertyName,ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("DELETE FROM ");
+		stmt.append(Defaults.TYPE_TABLENAME);
+		stmt.append(" WHERE OWNER_TABLE = ? AND COLUMN_NAME = ?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		ps.setString(2, propertyName);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		
+	}
+	
 }

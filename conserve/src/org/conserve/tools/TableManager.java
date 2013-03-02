@@ -873,7 +873,10 @@ public class TableManager
 			{
 				dropTableHelper(subClass, cw, classList);
 			}
+			//delete meta-info
 			deleteIsATableEntries(c, cw);
+			removeTypeInfo(tableName, cw);
+			
 			// drop the table
 			conditionalDelete(tableName, cw);
 			if (!adapter.isSupportsIdentity())
@@ -896,6 +899,7 @@ public class TableManager
 			}
 		}
 	}
+
 
 	private void conditionalDelete(String tableName, ConnectionWrapper cw) throws SQLException
 	{
@@ -1456,15 +1460,15 @@ public class TableManager
 	/**
 	 * Check if any columns have been removed or changed type.
 	 * 
-	 * @param objRes
+	 * @param newRep
 	 * @param valueTypeMap
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void removeObsoleteColumns(ObjectRepresentation objRes, Map<String, String> valueTypeMap,
+	private void removeObsoleteColumns(ObjectRepresentation newRep, Map<String, String> valueTypeMap,
 			ConnectionWrapper cw) throws SQLException
 	{
-		String tableName = objRes.getTableName();
+		String tableName = newRep.getTableName();
 		// check if any column in the database is obsolete
 		for (Entry<String, String> valueType : valueTypeMap.entrySet())
 		{
@@ -1474,11 +1478,11 @@ public class TableManager
 			{
 				try
 				{
-					if (!objRes.hasProperty(colName))
+					if (!newRep.hasProperty(colName))
 					{
 						// column no longer exists
 						// get parent class with property, if it exists
-						ObjectStack stack = new ObjectStack(adapter, objRes.getClass());
+						ObjectStack stack = new ObjectStack(adapter, newRep.getClass());
 						ObjectRepresentation parentWithProperty = stack.getRepresentation(colName);
 						// if so, copy all values to parent class
 						if (parentWithProperty != null)
@@ -1488,7 +1492,7 @@ public class TableManager
 						else
 						{
 							// move contents to subclasses
-							copyDown(objRes, objRes, colName, cw);
+							copyDown(newRep, newRep, colName, cw);
 						}
 						// drop column
 						dropColumn(tableName, colName, cw);
@@ -1496,7 +1500,7 @@ public class TableManager
 					else
 					{
 						// check that the type is the same
-						Class<?> newColumnClass = objRes.getReturnType(colName);
+						Class<?> newColumnClass = newRep.getReturnType(colName);
 						String newColumnType = adapter.getColumnType(newColumnClass, null);
 						if (!adapter.columnTypesEqual(newColumnType, valueType.getValue()))
 						{
@@ -1513,14 +1517,16 @@ public class TableManager
 								// create new column with the new type
 								createColumn(tableName, colName, newColumnType, cw);
 							}
+							//update the meta-information
+							changeTypeInfo(tableName, colName, newColumnClass, cw);
 						}
-						else if (newColumnType.equalsIgnoreCase(adapter.getReferenceType(objRes.getReturnType(colName))))
+						else if (newColumnType.equalsIgnoreCase(adapter.getReferenceType(newRep.getReturnType(colName))))
 						{
 							// compare contents to HAS_A table.
 							boolean wasReference = checkIfColumnWasReference(tableName, colName, cw);
 							// column has not changed type, but column
 							// is reference type
-							if (objRes.isPrimitive(colName))
+							if (newRep.isPrimitive(colName))
 							{
 								// the column points to a Long
 								// make sure there are no objects
@@ -1542,7 +1548,7 @@ public class TableManager
 									// reference:
 									// Check that all referenced objects
 									// are compatible
-									dropIncompatibleReferences(tableName, colName, objRes.getReturnType(colName), cw);
+									dropIncompatibleReferences(tableName, colName, newRep.getReturnType(colName), cw);
 									// TODO: Update reference type of
 									// remaining entries
 								}
@@ -1890,6 +1896,7 @@ public class TableManager
 	 */
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
+		//TODO: Use metadata table instead
 		Map<String, String> res = new HashMap<String, String>();
 
 		Connection c = cw.getConnection();
@@ -2064,6 +2071,12 @@ public class TableManager
 			ps.close();
 		}
 	}
+	
+	public void changeTypeInfo(String tableName, String propertyName, Class<?>returnType,ConnectionWrapper cw) throws SQLException
+	{
+		removeTypeInfo(tableName,propertyName,cw);
+		addTypeInfo(tableName,propertyName,returnType,cw);
+	}
 
 	/**
 	 * Add information about the return type of a given property of a given table.
@@ -2103,6 +2116,23 @@ public class TableManager
 		ps.execute();
 		ps.close();
 		
+	}
+	
+	/**
+	 * @param tableName
+	 * @param cw
+	 * @throws SQLException 
+	 */
+	private void removeTypeInfo(String tableName, ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("DELETE FROM ");
+		stmt.append(Defaults.TYPE_TABLENAME);
+		stmt.append(" WHERE OWNER_TABLE = ? ");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
 	}
 	
 }

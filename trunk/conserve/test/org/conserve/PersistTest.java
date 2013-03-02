@@ -2086,7 +2086,7 @@ public class PersistTest
 		List<OriginalObject>res2 = pm.getObjects(OriginalObject.class,new All());
 		assertEquals(1,res2.size());
 		OriginalObject obj2 = res2.get(0);
-		assertNull(obj2.getValue());
+		assertEquals(0,obj2.getValue());
 		pm.close();
 		
 	}

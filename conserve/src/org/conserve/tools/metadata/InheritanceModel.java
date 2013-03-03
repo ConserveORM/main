@@ -1,4 +1,4 @@
-package org.conserve.tools;
+package org.conserve.tools.metadata;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.Defaults;
+import org.conserve.tools.ObjectTools;
+import org.conserve.tools.Tools;
 
 /**
  * 

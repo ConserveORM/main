@@ -40,10 +40,10 @@ import org.conserve.sort.Order;
 import org.conserve.sort.Sorter;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
-import org.conserve.tools.ObjectRepresentation;
-import org.conserve.tools.ObjectStack;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.uniqueid.UniqueIdGenerator;
 import org.conserve.tools.uniqueid.UniqueIdTree;
 

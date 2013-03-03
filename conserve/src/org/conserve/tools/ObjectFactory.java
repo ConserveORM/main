@@ -34,6 +34,9 @@ import java.util.Map;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.metadata.MapEntry;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 
 /**
  * Generates and instantiates objects based on property-value pairs.

@@ -20,8 +20,8 @@ package org.conserve.tools.uniqueid;
 
 import java.util.ArrayList;
 
-import org.conserve.tools.ObjectRepresentation;
-import org.conserve.tools.ObjectStack;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 
 /**
  * Maintains a list of ObjectStacks for a given query position.

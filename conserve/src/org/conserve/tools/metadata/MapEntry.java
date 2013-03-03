@@ -16,7 +16,7 @@
  *       You should have received a copy of the GNU Lesser General Public License
  *       along with Conserve.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package org.conserve.tools;
+package org.conserve.tools.metadata;
 
 /**
  * This object is needed to work around Java bug <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4071957">4071957</a>

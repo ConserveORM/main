@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
 
 /**

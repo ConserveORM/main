@@ -44,6 +44,10 @@ import org.conserve.select.StatementPrototypeGenerator;
 import org.conserve.tools.generators.IdStatementGenerator;
 import org.conserve.tools.generators.RelationDescriptor;
 import org.conserve.tools.generators.SubclassMover;
+import org.conserve.tools.metadata.ConcreteObjectRepresentation;
+import org.conserve.tools.metadata.InheritanceModel;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
 import org.conserve.tools.uniqueid.UniqueIdGenerator;
 import org.conserve.tools.uniqueid.UniqueIdTree;
@@ -1071,7 +1075,7 @@ public class TableManager
 		if (this.createSchema)
 		{
 			// get list of old property-type pairs
-			ObjectRepresentation objRes = new ObjectRepresentation(adapter, klass, null);
+			ObjectRepresentation objRes = new ConcreteObjectRepresentation(adapter, klass, null);
 			String tableName = objRes.getTableName();
 			// find the list of name type pairs for the corresponding
 			// database table
@@ -1639,7 +1643,7 @@ public class TableManager
 		List<Class<?>> subs = iModel.getDirectSubclasses();
 		for (Class<?> s : subs)
 		{
-			ObjectRepresentation tmpRes = new ObjectRepresentation(adapter, s, null);
+			ObjectRepresentation tmpRes = new ConcreteObjectRepresentation(adapter, s, null);
 			if (tmpRes.hasProperty(colName))
 			{
 				// find the list of name type pairs for the corresponding

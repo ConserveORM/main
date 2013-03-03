@@ -55,16 +55,17 @@ import org.conserve.tools.ClassIdTuple;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.Duplicator;
-import org.conserve.tools.MapEntry;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectFactory;
-import org.conserve.tools.ObjectRepresentation;
-import org.conserve.tools.ObjectStack;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.TableManager;
 import org.conserve.tools.Tools;
 import org.conserve.tools.Updater;
+import org.conserve.tools.metadata.ConcreteObjectRepresentation;
+import org.conserve.tools.metadata.MapEntry;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
 
 /**
@@ -1769,9 +1770,9 @@ public class Persist
 			}
 			else
 			{
-				ObjectRepresentation orig = new ObjectRepresentation(adapter,
+				ObjectRepresentation orig = new ConcreteObjectRepresentation(adapter,
 						obj.getClass(), obj, null);
-				ObjectRepresentation nu = new ObjectRepresentation(adapter,
+				ObjectRepresentation nu = new ConcreteObjectRepresentation(adapter,
 						nuObject.getClass(), nuObject, null);
 				ArrayList<Long> idList = new ArrayList<Long>();
 				refresh(orig, cache, nu, tmpCache, idList);
@@ -1838,10 +1839,10 @@ public class Persist
 					{
 						// the id, and therefore the objects, are unchanged.
 						// recurse
-						ObjectRepresentation origPropertyPresentation = new ObjectRepresentation(
+						ObjectRepresentation origPropertyPresentation = new ConcreteObjectRepresentation(
 								adapter, origProperty.getClass(), origProperty,
 								null);
-						ObjectRepresentation nuPropertyPresentation = new ObjectRepresentation(
+						ObjectRepresentation nuPropertyPresentation = new ConcreteObjectRepresentation(
 								adapter, nuProperty.getClass(), nuProperty,
 								null);
 						if (!idList.contains(origDbId))

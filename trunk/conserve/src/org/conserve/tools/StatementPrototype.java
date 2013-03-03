@@ -27,6 +27,8 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.generators.IdStatementGenerator;
 import org.conserve.tools.generators.RelationDescriptor;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 
 /**
  * A prototype to a PreparedStatement, that can convert itself to a

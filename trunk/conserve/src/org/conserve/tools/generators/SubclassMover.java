@@ -30,10 +30,10 @@ import java.util.Map.Entry;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.ObjectRepresentation;
-import org.conserve.tools.ObjectStack;
 import org.conserve.tools.TableManager;
 import org.conserve.tools.Tools;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.uniqueid.UniqueIdGenerator;
 import org.conserve.tools.uniqueid.UniqueIdTree;
 

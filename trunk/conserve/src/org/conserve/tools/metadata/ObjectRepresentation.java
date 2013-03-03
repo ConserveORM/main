@@ -16,7 +16,7 @@
  *       You should have received a copy of the GNU Lesser General Public License
  *       along with Conserve.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package org.conserve.tools;
+package org.conserve.tools.metadata;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -38,6 +38,11 @@ import org.conserve.annotations.AsBlob;
 import org.conserve.annotations.AsClob;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.exceptions.SchemaPermissionException;
+import org.conserve.tools.Defaults;
+import org.conserve.tools.DelayedInsertionBuffer;
+import org.conserve.tools.NameGenerator;
+import org.conserve.tools.ObjectTools;
+import org.conserve.tools.Tools;
 import org.conserve.tools.protection.ProtectionEntry;
 import org.conserve.tools.protection.ProtectionStack;
 
@@ -48,131 +53,32 @@ import org.conserve.tools.protection.ProtectionStack;
  * @author Erik Berglund
  * 
  */
-public class ObjectRepresentation implements Iterable<Integer>
+public abstract class ObjectRepresentation implements Iterable<Integer>
 {
-	private ArrayList<Object> values = new ArrayList<Object>();
-	private ArrayList<String> props = new ArrayList<String>();
-	private ArrayList<Class<?>> returnTypes = new ArrayList<Class<?>>();
-	private ProtectionStack protectionStack;
-	private ArrayList<Method> setters = new ArrayList<Method>();
-	private ArrayList<Method> getters = new ArrayList<Method>();
-	private Class<?> clazz;
-	private String tableName;
-	private AdapterBase adapter;
-	private Object object;
-	private Long id;
-	private static final Logger LOGGER = Logger.getLogger("org.conserve");
-	private String asName;
+	protected ArrayList<Object> values = new ArrayList<Object>();
+	protected ArrayList<String> props = new ArrayList<String>();
+	protected ArrayList<Class<?>> returnTypes = new ArrayList<Class<?>>();
+	protected ProtectionStack protectionStack;
+	protected ArrayList<Method> setters = new ArrayList<Method>();
+	protected ArrayList<Method> getters = new ArrayList<Method>();
+	protected Class<?> clazz;
+	protected String tableName;
+	protected AdapterBase adapter;
+	protected Object object;
+	protected Long id;
+	protected static final Logger LOGGER = Logger.getLogger("org.conserve");
+	protected String asName;
 
-	private DelayedInsertionBuffer delayBuffer;
-
-	public ObjectRepresentation(AdapterBase adapter, Class<?> c,
-			DelayedInsertionBuffer delayBuffer)
+	protected DelayedInsertionBuffer delayBuffer;
+	
+	/**
+	 * Default constructor for subclassing.
+	 */
+	protected ObjectRepresentation()
 	{
-		this(adapter, c, null, delayBuffer);
+		
 	}
 
-	public ObjectRepresentation(AdapterBase adapter, Class<?> c, Object o,
-			DelayedInsertionBuffer delayBuffer)
-	{
-		this.protectionStack = new ProtectionStack(adapter.getPersist()
-				.getProtectionManager());
-		this.delayBuffer = delayBuffer;
-		this.adapter = adapter;
-		this.object = o;
-		this.clazz = c;
-		Method[] methods = c.getDeclaredMethods();
-		if (c.isArray())
-		{
-			tableName = NameGenerator.getArrayMemberTableName(
-					c.getComponentType(), adapter);
-		}
-		else 
-		{
-			tableName = NameGenerator.getTableName(c, adapter);
-		}
-		for (Method m : methods)
-		{
-			if (ObjectTools.isValidMethod(m))
-			{
-				String name = NameGenerator.getColumnName(m);
-				while (!adapter.isValidColumnName(name))
-				{
-					// create a valid name by pre-pending a string
-					name = "C_" + name;
-				}
-				try
-				{
-					props.add(name);
-					Method mutator = ObjectTools.getMutator(c,
-							getMutatorName(m), m.getReturnType());
-					setters.add(mutator);
-					getters.add(m);
-					Object value = null;
-					if (o != null)
-					{
-						boolean oldAccessValue = m.isAccessible();
-						m.setAccessible(true);
-						value = m.invoke(o);
-						values.add(value);
-						m.setAccessible(oldAccessValue);
-					}
-					else
-					{
-						values.add(null);
-					}
-
-					if (m.isAnnotationPresent(AsClob.class)
-							&& m.getReturnType().equals(char[].class)
-							&& adapter.isSupportsClob())
-					{
-						returnTypes.add(Clob.class);
-					}
-					else if (m.isAnnotationPresent(AsBlob.class)
-							&& m.getReturnType().equals(byte[].class)
-							&& adapter.isSupportsBlob())
-					{
-						returnTypes.add(Blob.class);
-					}
-					else
-					{
-						returnTypes.add(m.getReturnType());
-						if (adapter.isSupportsClob()
-								&& m.isAnnotationPresent(AsClob.class))
-						{
-							LOGGER.warning("AsClob annotation is present on property "
-									+ name
-									+ " of class "
-									+ ObjectTools.getSystemicName(clazz)
-									+ ", but it does not have char[] return type.");
-						}
-						if (adapter.isSupportsBlob()
-								&& m.isAnnotationPresent(AsBlob.class))
-						{
-							LOGGER.warning("AsBlob annotation is present on property "
-									+ name
-									+ " of class "
-									+ ObjectTools.getSystemicName(clazz)
-									+ ", but it does not have byte[] return type.");
-						}
-					}
-				}
-				catch (Exception e)
-				{
-					//can't recover, use generic catch
-					e.printStackTrace();
-				}
-			}
-		}
-		if (ObjectTools.isDatabasePrimitive(c))
-		{
-			props.add(Defaults.VALUE_COL);
-			returnTypes.add(c);
-			// no need to add setter, primitives are cast from the raw types and
-			// are final
-			values.add(o);
-		}
-	}
 
 	/**
 	 * Extract the entry set and save it as a property of this object.
@@ -406,7 +312,7 @@ public class ObjectRepresentation implements Iterable<Integer>
 	 *            an accessor.
 	 * @return
 	 */
-	private String getMutatorName(Method m)
+	protected String getMutatorName(Method m)
 	{
 		String name = m.getName();
 		if (name.startsWith("get"))

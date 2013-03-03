@@ -16,7 +16,7 @@
  *       You should have received a copy of the GNU Lesser General Public License
  *       along with Conserve.  If not, see <http://www.gnu.org/licenses/>.
  *******************************************************************************/
-package org.conserve.tools;
+package org.conserve.tools.metadata;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -27,6 +27,9 @@ import java.util.Map;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.Defaults;
+import org.conserve.tools.DelayedInsertionBuffer;
+import org.conserve.tools.ObjectTools;
 
 /**
  * Wrapper that encapsulates all ObjectRepresentations for an object.
@@ -59,11 +62,11 @@ public class ObjectStack
 			ObjectRepresentation rep = null;
 			if (o != null)
 			{
-				rep = new ObjectRepresentation(adapter, c, o, delayBuffer);
+				rep = new ConcreteObjectRepresentation(adapter, c, o, delayBuffer);
 			}
 			else
 			{
-				rep = new ObjectRepresentation(adapter, c, delayBuffer);
+				rep = new ConcreteObjectRepresentation(adapter, c, delayBuffer);
 			}
 			representations.add(0, rep);
 			c = c.getSuperclass();
@@ -157,7 +160,7 @@ public class ObjectStack
 		this.adapter = adapter;
 		for(Class<?>k:list)
 		{
-			this.representations.add(new ObjectRepresentation(adapter, k,null));
+			this.representations.add(new ConcreteObjectRepresentation(adapter, k,null));
 		}
 	}
 

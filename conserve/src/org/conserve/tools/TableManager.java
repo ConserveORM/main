@@ -550,7 +550,7 @@ public class TableManager
 		return res;
 	} 
 
-	private void createTable(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException,
+	private void createTable(ConcreteObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException,
 			SchemaPermissionException
 	{
 		if (!this.createSchema)
@@ -670,7 +670,7 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws SchemaPermissionException
 	 */
-	public void ensureTableExists(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
+	public void ensureTableExists(ConcreteObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
 	{
 		if (createSchema)
 		{
@@ -705,7 +705,7 @@ public class TableManager
 				ObjectStack oStack = new ObjectStack(this.adapter, c, null);
 				for (int x = 0; x < oStack.getSize(); x++)
 				{
-					ensureTableExists(oStack.getRepresentation(x), cw);
+					ensureTableExists((ConcreteObjectRepresentation)oStack.getRepresentation(x), cw);
 				}
 			}
 		}

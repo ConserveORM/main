@@ -145,7 +145,7 @@ public class ObjectStack
 				{
 					// the adapter requires at least one column be specified for insert statements,
 					// so create a dummy column
-					rep.addValuePair(Defaults.DUMMY_COL_NAME, null, short.class);
+					rep.addValueTrio(Defaults.DUMMY_COL_NAME, null, short.class);
 				}
 			}
 		}
@@ -311,7 +311,8 @@ public class ObjectStack
 		// iterate up from the lowest level towards java.lang.Object
 		for (int x = getSize() - 1; x >= minLevel; x--)
 		{
-			ObjectRepresentation rep = getRepresentation(x);
+			//only ConcreteObjectRepresentations can be saved
+			ConcreteObjectRepresentation rep = (ConcreteObjectRepresentation)getRepresentation(x);
 			adapter.getPersist().getTableManager().ensureTableExists(rep, cw);
 			rep.save(cw, className, id);
 			if (rep.isArray())

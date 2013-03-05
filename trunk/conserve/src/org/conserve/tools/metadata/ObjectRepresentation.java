@@ -76,7 +76,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 */
 	protected ObjectRepresentation()
 	{
-		
 	}
 
 
@@ -146,57 +145,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return ObjectTools.implementsInterface(clazz, interf);
 	}
 
-	/**
-	 * Save this object to the database. All properties will be saved. After
-	 * this operation, the getId method will return the id of the database row.
-	 * 
-	 * Preconditions: The table for saving this object exists.
-	 * 
-	 * @param cw
-	 *            the connection wrapper to use for the database operations.
-	 * @param subClassName
-	 *            the name of the direct subclass, if any. May be null.
-	 * @param subClassId
-	 *            the id of the subclass table row, if any. May be null.
-	 * @throws SQLException
-	 * @throws IOException
-	 */
-	public void save(ConnectionWrapper cw, String subClassName, Long subClassId)
-			throws SQLException
-	{
-		if (subClassName != null && subClassId != null)
-		{
-			// store a reference to the subclass table entry
-			addValuePair(Defaults.REAL_CLASS_COL, subClassName);
-			addValuePair(Defaults.REAL_ID_COL, subClassId);
-		}
-		String stmt = getRowInsertionStatement();
-		PreparedStatement ps = cw.prepareStatement(stmt);
-		fillRowInsertionStatement(ps, cw);
-		Tools.logFine(ps);
-		ps.execute();
-		ps.close();
-		if (!isArray())
-		{
-			// store the id of the inserted row
-			id = adapter.getPersist().getLastId(cw, getTableName());
-			// save the protection entries
-			protectionStack.save(this.getTableName(), id, cw);
-		}
-		else
-		{
-			// add the entries of the array
-			id = adapter.getPersist().getLastId(cw, Defaults.ARRAY_TABLENAME);
-			protectionStack.save(Defaults.ARRAY_TABLENAME, id, cw);
-			adapter.getPersist().getArrayEntryWriter()
-					.addArrayEntries(cw, id, object, delayBuffer);
-		}
-		if(delayBuffer!=null && object!=null)
-		{
-			delayBuffer.setUndefinedIds(id,System.identityHashCode(object));
-		}
-	}
-
 	public Object getObject()
 	{
 		return object;
@@ -254,12 +202,98 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	{
 		return this.setters.get(index);
 	}
+	
+	/**
+	 * Get the change in the database model from this object to the toRepresentation object.
+	 * If no change is detected, null is returned.
+	 * 
+	 * @throws MetadataException if there is more than one change.
+	 * 
+	 * @param toRepresentation
+	 * 
+	 * @return a description of the change.
+	 */
+	public ChangeDescription getDifference(ObjectRepresentation toRepresentation) throws MetadataException
+	{
+		ChangeDescription res = null;
+		//check for deletions
+		if(getPropertyCount()>toRepresentation.getPropertyCount())
+		{
+			//check error condition
+			if(getPropertyCount()>toRepresentation.getPropertyCount()+1)
+			{
+				throw new MetadataException("Removing more than one column.");
+			}
+			res = new ChangeDescription();
+			//find the column not in toRepresentation
+			for(int x=0;x<props.size();x++)
+			{
+				if(!toRepresentation.props.contains(props.get(x)))
+				{
+					res.setFromName(props.get(x));
+					res.setFromClass(returnTypes.get(x));
+				}
+			}
+		}
+		else if(getPropertyCount()<toRepresentation.getPropertyCount())
+		{
+			if(getPropertyCount()<toRepresentation.getPropertyCount()-1)
+			{
+				throw new MetadataException("Adding more than one column.");
+			}
+			res = new ChangeDescription();
+			//find the column not in this representation
+			for(int x = 0;x<toRepresentation.props.size();x++)
+			{
+				if(!props.contains(toRepresentation.props.get(x)))
+				{
+					res.setToName(toRepresentation.props.get(x));
+					res.setToClass(toRepresentation.returnTypes.get(x));
+				}
+			}
+		}
+		else 
+		{
+			//the number of columns are the same
+			//check if any column has been renamed
+			//if no rename, find if any column has changed type
+		}
+		
+		if(res != null)
+		{
+			//check that the remaining columns are unchanged
+			for(int x=0;x<props.size();x++)
+			{
+				String p = props.get(x);
+				if(!p.equals(res.getFromName()))
+				{
+					int i = toRepresentation.props.indexOf(p);
+					if(i<0)
+					{
+						//could not find matching column
+						throw new MetadataException("Changing more than one column.");
+					}
+					else
+					{
+						if(!returnTypes.get(x).equals(toRepresentation.returnTypes.get(i)))
+						{
+							//the return type is not the same
+							throw new MetadataException("Changing more than one column.");
+						}
+					}
+				}
+			}
+		}
+		
+		
+		return res;
+	}
 
 	/**
 	 * @param x
 	 * @return
 	 */
-	private Method getAccessor(int x)
+	protected Method getAccessor(int x)
 	{
 		if (x >= this.getters.size())
 		{
@@ -329,275 +363,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		}
 	}
 
-	/**
-	 * Statement to create the table for this type of object.
-	 * 
-	 * @return an SQL string that can be used to create the table for this
-	 *         object.
-	 * @throws SQLException
-	 */
-	public String getTableCreationStatement(ConnectionWrapper cw)
-			throws SQLException
-	{
-		StringBuilder statement = new StringBuilder("CREATE TABLE ");
-		statement.append(getTableName());
-		statement.append(" (");
-		ArrayList<String> columnDescriptions = new ArrayList<String>();
-		// add the identifier, set it to a primary key
-		if (adapter.isSupportsIdentity())
-		{
-			columnDescriptions.add(Defaults.ID_COL + " "
-					+ adapter.getIdentity() + " PRIMARY KEY");
-		}
-		else
-		{
-			columnDescriptions.add(Defaults.ID_COL + " "
-					+ adapter.getLongTypeKeyword() + " PRIMARY KEY");
-
-		}
-
-		if (this.clazz.isArray())
-		{
-			columnDescriptions.add(Defaults.ARRAY_MEMBER_ID + " "
-					+ adapter.getReferenceType(Defaults.ARRAY_TABLENAME));
-			columnDescriptions.add(Defaults.ARRAY_POSITION + " int ");
-			columnDescriptions.add(Defaults.COMPONENT_CLASS_COL +" "
-					+ adapter.getVarCharIndexed());
-			columnDescriptions.add(Defaults.VALUE_COL + " "
-					+ adapter.getColumnType(clazz.getComponentType(), null));
-		}
-		else
-		{
-			columnDescriptions.add(Defaults.REAL_CLASS_COL + " "
-					+ adapter.getVarCharIndexed());
-			columnDescriptions.add(Defaults.REAL_ID_COL + " bigint");
-			for (int x = 0; x < this.getPropertyCount(); x++)
-			{
-				String mName = this.getPropertyName(x) + " ";
-				if (this.isReferenceType(x))
-				{
-					Class<?> returnType = returnTypes.get(x);
-					if (returnType.isInterface())
-					{
-						returnType = Object.class;
-					}
-					mName += adapter.getReferenceType(returnType);
-				}
-				else
-				{
-					mName += adapter.getColumnType(getReturnType(x),
-							getAccessor(x));
-				}
-				columnDescriptions.add(mName);
-				//add info to type table
-				adapter.getPersist().getTableManager().addTypeInfo(getTableName(),getPropertyName(x),getReturnType(x),cw);
-			}
-		}
-		for (int x = 0; x < columnDescriptions.size(); x++)
-		{
-			statement.append(columnDescriptions.get(x));
-			if (x < columnDescriptions.size() - 1)
-			{
-				statement.append(", ");
-			}
-		}
-		statement.append(")");
-		return statement.toString();
-	}
-
-	public void ensureContainedTablesExist(ConnectionWrapper cw)
-			throws SQLException, SchemaPermissionException
-	{
-
-		// a list of contained classes that must be added
-		ArrayList<Class<?>> containedClasses = new ArrayList<Class<?>>();
-		if (this.clazz.isArray())
-		{
-			if (!ObjectTools.isDatabasePrimitive(clazz.getComponentType()))
-			{
-				// make sure the component type exists
-				containedClasses.add(clazz.getComponentType());
-			}
-		}
-		else
-		{
-			for (int x = 0; x < this.getPropertyCount(); x++)
-			{
-				if (this.isReferenceType(x))
-				{
-					Class<?> returnType = returnTypes.get(x);
-					if (returnType.isInterface())
-					{
-						returnType = Object.class;
-					}
-					containedClasses.add(returnType);
-				}
-			}
-		}
-		for (Class<?> c : containedClasses)
-		{
-			adapter.getPersist().getTableManager().ensureTableExists(c, cw);
-		}
-	}
-
-	/**
-	 * Generate the SQL statement that creates this object.
-	 * 
-	 * @return an SQL insert statement that can be used to create a
-	 *         PreparedStatement used to insert this object.
-	 */
-	public String getRowInsertionStatement()
-	{
-		StringBuilder statement = new StringBuilder("INSERT INTO ");
-		if (this.clazz.isArray())
-		{
-			statement.append(Defaults.ARRAY_TABLENAME);
-			statement.append(" (");
-			statement.append(Defaults.COMPONENT_TABLE_COL);
-			statement.append(",");
-			statement.append(Defaults.COMPONENT_CLASS_COL);
-			statement.append(")VALUES(?,?)");
-		}
-		else
-		{
-			statement.append(getTableName());
-			int nonNullCount = this.getNonNullPropertyCount();
-			statement.append(" (");
-			if (nonNullCount == 0 && !adapter.allowsEmptyStatements())
-			{
-				if (this.getPropertyCount() > 0)
-				{
-					// insert a null value for the first property
-					statement.append(this.getPropertyName(0));
-					statement.append(")VALUES(NULL");
-				}
-			}
-			else
-			{
-				int addedCount = 0;
-				for (int x = 0; x < props.size(); x++)
-				{
-					if (values.get(x) != null)
-					{
-						statement.append(props.get(x));
-						addedCount++;
-						if (addedCount < nonNullCount)
-						{
-							statement.append(", ");
-						}
-					}
-				}
-				// add the placeholders for the values
-				statement.append(")VALUES(");
-				addedCount = 0;
-				for (int x = 0; x < values.size(); x++)
-				{
-					if (values.get(x) != null)
-					{
-						statement.append("?");
-						addedCount++;
-						if (addedCount < nonNullCount)
-						{
-							statement.append(", ");
-						}
-					}
-				}
-			}
-			statement.append(")");
-		}
-		return statement.toString();
-	}
-
-	/**
-	 * Fill in the values in the PreparedStatement, making it ready for
-	 * execution.
-	 * 
-	 * @param ps
-	 * @throws SQLException
-	 * @throws IOException
-	 */
-	public void fillRowInsertionStatement(PreparedStatement ps,
-			ConnectionWrapper cw) throws SQLException
-	{
-		if (this.isArray())
-		{
-			ps.setString(1, NameGenerator.getTableName(
-					clazz.getComponentType(), adapter));
-			if (clazz.getComponentType().isArray())
-			{
-				ps.setString(1, Defaults.ARRAY_TABLENAME);
-			}
-			// the table also contains the actual name of the class
-			ps.setString(2, ObjectTools.getSystemicName(clazz));
-
-		}
-		else
-		{
-			// enter the values for the properties
-			int index = 0;
-			for (int x = 0; x < values.size(); x++)
-			{
-				Class<?> c = returnTypes.get(x);
-				Object value = values.get(x);
-				if (value != null)
-				{
-					index++;
-					// find the type that best describes the object to store
-					if (ObjectTools.isDatabasePrimitive(c))
-					{
-						Tools.setParameter(ps, c, index, value);
-					}
-					else
-					{
-						Long id = adapter.getPersist().saveObjectUnprotected(
-								cw, value, delayBuffer);
-						if (id == null)
-						{
-							ps.setNull(index, java.sql.Types.BIGINT);
-							// this is a circularly referenced object
-							// mark it for later insertion
-							delayBuffer.add(getTableName(), getPropertyName(x),
-									value, getReturnType(x),System.identityHashCode(this.object));
-						}
-						else
-						{
-							// get the correct id for the representative class
-							if (!c.equals(value.getClass()))
-							{
-								Class<?> tempClass = c;
-								if (c.isInterface())
-								{
-									// since we can't cast to an interface, just
-									// cast to java.lang.Object.
-									tempClass = Object.class;
-								}
-								long nuId = adapter.getPersist().getCastId(
-										tempClass, value.getClass(), id, cw);
-								ps.setLong(index, nuId);
-							}
-							else
-							{
-								ps.setLong(index, id);
-							}
-							// arrays are given as references to the
-							// ARRAY_TABLE_NAME row that represents them
-							if (value.getClass().isArray())
-							{
-								protectionStack.addEntry(new ProtectionEntry(
-										Defaults.ARRAY_TABLENAME,null, id, props.get(x)));
-							}
-							else
-							{
-								protectionStack.addEntry(new ProtectionEntry(
-										value.getClass(), id, props.get(x),
-										adapter));
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 
 	/**
 	 * Add a value as if it was a bona-fide property of the represented object.
@@ -607,7 +372,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 */
 	public void addValuePair(String column, Object value)
 	{
-		addValuePair(column, value, value.getClass());
+		addValueTrio(column, value, value.getClass());
 	}
 
 	/**
@@ -618,7 +383,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * @param clazz
 	 *            the class of value
 	 */
-	public void addValuePair(String column, Object value, Class<?> clazz)
+	public void addValueTrio(String column, Object value, Class<?> clazz)
 	{
 		this.props.add(column);
 		this.values.add(value);
@@ -726,6 +491,20 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 
 	/**
 	 * Remove the property with the given name.
+	 * 
+	 * @param name the name of the property to remove.
+	 */
+	public void removeProperty(String name)
+	{
+		int p = props.indexOf(name);
+		if(p>=0)
+		{
+			removeProperty(p);
+		}
+	}
+
+	/**
+	 * Remove the property at the given index.
 	 * 
 	 * @param p
 	 */

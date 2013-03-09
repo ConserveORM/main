@@ -35,6 +35,7 @@ public class ObjectRepresentationTest
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
 		assertTrue(cd.isDeletion());
+		assertNull(b.getDifference(b));
 
 		// generate addition rep
 		cd = b.getDifference(a);
@@ -48,6 +49,7 @@ public class ObjectRepresentationTest
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
 		assertEquals("barz", cd.getToName());
+		assertNull(b.getDifference(b));
 
 		// generate change type rep
 		b.removeProperty("barz");
@@ -58,6 +60,7 @@ public class ObjectRepresentationTest
 		assertEquals("bar", cd.getToName());
 		assertEquals(String.class, cd.getFromClass());
 		assertEquals(Long.class, cd.getToClass());
+		assertNull(b.getDifference(b));
 
 		// generate two deletion reps
 		b.removeProperty("bar");
@@ -65,12 +68,14 @@ public class ObjectRepresentationTest
 		expectMetdataException(a, b);
 		// generate two addition reps
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 		
 		// generate deletion rep and addition rep
 		b.addNamedType("baz",  Double.class);
 		b.addNamedType("bat",  Double.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 		
 		// generate deletion rep and change name rep
 		b = getStandard();
@@ -80,6 +85,7 @@ public class ObjectRepresentationTest
 		expectMetdataException(a, b);
 		// generate addition rep and change name rep
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 		
 		// generate deletion rep and change type rep
 		b = getStandard();
@@ -89,6 +95,7 @@ public class ObjectRepresentationTest
 		expectMetdataException(a, b);
 		// generate addition rep and change type rep
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 				
 		// generate two rename reps
 		b = getStandard();
@@ -98,6 +105,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("bra", String.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 		
 		// generate rename rep and change type rep
 		b = getStandard();
@@ -107,6 +115,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("bar", Short.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 		
 		// generate two change type reps
 		b = getStandard();
@@ -116,6 +125,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("bar", Integer.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 		
 		
 		// generate rep that changes both type and name of one prop
@@ -124,6 +134,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("faa", String.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
+		assertNull(b.getDifference(b));
 	}
 	
 	//helper method to get a standard testing object

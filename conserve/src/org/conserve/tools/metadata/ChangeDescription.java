@@ -88,7 +88,6 @@ public class ChangeDescription
 	
 	public boolean isTypeChange()
 	{
-		//any change that is not a creation, deletion, or name change must, by process of elimination, be a type change
-		return !isDeletion() && !isCreation() && !isNameChange();
+		return !isDeletion() && !isCreation() && !isNameChange() && !toClass.equals(fromClass);
 	}
 }

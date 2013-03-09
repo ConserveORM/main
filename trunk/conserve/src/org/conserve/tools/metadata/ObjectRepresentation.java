@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -70,14 +71,13 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	protected String asName;
 
 	protected DelayedInsertionBuffer delayBuffer;
-	
+
 	/**
 	 * Default constructor for subclassing.
 	 */
 	protected ObjectRepresentation()
 	{
 	}
-
 
 	/**
 	 * Extract the entry set and save it as a property of this object.
@@ -180,8 +180,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */
-	public void setPropertyValue(int index, Object nuProperty)
-			throws IllegalArgumentException, IllegalAccessException,
+	public void setPropertyValue(int index, Object nuProperty) throws IllegalArgumentException, IllegalAccessException,
 			InvocationTargetException
 	{
 		values.set(index, nuProperty);
@@ -202,12 +201,13 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	{
 		return this.setters.get(index);
 	}
-	
+
 	/**
-	 * Get the change in the database model from this object to the toRepresentation object.
-	 * If no change is detected, null is returned.
+	 * Get the change in the database model from this object to the
+	 * toRepresentation object. If no change is detected, null is returned.
 	 * 
-	 * @throws MetadataException if there is more than one change.
+	 * @throws MetadataException
+	 *             if there is more than one change.
 	 * 
 	 * @param toRepresentation
 	 * 
@@ -216,77 +216,164 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	public ChangeDescription getDifference(ObjectRepresentation toRepresentation) throws MetadataException
 	{
 		ChangeDescription res = null;
-		//check for deletions
-		if(getPropertyCount()>toRepresentation.getPropertyCount())
+		if (!hasSameProperties(toRepresentation))
 		{
-			//check error condition
-			if(getPropertyCount()>toRepresentation.getPropertyCount()+1)
+			// check for deletions
+			if (getPropertyCount() > toRepresentation.getPropertyCount())
 			{
-				throw new MetadataException("Removing more than one column.");
-			}
-			res = new ChangeDescription();
-			//find the column not in toRepresentation
-			for(int x=0;x<props.size();x++)
-			{
-				if(!toRepresentation.props.contains(props.get(x)))
+				// check error condition
+				if (getPropertyCount() > toRepresentation.getPropertyCount() + 1)
 				{
-					res.setFromName(props.get(x));
-					res.setFromClass(returnTypes.get(x));
+					throw new MetadataException("Removing more than one column.");
 				}
-			}
-		}
-		else if(getPropertyCount()<toRepresentation.getPropertyCount())
-		{
-			if(getPropertyCount()<toRepresentation.getPropertyCount()-1)
-			{
-				throw new MetadataException("Adding more than one column.");
-			}
-			res = new ChangeDescription();
-			//find the column not in this representation
-			for(int x = 0;x<toRepresentation.props.size();x++)
-			{
-				if(!props.contains(toRepresentation.props.get(x)))
+				res = new ChangeDescription();
+				// find the column not in toRepresentation
+				for (int x = 0; x < props.size(); x++)
 				{
-					res.setToName(toRepresentation.props.get(x));
-					res.setToClass(toRepresentation.returnTypes.get(x));
-				}
-			}
-		}
-		else 
-		{
-			//the number of columns are the same
-			//check if any column has been renamed
-			//if no rename, find if any column has changed type
-		}
-		
-		if(res != null)
-		{
-			//check that the remaining columns are unchanged
-			for(int x=0;x<props.size();x++)
-			{
-				String p = props.get(x);
-				if(!p.equals(res.getFromName()))
-				{
-					int i = toRepresentation.props.indexOf(p);
-					if(i<0)
+					if (!toRepresentation.props.contains(props.get(x)))
 					{
-						//could not find matching column
-						throw new MetadataException("Changing more than one column.");
+						res.setFromName(props.get(x));
+						res.setFromClass(returnTypes.get(x));
+					}
+				}
+			}
+			else if (getPropertyCount() < toRepresentation.getPropertyCount())
+			{
+				if (getPropertyCount() < toRepresentation.getPropertyCount() - 1)
+				{
+					throw new MetadataException("Adding more than one column.");
+				}
+				res = new ChangeDescription();
+				// find the column not in this representation
+				for (int x = 0; x < toRepresentation.props.size(); x++)
+				{
+					if (!props.contains(toRepresentation.props.get(x)))
+					{
+						res.setToName(toRepresentation.props.get(x));
+						res.setToClass(toRepresentation.returnTypes.get(x));
+					}
+				}
+			}
+			else
+			{
+				// the number of columns are the same
+				// check if any column has been renamed
+				List<String> fromNames = new ArrayList<String>(props);
+				List<String> toNames = new ArrayList<String>(toRepresentation.props);
+				for (int x = 0; x < fromNames.size(); x++)
+				{
+					String t = fromNames.get(x);
+					int toIndex = toNames.indexOf(t);
+					if (toIndex >= 0)
+					{
+						// make sure the two properties are still the same type
+						Class<?> fromClass = getReturnType(fromNames.get(x));
+						Class<?> toClass = toRepresentation.getReturnType(toNames.get(toIndex));
+						if (!fromClass.equals(toClass))
+						{
+							// found same name, different return types
+							res = new ChangeDescription();
+							// same to/from name
+							res.setFromName(fromNames.get(x));
+							res.setToName(res.getFromName());
+							res.setFromClass(fromClass);
+							res.setToClass(toClass);
+							break;
+						}
+						fromNames.remove(x);
+						toNames.remove(toIndex);
+						x--;
+					}
+				}
+				if (fromNames.size() == 1 && toNames.size() == 1)
+				{
+					if (res == null)
+					{
+						// no type change found, must be a name change
+						// check that the return type is unchanged
+						Class<?> fromClass = this.getReturnType(fromNames.get(0));
+						Class<?> toClass = toRepresentation.getReturnType(toNames.get(0));
+						if (fromClass.equals(toClass))
+						{
+
+							res = new ChangeDescription();
+							res.setFromName(fromNames.get(0));
+							res.setToName(toNames.get(0));
+							res.setFromClass(fromClass);
+							res.setToClass(toClass);
+						}
+						else
+						{
+							throw new MetadataException("Chaning both name and type.");
+						}
 					}
 					else
 					{
-						if(!returnTypes.get(x).equals(toRepresentation.returnTypes.get(i)))
+						throw new MetadataException("Changing more than one column.");
+					}
+				}
+			}
+
+			if (res != null)
+			{
+				// check that the remaining columns are unchanged
+				for (int x = 0; x < props.size(); x++)
+				{
+					String p = props.get(x);
+					if (!p.equals(res.getFromName()))
+					{
+						int i = toRepresentation.props.indexOf(p);
+						if (i < 0)
 						{
-							//the return type is not the same
+							// could not find matching column
 							throw new MetadataException("Changing more than one column.");
+						}
+						else
+						{
+							if (!returnTypes.get(x).equals(toRepresentation.returnTypes.get(i)))
+							{
+								// the return type is not the same
+								throw new MetadataException("Changing more than one column.");
+							}
 						}
 					}
 				}
 			}
+			else
+			{
+				//we did not find the changes, but we know they are there
+				throw new MetadataException("Changes detected but not identified.");
+			}
 		}
-		
-		
+
 		return res;
+	}
+
+	private boolean hasSameProperties(ObjectRepresentation other)
+	{
+		// different size
+		if (props.size() != other.props.size())
+		{
+			return false;
+		}
+		for (int x = 0; x < props.size(); x++)
+		{
+			String fromProp = props.get(x);
+			int toIndex = other.props.indexOf(fromProp);
+			if (toIndex < 0)
+			{
+				// other object does not have property
+				return false;
+			}
+			// check that the return type is the same
+			if (!returnTypes.get(x).equals(other.returnTypes.get(toIndex)))
+			{
+				// return types differ
+				return false;
+			}
+		}
+		// all properties and return types match
+		return true;
 	}
 
 	/**
@@ -363,7 +450,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		}
 	}
 
-
 	/**
 	 * Add a value as if it was a bona-fide property of the represented object.
 	 * 
@@ -376,6 +462,15 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	}
 
 	/**
+	 * @param column
+	 * @param clazz
+	 */
+	public void addNamedType(String column, Class<?> clazz)
+	{
+		addValueTrio(column, null, clazz);
+	}
+
+	/**
 	 * Add a value as if it was a bona-fide property of the represented object.
 	 * 
 	 * @param column
@@ -383,7 +478,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * @param clazz
 	 *            the class of value
 	 */
-	public void addValueTrio(String column, Object value, Class<?> clazz)
+	protected void addValueTrio(String column, Object value, Class<?> clazz)
 	{
 		this.props.add(column);
 		this.values.add(value);
@@ -492,12 +587,13 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	/**
 	 * Remove the property with the given name.
 	 * 
-	 * @param name the name of the property to remove.
+	 * @param name
+	 *            the name of the property to remove.
 	 */
 	public void removeProperty(String name)
 	{
 		int p = props.indexOf(name);
-		if(p>=0)
+		if (p >= 0)
 		{
 			removeProperty(p);
 		}

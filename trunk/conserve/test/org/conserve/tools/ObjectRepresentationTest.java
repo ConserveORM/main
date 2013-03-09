@@ -8,9 +8,7 @@ import static org.junit.Assert.assertTrue;
 import org.conserve.tools.metadata.ChangeDescription;
 import org.conserve.tools.metadata.MetadataException;
 import org.conserve.tools.metadata.ObjectRepresentation;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 /**
  * @author Erik Berglund
@@ -18,25 +16,13 @@ import org.junit.rules.ExpectedException;
  */
 public class ObjectRepresentationTest
 {
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	@Test
 	public void testGetDifference() throws Exception
 	{
 		// generate two identical reps
-		ObjectRepresentation a = new ObjectRepresentation()
-		{
-		};
-		ObjectRepresentation b = new ObjectRepresentation()
-		{
-		};
-		a.addValueTrio("foo", null, Integer.class);
-		a.addValueTrio("bar", null, String.class);
-		a.addValueTrio("baz", null, Double.class);
-		b.addValueTrio("foo", null, Integer.class);
-		b.addValueTrio("bar", null, String.class);
-		b.addValueTrio("baz", null, Double.class);
+		ObjectRepresentation a = getStandard();
+		ObjectRepresentation b = getStandard();
 
 		assertNull(a.getDifference(b));
 		assertNull(b.getDifference(a));
@@ -57,7 +43,7 @@ public class ObjectRepresentationTest
 		assertTrue(cd.isCreation());
 
 		// generate rename rep
-		b.addValueTrio("barz", null, String.class);
+		b.addNamedType("barz",  String.class);
 		cd = a.getDifference(b);
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
@@ -65,7 +51,7 @@ public class ObjectRepresentationTest
 
 		// generate change type rep
 		b.removeProperty("barz");
-		b.addValueTrio("bar", null, Long.class);
+		b.addNamedType("bar",  Long.class);
 		cd = a.getDifference(b);
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
@@ -73,20 +59,98 @@ public class ObjectRepresentationTest
 		assertEquals(String.class, cd.getFromClass());
 		assertEquals(Long.class, cd.getToClass());
 
-		exception.expect(MetadataException.class);
-		cd = a.getDifference(b);
 		// generate two deletion reps
-		// generate deletion rep and addition rep
-		// generate deletion rep and change name rep
-		// generate deletion rep and change type rep
+		b.removeProperty("bar");
+		b.removeProperty("baz");
+		expectMetdataException(a, b);
 		// generate two addition reps
+		expectMetdataException(b, a);
+		
+		// generate deletion rep and addition rep
+		b.addNamedType("baz",  Double.class);
+		b.addNamedType("bat",  Double.class);
+		expectMetdataException(a, b);
+		expectMetdataException(b, a);
+		
+		// generate deletion rep and change name rep
+		b = getStandard();
+		b.removeProperty("bar");
+		b.removeProperty("baz");
+		b.addNamedType("fut",  Double.class);
+		expectMetdataException(a, b);
 		// generate addition rep and change name rep
+		expectMetdataException(b, a);
+		
+		// generate deletion rep and change type rep
+		b = getStandard();
+		b.removeProperty("bar");
+		b.addNamedType("bar", Float.class);
+		b.removeProperty("baz");
+		expectMetdataException(a, b);
 		// generate addition rep and change type rep
+		expectMetdataException(b, a);
+				
 		// generate two rename reps
+		b = getStandard();
+		b.removeProperty("foo");
+		b.removeProperty("bar");
+		b.addNamedType("faa", Integer.class);
+		b.addNamedType("bra", String.class);
+		expectMetdataException(a, b);
+		expectMetdataException(b, a);
+		
 		// generate rename rep and change type rep
+		b = getStandard();
+		b.removeProperty("foo");
+		b.removeProperty("bar");
+		b.addNamedType("faa", Integer.class);
+		b.addNamedType("bar", Short.class);
+		expectMetdataException(a, b);
+		expectMetdataException(b, a);
+		
 		// generate two change type reps
-
+		b = getStandard();
+		b.removeProperty("foo");
+		b.removeProperty("bar");
+		b.addNamedType("foo", String.class);
+		b.addNamedType("bar", Integer.class);
+		expectMetdataException(a, b);
+		expectMetdataException(b, a);
+		
+		
 		// generate rep that changes both type and name of one prop
+		b = getStandard();
+		b.removeProperty("foo");
+		b.addNamedType("faa", String.class);
+		expectMetdataException(a, b);
+		expectMetdataException(b, a);
+	}
+	
+	//helper method to get a standard testing object
+	private ObjectRepresentation getStandard()
+	{
+		ObjectRepresentation a = new ObjectRepresentation()
+		{
+		};
+		a.addNamedType("foo",  Integer.class);
+		a.addNamedType("bar",  String.class);
+		a.addNamedType("baz",  Double.class);
+		return a;
+		
+	}
+	
+	private void expectMetdataException(ObjectRepresentation a, ObjectRepresentation b) 
+	{
+		boolean thrown = false;
+		try
+		{
+			ChangeDescription cd = a.getDifference(b);
+		}
+		catch (MetadataException e)
+		{
+			thrown = true;
+		}
+		assertTrue("Exception was not thrown",thrown);
 	}
 
 }

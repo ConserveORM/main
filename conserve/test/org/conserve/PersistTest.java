@@ -1871,7 +1871,7 @@ public class PersistTest
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-
+		
 		// create and store a new value
 		OriginalObject oo = new OriginalObject();
 		oo.setName(name);
@@ -1881,6 +1881,9 @@ public class PersistTest
 		pm.saveObject(oo);
 		// rename the table
 		pm.changeName(OriginalObject.class, RemovedColumn.class);
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
 		// update schema
 		pm.updateSchema(RemovedColumn.class);
 
@@ -1890,7 +1893,6 @@ public class PersistTest
 		// make sure all properties match
 		RemovedColumn nn = res1.get(0);
 		assertEquals(value, nn.getValue());
-		assertEquals(otherObject, nn.getOtherObject());
 		assertEquals(name, nn.getName());
 
 		// make sure no SimplestObject entries are left
@@ -1899,6 +1901,9 @@ public class PersistTest
 
 		// change everything back
 		pm.changeName(RemovedColumn.class, OriginalObject.class);
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
 
 		// get all OriginalObject objects
@@ -1908,7 +1913,6 @@ public class PersistTest
 		oo = res2.get(0);
 		assertEquals(value, oo.getValue());
 		assertEquals(name, oo.getName());
-		assertEquals(otherObject, oo.getOtherObject());
 		// make sure the column that has been added/removed is now null
 		assertNull(oo.getRedundantObject());
 

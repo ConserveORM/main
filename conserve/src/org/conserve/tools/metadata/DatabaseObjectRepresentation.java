@@ -9,6 +9,7 @@ import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
+import org.conserve.tools.Tools;
 
 /**
  * Metadata about an object loaded from the database.
@@ -48,6 +49,7 @@ public class DatabaseObjectRepresentation extends ObjectRepresentation
 		stmt.append(" WHERE OWNER_TABLE = ?");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		ps.setString(1, getTableName());
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		while(rs.next())
 		{

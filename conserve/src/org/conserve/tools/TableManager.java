@@ -44,8 +44,11 @@ import org.conserve.select.StatementPrototypeGenerator;
 import org.conserve.tools.generators.IdStatementGenerator;
 import org.conserve.tools.generators.RelationDescriptor;
 import org.conserve.tools.generators.SubclassMover;
+import org.conserve.tools.metadata.ChangeDescription;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
+import org.conserve.tools.metadata.DatabaseObjectRepresentation;
 import org.conserve.tools.metadata.InheritanceModel;
+import org.conserve.tools.metadata.MetadataException;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
@@ -1248,9 +1251,10 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 * @throws SchemaPermissionException
+	 * @throws ClassNotFoundException 
 	 */
 	public void updateTableForClass(Class<?> klass, ConnectionWrapper cw) throws SQLException,
-			SchemaPermissionException
+			SchemaPermissionException, ClassNotFoundException
 	{
 		// only update tables if we are allowed to
 		if (this.createSchema)
@@ -1342,17 +1346,48 @@ public class TableManager
 
 				}
 
-				// we have to re-aquire the database columns, they may have been
-				// altered by the property moving algorithm
-				Map<String, String> valueTypeMap = getDatabaseColumns(nuObjectStack.getActualRepresentation()
-						.getTableName(), cw);
-				// find the list of name-type pairs for this class
-				ObjectRepresentation objRes = nuObjectStack.getActualRepresentation();
-				// check if any columns have been removed
-				removeObsoleteColumns(objRes, valueTypeMap, cw);
-				// check if any new columns have been added
-				addNewColumns(objRes, valueTypeMap, cw);
-
+				ObjectRepresentation toRep = nuObjectStack.getActualRepresentation();
+				ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
+				
+				try
+				{
+					ChangeDescription change = fromRep.getDifference(toRep);
+					if(change != null)
+					{
+						TableManager tm = adapter.getPersist().getTableManager();
+						if(change.isDeletion())
+						{
+							tm.dropColumn(toRep.getTableName(), change.getFromName(),cw);
+						}
+						else if(change.isCreation())
+						{
+							String columnType = adapter.getColumnType(change.getToClass(), null).trim();
+							tm.createColumn(toRep.getTableName(), change.getToName(),columnType, cw);
+						}
+						else if(change.isNameChange())
+						{
+							tm.renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
+						}
+						else if(change.isTypeChange())
+						{
+							if(CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
+							{
+								//TODO: Handle this
+							}
+							else
+							{
+								//no conversion, drop and recreate.
+								tm.dropColumn(toRep.getTableName(), change.getFromName(),cw);
+								String columnType = adapter.getColumnType(change.getToClass(), null).trim();
+								tm.createColumn(toRep.getTableName(), change.getToName(),columnType, cw);
+							}
+						}
+					}
+				}
+				catch (MetadataException e)
+				{
+					throw new SQLException(e);
+				}
 			}
 		}
 		else
@@ -1832,10 +1867,26 @@ public class TableManager
 			ClassNotFoundException
 	{
 		dropUprotectedReferences(tableName, column, cw);
-		PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + tableName + " DROP " + column);
+		StringBuilder sb = new StringBuilder("ALTER TABLE ");
+		sb.append(tableName);
+		sb.append(" DROP ");
+		sb.append(column);
+		PreparedStatement ps = cw.prepareStatement(sb.toString());
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
+		
+		//remove the column from the type table
+		sb = new StringBuilder("DELETE FROM ");
+		sb.append(Defaults.TYPE_TABLENAME);
+		sb.append(" WHERE OWNER_TABLE = ? AND COLUMN_NAME = ?");
+		ps = cw.prepareStatement(sb.toString());
+		ps.setString(1,tableName);
+		ps.setString(2, column);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		
 	}
 
 	private void dropUprotectedReferences(String tableName, String column, ConnectionWrapper cw) throws SQLException,

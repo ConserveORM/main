@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.conserve.tools;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.Clob;
@@ -246,9 +247,16 @@ public class ObjectTools
 	public static Class<?> lookUpClass(String name)
 			throws ClassNotFoundException
 	{
-		if (name.contains(".") || Character.isUpperCase(name.charAt(0)))
+		if ( name.contains(".") || Character.isUpperCase(name.charAt(0)))
 		{
 			return ClassLoader.getSystemClassLoader().loadClass(name);
+		}
+		else if(name.endsWith("[]"))
+		{
+			String subName=name.substring(0, name.length()-2);
+			Class<?>type=lookUpClass(subName);
+			//create a new object, get the class
+			return Array.newInstance(type, 0).getClass();
 		}
 		else if ("boolean".equals(name))
 		{

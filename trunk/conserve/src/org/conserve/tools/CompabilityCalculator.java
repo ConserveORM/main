@@ -52,6 +52,7 @@ public class CompabilityCalculator
 		floats.add(Double.class);
 
 		// primitives for classes that have direct SQL representations
+		directs.add(String.class);
 		directs.add(java.sql.Blob.class);
 		directs.add(java.sql.Clob.class);
 		directs.add(java.sql.Date.class);
@@ -138,10 +139,21 @@ public class CompabilityCalculator
 			{
 				return sizeof(fromClass)<sizeof(toClass);
 			}
-			if(isFloat(fromClass)&&isFloat(toClass))
+			else if(isFloat(fromClass)&&isFloat(toClass))
 			{
 				return toClass.equals(Double.class) || toClass.equals(double.class);
 			}
+			else
+			{
+				//changing int to float or vice versa
+				return false;
+			}
+		}
+		//both are not primitives, check if either is primitive
+		else if(isPrimitive(fromClass)||isPrimitive(toClass))
+		{
+			//one primitive and one non-primitive, no conversion
+			return false;
 		}
 		if(directs.contains(fromClass)||directs.contains(toClass))
 		{

@@ -486,7 +486,7 @@ public class Persist
 					}
 					else
 					{
-						Class<?> c = ObjectTools.lookUpClass(propertyClassName);
+						Class<?> c = ObjectTools.lookUpClass(propertyClassName,adapter);
 						deleteObject(c, propertyId, cw);
 					}
 				}
@@ -1355,7 +1355,7 @@ public class Persist
 				try
 				{
 					Class<?> superClass = ObjectTools
-							.lookUpClass(superClassName);
+							.lookUpClass(superClassName,adapter);
 					if (superClass != null && !res.contains(superClass))
 					{
 						res.add(superClass);
@@ -1367,7 +1367,7 @@ public class Persist
 				}
 				try
 				{
-					Class<?> subClass = ObjectTools.lookUpClass(subClassName);
+					Class<?> subClass = ObjectTools.lookUpClass(subClassName,adapter);
 					if (subClass != null && !res.contains(subClass))
 					{
 						res.add(subClass);
@@ -1718,7 +1718,7 @@ public class Persist
 				try
 				{
 					// convert to table name
-					Class<?> realClass = ObjectTools.lookUpClass(realName);
+					Class<?> realClass = ObjectTools.lookUpClass(realName,adapter);
 					res = getRealTableNameAndId(cw, realClass, realId);
 				}
 				catch (ClassNotFoundException e)

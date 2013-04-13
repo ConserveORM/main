@@ -21,7 +21,6 @@ package org.conserve.adapter;
 import java.lang.reflect.Method;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.SQLException;
 
 import org.conserve.Persist;
 import org.conserve.annotations.MaxLength;
@@ -67,9 +66,8 @@ public class AdapterBase
 	 *            the method that returns the object.
 	 * @return a String representation of the SQL data type of the column
 	 *         representation of the given class.
-	 * @throws SQLException
 	 */
-	public String getColumnType(Class<?> c, Method m) throws SQLException
+	public String getColumnType(Class<?> c, Method m) 
 	{
 
 		if (c.equals(boolean.class) || c.equals(Boolean.class))

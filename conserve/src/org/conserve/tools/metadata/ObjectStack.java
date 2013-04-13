@@ -155,12 +155,12 @@ public class ObjectStack
 	 * @param adapter
 	 * @param list
 	 */
-	public ObjectStack(AdapterBase adapter, List<Class<?>> list)
+	public ObjectStack(AdapterBase adapter, List<ObjectRepresentation> list)
 	{
 		this.adapter = adapter;
-		for(Class<?>k:list)
+		for(ObjectRepresentation k:list)
 		{
-			this.representations.add(new ConcreteObjectRepresentation(adapter, k,null));
+			this.representations.add(k);
 		}
 	}
 

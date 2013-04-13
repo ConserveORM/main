@@ -9,7 +9,7 @@ package org.conserve.objects.schemaupdate.changedcolumns;
  */
 public class ArrayToLong
 {
-
+	private String name;
 	private int value;
 	private Object otherObject;
 	private Object redundantObject;
@@ -69,5 +69,19 @@ public class ArrayToLong
 	public void setArray(long array)
 	{
 		this.array = array;
+	}
+	/**
+	 * @return the name
+	 */
+	public String getName()
+	{
+		return name;
+	}
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(String name)
+	{
+		this.name = name;
 	}
 }

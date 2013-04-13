@@ -155,7 +155,7 @@ public class ObjectRepresentationTest
 		boolean thrown = false;
 		try
 		{
-			ChangeDescription cd = a.getDifference(b);
+			a.getDifference(b);
 		}
 		catch (MetadataException e)
 		{

@@ -18,13 +18,8 @@
  *******************************************************************************/
 package org.conserve.tools.metadata;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,16 +30,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.conserve.adapter.AdapterBase;
-import org.conserve.annotations.AsBlob;
-import org.conserve.annotations.AsClob;
-import org.conserve.connection.ConnectionWrapper;
-import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
-import org.conserve.tools.Tools;
-import org.conserve.tools.protection.ProtectionEntry;
 import org.conserve.tools.protection.ProtectionStack;
 
 /**
@@ -237,6 +225,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 					}
 				}
 			}
+			// check for insertions
 			else if (getPropertyCount() < toRepresentation.getPropertyCount())
 			{
 				if (getPropertyCount() < toRepresentation.getPropertyCount() - 1)
@@ -285,31 +274,26 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 						x--;
 					}
 				}
-				if (fromNames.size() == 1 && toNames.size() == 1)
+				// there are only two unmatched names, one in each list, and
+				// there is no type change
+				if (res == null && fromNames.size() == 1 && toNames.size() == 1)
 				{
-					if (res == null)
+					// no type change found, must be a name change
+					// check that the return type is unchanged
+					Class<?> fromClass = this.getReturnType(fromNames.get(0));
+					Class<?> toClass = toRepresentation.getReturnType(toNames.get(0));
+					if (fromClass.equals(toClass))
 					{
-						// no type change found, must be a name change
-						// check that the return type is unchanged
-						Class<?> fromClass = this.getReturnType(fromNames.get(0));
-						Class<?> toClass = toRepresentation.getReturnType(toNames.get(0));
-						if (fromClass.equals(toClass))
-						{
 
-							res = new ChangeDescription();
-							res.setFromName(fromNames.get(0));
-							res.setToName(toNames.get(0));
-							res.setFromClass(fromClass);
-							res.setToClass(toClass);
-						}
-						else
-						{
-							throw new MetadataException("Chaning both name and type.");
-						}
+						res = new ChangeDescription();
+						res.setFromName(fromNames.get(0));
+						res.setToName(toNames.get(0));
+						res.setFromClass(fromClass);
+						res.setToClass(toClass);
 					}
 					else
 					{
-						throw new MetadataException("Changing more than one column.");
+						throw new MetadataException("Chaning both name and type.");
 					}
 				}
 			}
@@ -341,7 +325,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 			}
 			else
 			{
-				//we did not find the changes, but we know they are there
+				// we did not find the changes, but we know they are there
 				throw new MetadataException("Changes detected but not identified.");
 			}
 		}

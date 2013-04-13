@@ -26,6 +26,7 @@ import java.sql.Blob;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.conserve.adapter.AdapterBase;
 import org.conserve.annotations.Transient;
 
 /**
@@ -36,6 +37,7 @@ import org.conserve.annotations.Transient;
  */
 public class ObjectTools
 {
+	private static Class<?>[] classes = new Class<?>[]{boolean.class,byte.class,short.class,char.class,int.class,long.class,float.class,double.class,String.class};
 
 	/**
 	 * Get all interfaces of c. If c is an interface, get all super-interfaces.
@@ -89,8 +91,7 @@ public class ObjectTools
 	 * @param interf
 	 * @return true if interf is one of the interfaces of implementor.
 	 */
-	public static boolean implementsInterface(Class<?> implementor,
-			Class<?> interf)
+	public static boolean implementsInterface(Class<?> implementor, Class<?> interf)
 	{
 		List<Class<?>> interfaces = getAllInterfaces(implementor);
 		for (Class<?> intf : interfaces)
@@ -112,8 +113,7 @@ public class ObjectTools
 	 * @return true if interf is one of the interfaces of implementor or its
 	 *         superclasses.
 	 */
-	public static boolean implementsInterfaceIncludingSuper(
-			Class<?> implementor, Class<?> interf)
+	public static boolean implementsInterfaceIncludingSuper(Class<?> implementor, Class<?> interf)
 	{
 		List<Class<?>> interfaces = getAllInterfacesIncludingSuper(implementor);
 		for (Class<?> intf : interfaces)
@@ -135,8 +135,7 @@ public class ObjectTools
 	 * @param possibleSuperClass
 	 * @return true if the two classes is in a class-superclass relationship.
 	 */
-	public static boolean isSubClassOf(Class<?> subClass,
-			Class<?> possibleSuperClass)
+	public static boolean isSubClassOf(Class<?> subClass, Class<?> possibleSuperClass)
 	{
 		Class<?> c = subClass;
 		while (c != null)
@@ -175,12 +174,13 @@ public class ObjectTools
 	}
 
 	/**
-	 * Determine if a class is a 'database primitive'. A class is a database primitive if its
-	 * Class.isPrimitive method returns true, if it's an object representation
-	 * of a primitive class (e.g. Double, Integer), or if it is String, Enum, 
-	 * or any of the java.sql.Time,Timestapm, or Date classes.
+	 * Determine if a class is a 'database primitive'. A class is a database
+	 * primitive if its Class.isPrimitive method returns true, if it's an object
+	 * representation of a primitive class (e.g. Double, Integer), or if it is
+	 * String, Enum, or any of the java.sql.Time,Timestapm, or Date classes.
 	 * 
-	 * In short, a database primitive is any class that can be fully represented in one column of an SQL database.
+	 * In short, a database primitive is any class that can be fully represented
+	 * in one column of an SQL database.
 	 * 
 	 * @param c
 	 * @return true if the parameter represents a 'database primitive' class.
@@ -203,8 +203,7 @@ public class ObjectTools
 		{
 			return true;
 		}
-		else if (c.getSuperclass() != null
-				&& c.getSuperclass().equals(Number.class))
+		else if (c.getSuperclass() != null && c.getSuperclass().equals(Number.class))
 		{
 			return true;
 		}
@@ -244,57 +243,81 @@ public class ObjectTools
 	 * @return the Class corresponding to the name.
 	 * @throws ClassNotFoundException
 	 */
-	public static Class<?> lookUpClass(String name)
-			throws ClassNotFoundException
+	public static Class<?> lookUpClass(String name, AdapterBase adapter) throws ClassNotFoundException
 	{
-		if ( name.contains(".") || Character.isUpperCase(name.charAt(0)))
+		Class<?> res = null;
+		if (name.contains(".") || Character.isUpperCase(name.charAt(0)))
 		{
-			return ClassLoader.getSystemClassLoader().loadClass(name);
+			try
+			{
+				res = ClassLoader.getSystemClassLoader().loadClass(name);
+			}
+			catch (ClassNotFoundException e)
+			{
+				// this means it's not a valid class name
+				// try the other ways of finding the class
+			}
 		}
-		else if(name.endsWith("[]"))
+
+		if (res == null)
 		{
-			String subName=name.substring(0, name.length()-2);
-			Class<?>type=lookUpClass(subName);
-			//create a new object, get the class
-			return Array.newInstance(type, 0).getClass();
+			if (name.endsWith("[]"))
+			{
+				String subName = name.substring(0, name.length() - 2);
+				Class<?> type = lookUpClass(subName,adapter);
+				// create a new object, get the class
+				res = Array.newInstance(type, 0).getClass();
+			}
+			else if ("boolean".equals(name))
+			{
+				res = boolean.class;
+			}
+			else if ("byte".equals(name))
+			{
+				res = byte.class;
+			}
+			else if ("short".equals(name))
+			{
+				res = short.class;
+			}
+			else if ("char".equals(name))
+			{
+				res = char.class;
+			}
+			else if ("int".equals(name))
+			{
+				res = int.class;
+			}
+			else if ("long".equals(name))
+			{
+				res = long.class;
+			}
+			else if ("float".equals(name))
+			{
+				res = float.class;
+			}
+			else if ("double".equals(name))
+			{
+				res = double.class;
+			}
+			//database-returned name, see if the adapter can help us.
+			else if(adapter != null)
+			{
+				for(Class<?>c:classes)
+				{
+					if(adapter.getColumnType(c, null).equalsIgnoreCase(name))
+					{
+						res = c;
+						break;
+					}
+				}
+			}
 		}
-		else if ("boolean".equals(name))
+		if (res == null)
 		{
-			return boolean.class;
+			throw new ClassNotFoundException("Don't know how to handle class " + name);
 		}
-		else if ("byte".equals(name))
-		{
-			return byte.class;
-		}
-		else if ("short".equals(name))
-		{
-			return short.class;
-		}
-		else if ("char".equals(name))
-		{
-			return char.class;
-		}
-		else if ("int".equals(name))
-		{
-			return int.class;
-		}
-		else if ("long".equals(name))
-		{
-			return long.class;
-		}
-		else if ("float".equals(name))
-		{
-			return float.class;
-		}
-		else if ("double".equals(name))
-		{
-			return double.class;
-		}
-		else
-		{
-			throw new ClassNotFoundException("Don't know how to handle class "
-					+ name);
-		}
+		return res;
 	}
 
 	/**
@@ -363,12 +386,9 @@ public class ObjectTools
 	 */
 	public static boolean isValidMethod(Method m)
 	{
-		if ((!Modifier.isStatic(m.getModifiers())
-				&& !m.getName().equals("getClass")
-				&& !m.isAnnotationPresent(Transient.class)
-				&& !m.getReturnType().equals(void.class)
-				&& (m.getName().startsWith("get") || m.getName().startsWith(
-						"is")) && m.getParameterTypes().length == 0))
+		if ((!Modifier.isStatic(m.getModifiers()) && !m.getName().equals("getClass")
+				&& !m.isAnnotationPresent(Transient.class) && !m.getReturnType().equals(void.class)
+				&& (m.getName().startsWith("get") || m.getName().startsWith("is")) && m.getParameterTypes().length == 0))
 		{
 			if (!isIgnored(m))
 			{
@@ -392,8 +412,7 @@ public class ObjectTools
 	 */
 	private static boolean isIgnored(Method m)
 	{
-		if (isSubClassOf(m.getDeclaringClass(),
-				java.util.AbstractCollection.class))
+		if (isSubClassOf(m.getDeclaringClass(), java.util.AbstractCollection.class))
 		{
 			if (m.getName().equalsIgnoreCase("isEmpty"))
 			{
@@ -478,8 +497,7 @@ public class ObjectTools
 	 *            the argument type.
 	 * @return the Method with the given name and single argument type.
 	 */
-	public static Method getMutator(Class<?> declaringClass,
-			String mutatorName, Class<?> argument)
+	public static Method getMutator(Class<?> declaringClass, String mutatorName, Class<?> argument)
 	{
 		Method res = null;
 		if (declaringClass != null)
@@ -495,8 +513,7 @@ public class ObjectTools
 			}
 			if (res == null)
 			{
-				res = getMutator(declaringClass.getSuperclass(), mutatorName,
-						argument);
+				res = getMutator(declaringClass.getSuperclass(), mutatorName, argument);
 			}
 		}
 
@@ -515,8 +532,7 @@ public class ObjectTools
 		String res = clazz.getCanonicalName();
 		if (clazz.getEnclosingClass() != null)
 		{
-			res = getSystemicName(clazz.getEnclosingClass()) + "$"
-					+ clazz.getSimpleName();
+			res = getSystemicName(clazz.getEnclosingClass()) + "$" + clazz.getSimpleName();
 		}
 		return res;
 	}

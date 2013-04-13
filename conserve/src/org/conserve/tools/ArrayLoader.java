@@ -120,7 +120,7 @@ public class ArrayLoader
 			if (getDimensions() == 1)
 			{
 				loadArray(ObjectTools.lookUpClass(className.replaceFirst(
-						"\\[\\]", "")), dbId, connectionWrapper);
+						"\\[\\]", ""),adapter), dbId, connectionWrapper);
 			}
 			else
 			{
@@ -148,7 +148,7 @@ public class ArrayLoader
 					// get the name of the component type
 					String innerName = className.replaceAll("\\[\\]", "");
 					array = Array.newInstance(
-							ObjectTools.lookUpClass(innerName), dims);
+							ObjectTools.lookUpClass(innerName,adapter), dims);
 					int index = 0;
 					for (ArrayLoader subLoader : subLoaders)
 					{

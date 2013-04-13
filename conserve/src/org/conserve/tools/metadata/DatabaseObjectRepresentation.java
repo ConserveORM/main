@@ -55,7 +55,7 @@ public class DatabaseObjectRepresentation extends ObjectRepresentation
 		{
 			String name = rs.getString(1);
 			String classDesc = rs.getString(2);
-			Class<?> c = ObjectTools.lookUpClass(classDesc);
+			Class<?> c = ObjectTools.lookUpClass(classDesc,adapter);
 			this.returnTypes.add(c);
 			this.props.add(name);
 		}

@@ -1143,6 +1143,15 @@ public class TableManager
 		}
 	}
 	
+	/**
+	 * Change the type of a named column. Also changes associated metadata.
+	 * 
+	 * @param tableName the name of the column to change the type for.
+	 * @param column the column to change the type of.
+	 * @param nuClass the type to change the column into.
+	 * @param cw
+	 * @throws SQLException
+	 */
 	private void changeColumnType(String tableName, String column, Class<?>nuClass,ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
@@ -1160,6 +1169,15 @@ public class TableManager
 		changeTypeInfo(tableName, column, nuClass, cw);
 	}
 
+	/**
+	 * Rename a column.
+	 * 
+	 * @param tableName
+	 * @param oldName
+	 * @param nuName
+	 * @param cw
+	 * @throws SQLException
+	 */
 	private void renameColumn(String tableName, String oldName, String nuName, ConnectionWrapper cw)
 			throws SQLException
 	{

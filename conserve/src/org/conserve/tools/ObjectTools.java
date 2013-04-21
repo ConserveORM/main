@@ -37,7 +37,8 @@ import org.conserve.annotations.Transient;
  */
 public class ObjectTools
 {
-	private static Class<?>[] classes = new Class<?>[]{boolean.class,byte.class,short.class,char.class,int.class,long.class,float.class,double.class,String.class};
+	private static Class<?>[] classes = new Class<?>[] { long.class, int.class, short.class, char.class, byte.class,
+			boolean.class, double.class, float.class, String.class };
 
 	/**
 	 * Get all interfaces of c. If c is an interface, get all super-interfaces.
@@ -264,7 +265,7 @@ public class ObjectTools
 			if (name.endsWith("[]"))
 			{
 				String subName = name.substring(0, name.length() - 2);
-				Class<?> type = lookUpClass(subName,adapter);
+				Class<?> type = lookUpClass(subName, adapter);
 				// create a new object, get the class
 				res = Array.newInstance(type, 0).getClass();
 			}
@@ -300,12 +301,12 @@ public class ObjectTools
 			{
 				res = double.class;
 			}
-			//database-returned name, see if the adapter can help us.
-			else if(adapter != null)
+			// database-returned name, see if the adapter can help us.
+			else if (adapter != null)
 			{
-				for(Class<?>c:classes)
+				for (Class<?> c : classes)
 				{
-					if(adapter.getColumnType(c, null).equalsIgnoreCase(name))
+					if (adapter.getColumnType(c, null).equalsIgnoreCase(name))
 					{
 						res = c;
 						break;

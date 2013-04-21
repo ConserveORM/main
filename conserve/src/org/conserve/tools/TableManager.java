@@ -1142,6 +1142,23 @@ public class TableManager
 			throw new SchemaPermissionException("We do not have permission to change the database schema.");
 		}
 	}
+	
+	private void changeColumnType(String tableName, String column, Class<?>nuClass,ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder sb = new StringBuilder("ALTER TABLE ");
+		sb.append(tableName);
+		sb.append(" ALTER COLUMN ");
+		sb.append(column);
+		sb.append(" ");
+		sb.append(adapter.getColumnType(nuClass, null).trim());
+		PreparedStatement ps = cw.prepareStatement(sb.toString());
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		
+		//store the new column metadata
+		changeTypeInfo(tableName, column, nuClass, cw);
+	}
 
 	private void renameColumn(String tableName, String oldName, String nuName, ConnectionWrapper cw)
 			throws SQLException
@@ -1372,8 +1389,12 @@ public class TableManager
 						{
 							if(CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
 							{
-								//TODO: Handle this
-								System.out.println("Changing column type.");
+								//there is a conversion available
+								//change the column type
+								changeColumnType(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+								
+								//TODO: Update object references
+								//TODO: If toClass is a subclas of fromClass, remove incompatible entries
 							}
 							else
 							{

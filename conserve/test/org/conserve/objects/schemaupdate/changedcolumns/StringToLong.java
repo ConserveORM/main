@@ -8,7 +8,7 @@ package org.conserve.objects.schemaupdate.changedcolumns;
  */
 public class StringToLong
 {
-	private long name;
+	private Long name;
 	private int value;
 	private Object otherObject;
 	private Object redundantObject;
@@ -17,14 +17,14 @@ public class StringToLong
 	/**
 	 * @return the name
 	 */
-	public long getName()
+	public Long getName()
 	{
 		return name;
 	}
 	/**
 	 * @param name the name to set
 	 */
-	public void setName(long name)
+	public void setName(Long name)
 	{
 		this.name = name;
 	}

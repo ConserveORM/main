@@ -2128,7 +2128,7 @@ public class PersistTest
 		StringToLong obj1 = res1.get(0);
 		assertNull(obj1.getName());
 		//save a long
-		obj1.setName(1);
+		obj1.setName(1L);
 		pm.saveObject(obj1);
 		pm.close();
 

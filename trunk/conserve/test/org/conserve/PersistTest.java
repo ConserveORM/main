@@ -2225,13 +2225,13 @@ public class PersistTest
 		ns = new NotSubClass();
 		ns.setName("bar");
 		pm.saveObject(ns);
-
 		pm.close();
+		
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename NotSubClass to SubClass
 		pm.changeName(NotSubClass.class, SubClass.class);
-
 		pm.close();
+		
 		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(SubClass.class);
@@ -2257,7 +2257,9 @@ public class PersistTest
 
 		// rename SubClass to to NotSubClass
 		pm.changeName(SubClass.class, NotSubClass.class);
+		pm.close();
 		// change the database schema
+		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(NotSubClass.class);
 
 		// search all OriginalObject, make sure both objects are returned.

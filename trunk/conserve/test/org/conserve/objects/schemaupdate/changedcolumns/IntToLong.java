@@ -11,6 +11,10 @@ public class IntToLong
 {
 	private String name;
 	private long value;
+	private Object otherObject;
+	private Object redundantObject;
+	private long[] array;
+	
 	/**
 	 * @return the name
 	 */
@@ -81,8 +85,5 @@ public class IntToLong
 	{
 		this.array = array;
 	}
-	private Object otherObject;
-	private Object redundantObject;
-	private long[] array;
 	
 }

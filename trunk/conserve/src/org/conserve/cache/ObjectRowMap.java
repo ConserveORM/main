@@ -39,7 +39,7 @@ public class ObjectRowMap implements Runnable
 	/**
 	 * Map from the systemHashCode to the database table and id
 	 */
-	private HashMap<Long, TableEntry> classMap = new HashMap<Long, TableEntry>();
+	private HashMap<Long, List<TableEntry>> classMap = new HashMap<Long, List<TableEntry>>();
 	/**
 	 * Map from the database table and database id to the object.
 	 */
@@ -85,7 +85,13 @@ public class ObjectRowMap implements Runnable
 		long id = System.identityHashCode(o);
 
 		// store the id -> dbId map
-		classMap.put(id, new TableEntry(tableName, dbId));
+		List<TableEntry> list = classMap.get(id);
+		if (list == null)
+		{
+			list = new ArrayList<TableEntry>();
+			classMap.put(id, list);
+		}
+		list.add(new TableEntry(tableName, dbId, o));
 
 		// store the dbId -> object map
 		WeakReference<Object> ref = new WeakReference<Object>(o, refQueue);
@@ -138,10 +144,16 @@ public class ObjectRowMap implements Runnable
 	public Long getDatabaseId(Object o)
 	{
 		long id = System.identityHashCode(o);
-		TableEntry entry = classMap.get(id);
-		if (entry != null)
+		List<TableEntry> list = classMap.get(id);
+		if (list != null)
 		{
-			return entry.getDbId();
+			for (TableEntry entry : list)
+			{
+				if (entry.refernetEquals(o))
+				{
+					return entry.getDbId();
+				}
+			}
 		}
 		return null;
 	}
@@ -152,27 +164,43 @@ public class ObjectRowMap implements Runnable
 	 * @param id
 	 *            The identityHashCode of the object to purge
 	 */
-	public void purge(Long id)
+	public void purge(Object o)
 	{
-
+		Long id = (long) System.identityHashCode(o);
 		// remove from the id -> dbId map, if exists
-		TableEntry entry = classMap.get(id);
-		if (entry != null)
+		List<TableEntry> list = classMap.get(id);
+		if (list != null)
 		{
-			classMap.remove(id);
-			HashMap<Long, WeakReference<Object>> map = objectMap.get(entry
-					.getTableName());
-			WeakReference<Object> ref = map.get(entry.getDbId());
-			if (ref != null)
+			TableEntry toRemove = null;
+			for (TableEntry entry : list)
 			{
-				map.remove(entry.getDbId());
-				if (map.isEmpty())
+				if (entry.refernetEquals(o))
 				{
-					objectMap.remove(entry.getTableName());
+					toRemove = entry;
+					break;
 				}
-				inverseReferenceMap.remove(ref);
 			}
+			if (toRemove != null)
+			{
+				list.remove(toRemove);
+				if (list.isEmpty())
+				{
+					classMap.remove(id);
+				}
 
+				HashMap<Long, WeakReference<Object>> map = objectMap
+						.get(toRemove.getTableName());
+				WeakReference<Object> ref = map.get(toRemove.getDbId());
+				if (ref != null)
+				{
+					map.remove(toRemove.getDbId());
+					if (map.isEmpty())
+					{
+						objectMap.remove(toRemove.getTableName());
+					}
+					inverseReferenceMap.remove(ref);
+				}
+			}
 		}
 	}
 
@@ -200,7 +228,7 @@ public class ObjectRowMap implements Runnable
 	{
 
 		HashMap<Long, WeakReference<Object>> map = objectMap.get(tableName);
-		List<Object>toRemove = new ArrayList<Object>();
+		List<Object> toRemove = new ArrayList<Object>();
 		if (map != null)
 		{
 			for (Entry<Long, WeakReference<Object>> e : map.entrySet())
@@ -212,9 +240,9 @@ public class ObjectRowMap implements Runnable
 					toRemove.add(ref.get());
 				}
 			}
-			for(Object o:toRemove)
+			for (Object o : toRemove)
 			{
-				purge((long) System.identityHashCode(o));
+				purge(o);
 			}
 		}
 	}
@@ -228,11 +256,14 @@ public class ObjectRowMap implements Runnable
 	public void changeName(String oldName, String newName)
 	{
 		// fix all the table-entries
-		for (TableEntry entry : classMap.values())
+		for (List<TableEntry> list : classMap.values())
 		{
-			if (entry.getTableName().equals(oldName))
+			for (TableEntry entry : list)
 			{
-				entry.setTableName(newName);
+				if (entry.getTableName().equals(oldName))
+				{
+					entry.setTableName(newName);
+				}
 			}
 		}
 
@@ -286,11 +317,18 @@ public class ObjectRowMap implements Runnable
 	{
 		private String tableName;
 		private Long dbId;
+		private WeakReference<Object> ref;
 
-		public TableEntry(String tableName, Long dbId)
+		public TableEntry(String tableName, Long dbId, Object o)
 		{
 			this.tableName = tableName;
 			this.dbId = dbId;
+			this.ref = new WeakReference<Object>(o);
+		}
+
+		public boolean refernetEquals(Object o)
+		{
+			return ref.get() == o;
 		}
 
 		public String getTableName()

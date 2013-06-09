@@ -666,6 +666,20 @@ public class PersistenceManager
 	{
 		return persist.refresh(cw, obj);
 	}
+	
+	/**
+	 * Check if an object has been changed since it was loaded from the database.
+	 * 
+	 * @param o the object to check for, will be unchanged.
+	 * 
+	 * @return true if the object or any of its properties has changed or been deleted, false otherwise.
+	 */
+	public boolean hasChanged(Object o)
+	{
+		//TODO: implement like this: Search using o as example, make sure returned object exists and has same
+		// table id number.
+		return false;
+	}
 
 	/**
 	 * Drop all tables that make up class c. Tables will be dropped regardless

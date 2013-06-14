@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Module>
-  <ModulePrefs title="google gadget for social buttons" />
+  <ModulePrefs height="90" title="google gadget for social buttons" />
   <Content type="html"><![CDATA[
 <html>
 <head>

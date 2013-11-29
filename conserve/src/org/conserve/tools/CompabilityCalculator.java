@@ -123,7 +123,7 @@ public class CompabilityCalculator
 	 * @param fromClass
 	 * @param toClass
 	 * @return true if converting from fromClass to toClass will not result in
-	 *         loss of data.
+	 *         loss of data or generality.
 	 */
 	public static boolean calculate(Class<?> fromClass, Class<?> toClass)
 	{
@@ -175,7 +175,7 @@ public class CompabilityCalculator
 			return false;
 		}
 		//if we got this far it's a reference type
-		//check if one is a subclass of the other
+		//check if fromClass is a subclass of toClass
 		return ObjectTools.isA(fromClass, toClass)||ObjectTools.isA(toClass,fromClass);
 	}
 }

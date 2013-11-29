@@ -337,18 +337,19 @@ public class TableManager
 
 				}
 			}
-			
-			if(!tableExists(Defaults.TYPE_TABLENAME, cw))
+
+			if (!tableExists(Defaults.TYPE_TABLENAME, cw))
 			{
-				//create the type table
+				// create the type table
 
 				String createString = "CREATE TABLE " + Defaults.TYPE_TABLENAME + " (OWNER_TABLE "
-						+ adapter.getVarCharIndexed() + ",COLUMN_NAME " + adapter.getVarCharIndexed() + ",COLUMN_CLASS " + adapter.getVarCharIndexed() +")";
+						+ adapter.getVarCharIndexed() + ",COLUMN_NAME " + adapter.getVarCharIndexed()
+						+ ",COLUMN_CLASS " + adapter.getVarCharIndexed() + ")";
 				PreparedStatement ps = cw.prepareStatement(createString);
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
-				
+
 			}
 
 			// commit, return connection to pool
@@ -549,7 +550,7 @@ public class TableManager
 			}
 		}
 		return res;
-	} 
+	}
 
 	private void createTable(ConcreteObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException,
 			SchemaPermissionException
@@ -706,7 +707,7 @@ public class TableManager
 				ObjectStack oStack = new ObjectStack(this.adapter, c, null);
 				for (int x = 0; x < oStack.getSize(); x++)
 				{
-					ensureTableExists((ConcreteObjectRepresentation)oStack.getRepresentation(x), cw);
+					ensureTableExists((ConcreteObjectRepresentation) oStack.getRepresentation(x), cw);
 				}
 			}
 		}
@@ -733,7 +734,7 @@ public class TableManager
 				while (rs.next())
 				{
 					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name,adapter);
+					Class<?> c = ObjectTools.lookUpClass(name, adapter);
 					res.add(c);
 					if (!existingClasses.contains(c))
 					{
@@ -751,7 +752,7 @@ public class TableManager
 				while (rs.next())
 				{
 					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name,adapter);
+					Class<?> c = ObjectTools.lookUpClass(name, adapter);
 					if (!res.contains(c))
 					{
 						res.add(c);
@@ -795,7 +796,7 @@ public class TableManager
 				while (rs.next())
 				{
 					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name,adapter);
+					Class<?> c = ObjectTools.lookUpClass(name, adapter);
 					res.add(c);
 				}
 				rs.close();
@@ -836,7 +837,7 @@ public class TableManager
 				while (rs.next())
 				{
 					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name,adapter);
+					Class<?> c = ObjectTools.lookUpClass(name, adapter);
 					res.add(c);
 				}
 				rs.close();
@@ -878,10 +879,10 @@ public class TableManager
 			{
 				dropTableHelper(subClass, cw, classList);
 			}
-			//delete meta-info
+			// delete meta-info
 			deleteIsATableEntries(c, cw);
 			removeTypeInfo(tableName, cw);
-			
+
 			// drop the table
 			conditionalDelete(tableName, cw);
 			if (!adapter.isSupportsIdentity())
@@ -904,7 +905,6 @@ public class TableManager
 			}
 		}
 	}
-
 
 	private void conditionalDelete(String tableName, ConnectionWrapper cw) throws SQLException
 	{
@@ -1140,17 +1140,21 @@ public class TableManager
 			throw new SchemaPermissionException("We do not have permission to change the database schema.");
 		}
 	}
-	
+
 	/**
 	 * Change the type of a named column. Also changes associated metadata.
 	 * 
-	 * @param tableName the name of the column to change the type for.
-	 * @param column the column to change the type of.
-	 * @param nuClass the type to change the column into.
+	 * @param tableName
+	 *            the name of the column to change the type for.
+	 * @param column
+	 *            the column to change the type of.
+	 * @param nuClass
+	 *            the type to change the column into.
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void changeColumnType(String tableName, String column, Class<?>nuClass,ConnectionWrapper cw) throws SQLException
+	private void changeColumnType(String tableName, String column, Class<?> nuClass, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
 		sb.append(tableName);
@@ -1162,8 +1166,8 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		
-		//store the new column metadata
+
+		// store the new column metadata
 		changeTypeInfo(tableName, column, nuClass, cw);
 	}
 
@@ -1284,7 +1288,7 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 * @throws SchemaPermissionException
-	 * @throws ClassNotFoundException 
+	 * @throws ClassNotFoundException
 	 */
 	public void updateTableForClass(Class<?> klass, ConnectionWrapper cw) throws SQLException,
 			SchemaPermissionException, ClassNotFoundException
@@ -1381,43 +1385,45 @@ public class TableManager
 
 				ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
 				ObjectRepresentation toRep = nuObjectStack.getActualRepresentation();
-				
+
 				try
 				{
 					ChangeDescription change = fromRep.getDifference(toRep);
-					if(change != null)
+					if (change != null)
 					{
 						TableManager tm = adapter.getPersist().getTableManager();
-						if(change.isDeletion())
+						if (change.isDeletion())
 						{
-							tm.dropColumn(toRep.getTableName(), change.getFromName(),cw);
+							tm.dropColumn(toRep.getTableName(), change.getFromName(), cw);
 						}
-						else if(change.isCreation())
+						else if (change.isCreation())
 						{
 							String columnType = adapter.getColumnType(change.getToClass(), null).trim();
-							tm.createColumn(toRep.getTableName(), change.getToName(),columnType, cw);
+							tm.createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
 						}
-						else if(change.isNameChange())
+						else if (change.isNameChange())
 						{
 							tm.renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
 						}
-						else if(change.isTypeChange())
+						else if (change.isTypeChange())
 						{
-							if(CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
+							if (CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
 							{
-								//there is a conversion available
-								//change the column type
+								// there is a conversion available
+								// change the column type
 								changeColumnType(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
-								
-								//TODO: Update object references
-								//TODO: If toClass is a subclas of fromClass, remove incompatible entries
+
+								// TODO: Update object references
+								// remove incompatible entries
+								updateReferences(toRep.getTableName(), change.getToName(),change.getFromClass(),
+										change.getToClass(), cw);
 							}
 							else
 							{
-								//no conversion, drop and recreate.
-								tm.dropColumn(toRep.getTableName(), change.getFromName(),cw);
+								// no conversion, drop and recreate.
+								tm.dropColumn(toRep.getTableName(), change.getFromName(), cw);
 								String columnType = adapter.getColumnType(change.getToClass(), null).trim();
-								tm.createColumn(toRep.getTableName(), change.getToName(),columnType, cw);
+								tm.createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
 							}
 						}
 					}
@@ -1511,9 +1517,10 @@ public class TableManager
 	 * @param klass
 	 * @return
 	 * @throws SQLException
-	 * @throws ClassNotFoundException 
+	 * @throws ClassNotFoundException
 	 */
-	private ObjectStack getObjectStackFromDatabase(Class<?> klass, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	private ObjectStack getObjectStackFromDatabase(Class<?> klass, ConnectionWrapper cw) throws SQLException,
+			ClassNotFoundException
 	{
 		List<Class<?>> list = new ArrayList<Class<?>>();
 		list.add(klass);
@@ -1531,18 +1538,130 @@ public class TableManager
 				}
 			}
 		}
-		List<ObjectRepresentation>repList = new ArrayList<ObjectRepresentation>();
-		for(Class<?>c:list)
+		List<ObjectRepresentation> repList = new ArrayList<ObjectRepresentation>();
+		for (Class<?> c : list)
 		{
 			DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, c, cw);
 			repList.add(dor);
 		}
-		
+
 		ObjectStack res = new ObjectStack(adapter, repList);
 		return res;
 	}
 
+	/**
+	 * Check that all objects referenced from tableName via colName are of type
+	 * returnType or a subtype of return type.
+	 * 
+	 * If they are, update the reference.
+	 * 
+	 * If not, drop it.
+	 * 
+	 * @param tableName
+	 * @param colName
+	 * @param nuType
+	 * @param cw
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	private void updateReferences(String tableName, String colName, Class<?> currentType, Class<?> nuType, ConnectionWrapper cw)
+			throws SQLException, ClassNotFoundException
+	{
 
+		// Get affected entries from HAS_A table
+		StringBuilder statement = new StringBuilder("SELECT ");
+		statement.append("OWNER_ID,");
+		statement.append("PROPERTY_TABLE,");
+		statement.append("PROPERTY_ID,");
+		statement.append("PROPERTY_CLASS");
+		statement.append(" FROM ");
+		statement.append(Defaults.HAS_A_TABLENAME);
+		statement.append(" WHERE OWNER_TABLE=? AND (");
+		statement.append(Defaults.RELATION_NAME_COL);
+		statement.append("=? OR ");
+		statement.append(Defaults.RELATION_NAME_COL);
+		statement.append(" IS NULL)");
+
+		PreparedStatement ps = cw.prepareStatement(statement.toString());
+		ps.setString(1, tableName);
+		ps.setString(2, colName);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		ProtectionManager pm = adapter.getPersist().getProtectionManager();
+		while (rs.next())
+		{
+			// get data on one instance
+			Long ownerId = rs.getLong(1);
+			String propertyTable = rs.getString(2);
+			Long propertyId = rs.getLong(3);
+			String propertyClassName = rs.getString(4);
+			Class<?> sourceClass = ObjectTools.lookUpClass(propertyClassName, adapter);
+			// check compatibility
+			if (ObjectTools.isA(sourceClass, nuType))
+			{
+				//update the reference id
+				setReferenceTo(tableName,ownerId,colName,propertyId,cw);
+			}
+			else
+			{
+				//can't convert this reference, drop it
+				// null the reference in the owner table
+				setReferenceTo(tableName, ownerId, colName, null,cw);
+				// remove protection
+				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
+				// if entity is unprotected,
+				if (!pm.isProtected(propertyClassName, propertyId, cw))
+				{
+					// then delete the entity
+					adapter.getPersist().deleteObject(ObjectTools.lookUpClass(propertyClassName, adapter), propertyId,
+							cw);
+				}
+			}
+		}
+		ps.close();
+	}
+
+	/**
+	 * Set the reference stored in colname in the row in tableName with C__ID = id to nuReference.
+	 * @param tableName the table name to update
+	 * @param id the ID_COL value of the row to update
+	 * @param colName the column to update
+	 * @param nuReference the new reference to set
+	 * @param cw
+	 * @throws SQLException
+	 */
+	private void setReferenceTo(String tableName, Long id, String colName, Long nuReference, ConnectionWrapper cw)throws SQLException
+	{
+		StringBuilder statement = new StringBuilder("UPDATE ");
+		statement.append(tableName);
+		statement.append(" SET ");
+		statement.append(colName);
+		statement.append(" = ");
+		if(nuReference == null)
+		{
+			statement.append("NULL");
+		}
+		else
+		{
+			statement.append("?");
+		}
+		statement.append(" WHERE ");
+		statement.append(Defaults.ID_COL);
+		statement.append(" = ?");
+		PreparedStatement ps = cw.prepareStatement(statement.toString());
+		if(nuReference == null)
+		{
+			ps.setLong(1, id);
+		}
+		else
+		{
+			ps.setLong(1, nuReference);
+			ps.setLong(2, id);
+		}
+		Tools.logFine(ps);
+		ps.executeUpdate();
+		ps.close();
+	}
 
 	/**
 	 * @param className
@@ -1573,7 +1692,8 @@ public class TableManager
 	private void createColumn(String tableName, String columnName, String columnType, ConnectionWrapper cw)
 			throws SQLException
 	{
-		PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnType);
+		PreparedStatement ps = cw
+				.prepareStatement("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnType);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
@@ -1601,8 +1721,8 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		removeTypeInfo(tableName,column,cw);
-		
+		removeTypeInfo(tableName, column, cw);
+
 	}
 
 	private void dropUprotectedReferences(String tableName, String column, ConnectionWrapper cw) throws SQLException,
@@ -1643,7 +1763,7 @@ public class TableManager
 				if (!pm.isProtected(propertyClassName, propertyId, cw))
 				{
 					// then delete the entity
-					Class<?> c = ObjectTools.lookUpClass(propertyClassName,adapter);
+					Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);
 					adapter.getPersist().deleteObject(c, propertyId, cw);
 				}
 			}
@@ -1667,7 +1787,7 @@ public class TableManager
 	 */
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
-		//TODO: Use metadata table instead
+		// TODO: Use metadata table instead
 		Map<String, String> res = new HashMap<String, String>();
 
 		Connection c = cw.getConnection();
@@ -1720,9 +1840,9 @@ public class TableManager
 				// Update ownership relations
 				updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
 				updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", oldTableName, newTableName, cw);
-				
-				//update type info table
-				updateAllRelations(Defaults.TYPE_TABLENAME,"OWNER_TABLE",oldTableName,newTableName,cw);
+
+				// update type info table
+				updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
 			}
 			// check if the class name has changed
 			if (!newClassName.equals(oldClassName))
@@ -1842,34 +1962,40 @@ public class TableManager
 			ps.close();
 		}
 	}
-	
-	public void changeTypeInfo(String tableName, String propertyName, Class<?>returnType,ConnectionWrapper cw) throws SQLException
+
+	public void changeTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw)
+			throws SQLException
 	{
-		removeTypeInfo(tableName,propertyName,cw);
-		addTypeInfo(tableName,propertyName,returnType,cw);
+		removeTypeInfo(tableName, propertyName, cw);
+		addTypeInfo(tableName, propertyName, returnType, cw);
 	}
 
 	/**
-	 * Add information about the return type of a given property of a given table.
+	 * Add information about the return type of a given property of a given
+	 * table.
+	 * 
 	 * @param tableName
 	 * @param propertyName
 	 * @param returnType
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType,ConnectionWrapper cw) throws SQLException
+	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw)
+			throws SQLException
 	{
-		addTypeInfo(tableName,propertyName, ObjectTools.getSystemicName(returnType),cw);
+		addTypeInfo(tableName, propertyName, ObjectTools.getSystemicName(returnType), cw);
 	}
-	
 
 	/**
-	 * Add information about the return type of a given property of a given table.
+	 * Add information about the return type of a given property of a given
+	 * table.
+	 * 
 	 * @param tableName
 	 * @param propertyName
 	 * @param returnType
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	public void addTypeInfo(String tableName, String propertyName, String returnType,ConnectionWrapper cw) throws SQLException
+	public void addTypeInfo(String tableName, String propertyName, String returnType, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("INSERT INTO ");
 		stmt.append(Defaults.TYPE_TABLENAME);
@@ -1882,13 +2008,16 @@ public class TableManager
 		ps.execute();
 		ps.close();
 	}
+
 	/**
-	 * Remove information about the return type of a given property of a given table.
+	 * Remove information about the return type of a given property of a given
+	 * table.
+	 * 
 	 * @param tableName
 	 * @param propertyName
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	public void removeTypeInfo(String tableName, String propertyName,ConnectionWrapper cw) throws SQLException
+	public void removeTypeInfo(String tableName, String propertyName, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("DELETE FROM ");
 		stmt.append(Defaults.TYPE_TABLENAME);
@@ -1899,13 +2028,13 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		
+
 	}
-	
+
 	/**
 	 * @param tableName
 	 * @param cw
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	private void removeTypeInfo(String tableName, ConnectionWrapper cw) throws SQLException
 	{
@@ -1918,5 +2047,5 @@ public class TableManager
 		ps.execute();
 		ps.close();
 	}
-	
+
 }

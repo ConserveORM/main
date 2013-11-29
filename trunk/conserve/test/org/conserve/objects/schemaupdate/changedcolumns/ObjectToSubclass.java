@@ -14,6 +14,8 @@ public class ObjectToSubclass
 	private int value;
 	private SimplestObject otherObject;
 	private Object redundantObject;
+	private long[] array;
+	
 	/**
 	 * @return the name
 	 */
@@ -84,6 +86,4 @@ public class ObjectToSubclass
 	{
 		this.array = array;
 	}
-	private long[] array;
-
 }

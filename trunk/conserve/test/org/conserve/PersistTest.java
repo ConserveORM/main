@@ -2008,20 +2008,24 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToSubclass.class);
 		pm.close();
-		//check that objects exist/not exist
+		//check that Object (oo1.otherObject) do not exist, and SimplestObject (oo2.otherObject) still exists
 		pm = new PersistenceManager(driver, database, login, password);
 		ObjectToSubclass src = new ObjectToSubclass();
+		//get oo1
 		src.setValue(1);
 		List<ObjectToSubclass>res = pm.getObjects(ObjectToSubclass.class, new Equal(src));
 		assertEquals(1,res.size());
 		ObjectToSubclass obj = res.get(0);
 		assertTrue(obj.getName().equals(name));
+		//make sure oo1.otherObject has been deleted, as it is not compatible with SimplestObject
 		assertNull(obj.getOtherObject());
+		//get oo2
 		src.setValue(2);
 		res = pm.getObjects(ObjectToSubclass.class, new Equal(src));
 		assertEquals(1,res.size());
 		obj = res.get(0);
 		assertTrue(obj.getName().equals(name));
+		//make sure oo2.otherObject still exists, as SimplestObject is an acceptable subclass
 		assertNotNull(obj.getOtherObject());
 		
 		//change subclass to superclass
@@ -2030,6 +2034,7 @@ public class PersistTest
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
+		//verify that the object still exists
 		List<OriginalObject>res2 = pm.getObjects(OriginalObject.class, new All());
 		assertEquals(2,res2.size());
 		pm.close();

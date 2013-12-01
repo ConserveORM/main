@@ -795,6 +795,9 @@ public class PersistenceManager
 	 * * Remove a property.
 	 * <p/>
 	 * 
+	 * * Rename a property. 
+	 * <p/>
+	 * 
 	 * * Change a property from a primitive to the corresponding reference type,
 	 * for example from double to Double. The opposite (Double to double) is
 	 * possible, but not encouraged as it is entirely up to your code how any
@@ -808,7 +811,7 @@ public class PersistenceManager
 	 * from ArrayList to List, but not the other way around, without losing
 	 * data. Any non-compatible references will be dropped. If a property refers
 	 * to both List and ArrayList objects and is converted from List to
-	 * ArrayList (the 'wrong' way) all List references will be deleted.
+	 * ArrayList (the 'wrong' way) all List references that are not also ArrayList references will be deleted.
 	 * <p/>
 	 * 
 	 * * Change a reference type to a primitive, or the other way around, for
@@ -819,12 +822,7 @@ public class PersistenceManager
 	 * directly correspond to primitive types (see above).
 	 * <p/>
 	 * 
-	 * The following changes ARE NOT supported:
-	 * <p/>
 	 * 
-	 * * Rename a property. For this see the {@link #renameProperties(Class)}
-	 * method.
-	 * <p/>
 	 * 
 	 * To carry out any of the supported changes, just pass a Class object you
 	 * want changed to this method. If you are changing a property from
@@ -893,30 +891,6 @@ public class PersistenceManager
 		}
 	}
 
-	/**
-	 * Check klass to see if any properties have changed names. If so, rename
-	 * the corresponding database columns.
-	 * 
-	 * @param klass
-	 *            the class to rename properties for.
-	 * @throws SQLException
-	 */
-	public void renameProperties(Class<?> klass) throws SQLException
-	{
-		ConnectionWrapper cw = getConnectionWrapper();
-		try
-		{
-			persist.getTableManager().renameColumns(klass, cw);
-			cw.commitAndDiscard();
-		}
-		catch (Exception e)
-		{
-			// cancel the operation
-			cw.rollbackAndDiscard();
-			// re-throw the original exception
-			throw new SQLException(e);
-		}
-	}
 
 	/**
 	 * Close the database connection and release all resources. After calling

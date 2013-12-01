@@ -1829,8 +1829,10 @@ public class PersistTest
 	{
 		String name = "foo";
 		int value = 42;
-		Object otherObject = new SimpleObject();
-		Object redundantObject = new SimplestObject();
+		SimpleObject otherObject = new SimpleObject();
+		otherObject.setCount(87);
+		SimplestObject redundantObject = new SimplestObject();
+		redundantObject.setFoo(88.0);
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
@@ -1845,8 +1847,11 @@ public class PersistTest
 		// rename the table
 		pm.changeName(OriginalObject.class, RenamedColumn.class);
 		// update schema
-		pm.renameProperties(RenamedColumn.class);
+		pm.updateSchema(RenamedColumn.class);
+		pm.close();
 
+		//re-establish connection
+		pm = new PersistenceManager(driver, database, login, password);
 		// get all RenamedColumn objects
 		List<RenamedColumn> res1 = pm.getObjects(RenamedColumn.class, new All());
 		assertEquals(res1.size(), 1);
@@ -1854,13 +1859,17 @@ public class PersistTest
 		RenamedColumn nn = res1.get(0);
 		assertEquals(value, nn.getValue());
 		assertEquals(name, nn.getName());
-		assertEquals(otherObject, nn.getOtherObject());
-		assertEquals(redundantObject, nn.getRenamedObject());
+		assertEquals(otherObject.getCount(), ((SimpleObject)nn.getOtherObject()).getCount());
+		assertEquals((double)redundantObject.getFoo(), (double)((SimplestObject)nn.getRenamedObject()).getFoo(),0.000001);
 
 		// change everything back
 		pm.changeName(RenamedColumn.class, OriginalObject.class);
-		pm.renameProperties(OriginalObject.class);
-
+		pm.updateSchema(OriginalObject.class);
+		pm.close();
+		
+		//re-establish database connection
+		pm = new PersistenceManager(driver, database, login, password);
+		
 		// get all OriginalObject objects
 		List<OriginalObject> res2 = pm.getObjects(OriginalObject.class, new All());
 		assertEquals(res2.size(), 1);
@@ -1868,9 +1877,9 @@ public class PersistTest
 		oo = res2.get(0);
 		assertEquals(value, oo.getValue());
 		assertEquals(name, oo.getName());
-		assertEquals(otherObject, oo.getOtherObject());
+		assertEquals(otherObject.getCount(), ((SimpleObject)oo.getOtherObject()).getCount());
 		// make sure the column that has been renamed is preserved
-		assertEquals(redundantObject, oo.getRedundantObject());
+		assertEquals((double)redundantObject.getFoo(), (double)((SimplestObject)oo.getRedundantObject()).getFoo(),0.000001);
 
 		pm.close();
 	}

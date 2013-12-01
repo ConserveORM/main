@@ -37,7 +37,6 @@ import org.conserve.annotations.AsBlob;
 import org.conserve.annotations.AsClob;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
-import org.conserve.exceptions.IntegrityException;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.select.All;
 import org.conserve.tools.generators.IdStatementGenerator;
@@ -1061,87 +1060,6 @@ public class TableManager
 	}
 
 	/**
-	 * Check for changed column names, update table.
-	 * 
-	 * @param klass
-	 * @param cw
-	 * @throws SQLException
-	 * @throws SchemaPermissionException
-	 * @throws IntegrityException
-	 */
-	public void renameColumns(Class<?> klass, ConnectionWrapper cw) throws SQLException, SchemaPermissionException,
-			IntegrityException
-	{
-		// only drop tables if we can create tables.
-		if (this.createSchema)
-		{
-			// get list of old property-type pairs
-			ObjectRepresentation objRes = new ConcreteObjectRepresentation(adapter, klass, null);
-			String tableName = objRes.getTableName();
-			// find the list of name type pairs for the corresponding
-			// database table
-			Map<String, String> valueTypeMap = getDatabaseColumns(tableName, cw);
-			List<String> oldNames = new ArrayList<String>();
-			List<String> oldTypes = new ArrayList<String>();
-			for (Entry<String, String> en : valueTypeMap.entrySet())
-			{
-				if (!en.getKey().toUpperCase().startsWith("C__"))
-				{
-					oldNames.add(en.getKey());
-					oldTypes.add(en.getValue());
-				}
-			}
-			// get list of new property-type pairs
-			List<String> nuNames = new ArrayList<String>();
-			List<String> nuTypes = new ArrayList<String>();
-			for (int propIndex = 0; propIndex < objRes.getPropertyCount(); propIndex++)
-			{
-				nuNames.add(objRes.getPropertyName(propIndex));
-				nuTypes.add(adapter.getColumnType(objRes.getReturnType(propIndex), objRes.getMutator(propIndex)));
-			}
-			for (int oldIndex = 0; oldIndex < oldNames.size(); oldIndex++)
-			{
-				String oldName = oldNames.get(oldIndex);
-				if (nuNames.contains(oldName))
-				{
-					int nuIndex = nuNames.indexOf(oldName);
-					// name is unchanged, remove
-					oldNames.remove(oldIndex);
-					oldTypes.remove(oldIndex);
-					nuNames.remove(nuIndex);
-					nuTypes.remove(nuIndex);
-					oldIndex--;
-				}
-			}
-			// sanity check
-			if (oldNames.size() != nuNames.size())
-			{
-				throw new IntegrityException("The number of properties has changed, use updateSchema(...) instead.");
-			}
-			// iterate over the old names, find matching new name
-			for (int oldIndex = 0; oldIndex < oldNames.size(); oldIndex++)
-			{
-				String oldType = oldTypes.get(oldIndex);
-				int nuIndex = nuTypes.indexOf(oldType);
-				// make sure there is only one column of this type in both old
-				// and new version of object
-				if (oldTypes.indexOf(oldType) != oldTypes.lastIndexOf(oldType)
-						|| nuIndex != nuTypes.lastIndexOf(oldType))
-				{
-					throw new IntegrityException("More than one changed property of type " + oldType + " in table "
-							+ tableName);
-				}
-				// execute schema update
-				renameColumn(tableName, oldNames.get(oldIndex), nuNames.get(nuIndex), cw);
-			}
-		}
-		else
-		{
-			throw new SchemaPermissionException("We do not have permission to change the database schema.");
-		}
-	}
-
-	/**
 	 * Change the type of a named column. Also changes associated metadata.
 	 * 
 	 * @param tableName
@@ -1280,6 +1198,30 @@ public class TableManager
 				// rename new table
 				this.setTableName(temporaryName, tableName, cw);
 			}
+			
+			//TODO: Change name in C__TYPE_TABLE
+			StringBuilder stmt = new StringBuilder("UPDATE ");
+			stmt.append(Defaults.TYPE_TABLENAME);
+			stmt.append(" SET COLUMN_NAME = ? WHERE OWNER_TABLE  = ? AND COLUMN_NAME = ?");
+			PreparedStatement ps = cw.prepareStatement(stmt.toString());
+			ps.setString(1, nuName);
+			ps.setString(2, tableName);
+			ps.setString(3, oldName);
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+			
+			//TODO: Change name in C__HAS_A
+			stmt = new StringBuilder("UPDATE ");
+			stmt.append(Defaults.HAS_A_TABLENAME);
+			stmt.append(" SET RELATION_NAME = ? WHERE OWNER_TABLE  = ? AND RELATION_NAME = ?");
+			ps = cw.prepareStatement(stmt.toString());
+			ps.setString(1, nuName);
+			ps.setString(2, tableName);
+			ps.setString(3, oldName);
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
 		}
 	}
 
@@ -1391,19 +1333,18 @@ public class TableManager
 					ChangeDescription change = fromRep.getDifference(toRep);
 					if (change != null)
 					{
-						TableManager tm = adapter.getPersist().getTableManager();
 						if (change.isDeletion())
 						{
-							tm.dropColumn(toRep.getTableName(), change.getFromName(), cw);
+							dropColumn(toRep.getTableName(), change.getFromName(), cw);
 						}
 						else if (change.isCreation())
 						{
 							String columnType = adapter.getColumnType(change.getToClass(), null).trim();
-							tm.createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
+							createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
 						}
 						else if (change.isNameChange())
 						{
-							tm.renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
+							renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
 						}
 						else if (change.isTypeChange())
 						{
@@ -1413,17 +1354,16 @@ public class TableManager
 								// change the column type
 								changeColumnType(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 
-								// TODO: Update object references
-								// remove incompatible entries
+								// Update object references and remove incompatible entries
 								updateReferences(toRep.getTableName(), change.getToName(),change.getFromClass(),
 										change.getToClass(), cw);
 							}
 							else
 							{
 								// no conversion, drop and recreate.
-								tm.dropColumn(toRep.getTableName(), change.getFromName(), cw);
+								dropColumn(toRep.getTableName(), change.getFromName(), cw);
 								String columnType = adapter.getColumnType(change.getToClass(), null).trim();
-								tm.createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
+								createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
 							}
 						}
 					}

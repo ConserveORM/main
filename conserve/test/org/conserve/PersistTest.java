@@ -344,8 +344,8 @@ public class PersistTest
 		persist.saveObject(co2);
 		persist.close();
 		persist = new PersistenceManager(driver, database, login, password);
-		// List<Object> allList = persist.getObjects(new Object());
-		// assertEquals(4, allList.size());
+		List<Object> allList = persist.getObjects(Object.class);
+		assertEquals(4, allList.size());
 		List<ComplexObject> complexList = persist.getObjectsMatching(new ComplexObject());
 		assertEquals(2, complexList.size());
 		ComplexObject a = complexList.get(0);
@@ -1618,8 +1618,24 @@ public class PersistTest
 	public void testDropTable() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//add some data
+		SimpleObject so = new SimpleObject();
+		persist.saveObject(so);
+		persist.close();
+		
+		//re-establish database connection
+		persist = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		persist.dropTable(Object.class);
+		persist.close();
+		
+		//re-establish database connection
+		persist = new PersistenceManager(driver, database, login, password);
+		//make sure no objects are in the database
+		List<Object> resObjs = persist.getObjects(Object.class);
+		assertEquals(0,resObjs.size());
+		List<SimpleObject> resSimpObjs = persist.getObjects(SimpleObject.class);
+		assertEquals(0,resSimpObjs.size());
 		persist.close();
 	}
 
@@ -1739,6 +1755,7 @@ public class PersistTest
 		// assert that the LessSimpleObject has "name" as name.
 		LessSimpleObject first = lessSimpleObjects.get(0);
 		assertEquals("name", first.getName());
+		persistTwo.close();
 	}
 
 	/**
@@ -2280,9 +2297,19 @@ public class PersistTest
 		assertEquals(1, res1.size());
 
 		pm.close();
+	}
+	
+	/**
+	 * Change a property of an object from OriginalObject to SubClass, then back again.
+	 * @throws Exception
+	 */
+	@Test
+	public void testChangeSubclassingOfProperty() throws Exception
+	{
 
 		// TODO: Test changing inheritance of an object that is a property of
 		// another object
+		assertTrue("Not implemented",false);
 
 	}
 

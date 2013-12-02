@@ -2307,17 +2307,58 @@ public class PersistTest
 
 		pm.close();
 	}
-	
+
 	/**
-	 * Change a property of an object from OriginalObject to SubClass, then back again.
+	 * Change a property of an object from OriginalObject to OtherObject, then back again.
 	 * @throws Exception
 	 */
 	@Test
-	public void testChangeSubclassingOfProperty() throws Exception
+	public void testChangeNameOfProperty() throws Exception
 	{
-
-		// TODO: Test changing inheritance of an object that is a property of
+		// TODO: Test changing the class name of an object that is a property of
 		// another object
+		assertTrue("Not implemented",false);
+
+	}
+
+	/**
+	 * Change a property of an object from a class implementing an interface to a class that does not implement that interface.
+	 * Make sure objects are deleted or not as appropriate.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testChangeInterfaceOfProperty() throws Exception
+	{
+		// TODO: Test changing the implemented interfaces of an object that is a property of
+		// another object
+		assertTrue("Not implemented",false);
+
+	}
+	
+	/**
+	 * Move a property from a class to its subclass.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testMovePropertyDown() throws Exception
+	{
+		// TODO: Test moving a property from a class to its subclass.
+		assertTrue("Not implemented",false);
+
+	}
+	/**
+	 * Move a property from a class to its superclass.
+	 * 
+	 * This is the reverse of testMovePropertyDown().
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testMovePropertyUp() throws Exception
+	{
+		// TODO: Test moving a property from a class to its superclass.
 		assertTrue("Not implemented",false);
 
 	}

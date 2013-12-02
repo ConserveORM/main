@@ -62,7 +62,9 @@ import org.conserve.objects.recursive.Layer1;
 import org.conserve.objects.recursive.Layer2;
 import org.conserve.objects.recursive.Layer3;
 import org.conserve.objects.schemaupdate.ChangedInheritance;
+import org.conserve.objects.schemaupdate.ContainerObject;
 import org.conserve.objects.schemaupdate.NewName;
+import org.conserve.objects.schemaupdate.NewNameContainer;
 import org.conserve.objects.schemaupdate.NotSubClass;
 import org.conserve.objects.schemaupdate.OriginalObject;
 import org.conserve.objects.schemaupdate.RemovedColumn;
@@ -2309,16 +2311,88 @@ public class PersistTest
 	}
 
 	/**
-	 * Change a property of an object from OriginalObject to OtherObject, then back again.
+	 * Change a property of an object from OriginalObject to NewName, then back again.
 	 * @throws Exception
 	 */
 	@Test
 	public void testChangeNameOfProperty() throws Exception
 	{
-		// TODO: Test changing the class name of an object that is a property of
-		// another object
-		assertTrue("Not implemented",false);
+		//connect to database
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create test objects
+		OriginalObject oo = new OriginalObject();
+		oo.setValue(76);
+		ContainerObject one = new ContainerObject();
+		ContainerObject two = new ContainerObject();
+		one.setFoo(oo);
+		
+		//store test objects
+		pm.saveObject(one);
+		pm.saveObject(two);
+		pm.close();
+		
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//change the name of the property class
+		pm.changeName(OriginalObject.class, NewName.class);
+		pm.changeName(ContainerObject.class, NewNameContainer.class);
+		pm.close();
 
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//update schema
+		pm.updateSchema(NewName.class);
+		pm.close();
+		
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//make sure there is one NewName object
+		List<NewName>nnList = pm.getObjects(NewName.class);
+		assertEquals(1,nnList.size());
+		//make sure there are two NewNameContainer objects
+		List<NewNameContainer>ncList = pm.getObjects(NewNameContainer.class);
+		assertEquals(2,ncList.size());
+		//make sure one of the NewNameContainer objects contain the correct NewName object.
+		if(ncList.get(0).getFoo()!=null)
+		{
+			assertEquals(76,ncList.get(0).getFoo().getValue());
+		}
+		else if(ncList.get(1).getFoo()!=null)
+		{
+			assertEquals(76,ncList.get(1).getFoo().getValue());
+		}
+		else
+		{
+			fail("Reference not preserved.");
+		}
+		//store a new NewName object in the empty NewNameContainer object
+		NewName nu = new NewName();
+		nu.setValue(18);
+		if(ncList.get(0).getFoo()==null)
+		{
+			ncList.get(0).setFoo(nu);
+			pm.saveObject(ncList.get(0));
+		}
+		else if(ncList.get(1).getFoo()==null)
+		{
+			ncList.get(1).setFoo(nu);	
+			pm.saveObject(ncList.get(1));		
+		}
+		pm.close();
+
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//make sure we can retrieve the NewName object we stored previously
+		ncList = pm.getObjects(NewNameContainer.class);
+		assertEquals(2,ncList.size());
+		NewNameContainer nc1 = ncList.get(0);
+		NewNameContainer nc2 = ncList.get(1);
+		assertTrue((nc1.getFoo().getValue()==18 && nc2.getFoo().getValue()==76)||(nc1.getFoo().getValue()==76 && nc2.getFoo().getValue()==18));
+		pm.close();
+		
 	}
 
 	/**
@@ -2332,33 +2406,6 @@ public class PersistTest
 	{
 		// TODO: Test changing the implemented interfaces of an object that is a property of
 		// another object
-		assertTrue("Not implemented",false);
-
-	}
-	
-	/**
-	 * Move a property from a class to its subclass.
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testMovePropertyDown() throws Exception
-	{
-		// TODO: Test moving a property from a class to its subclass.
-		assertTrue("Not implemented",false);
-
-	}
-	/**
-	 * Move a property from a class to its superclass.
-	 * 
-	 * This is the reverse of testMovePropertyDown().
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testMovePropertyUp() throws Exception
-	{
-		// TODO: Test moving a property from a class to its superclass.
 		assertTrue("Not implemented",false);
 
 	}

@@ -62,10 +62,12 @@ import org.conserve.objects.recursive.Layer1;
 import org.conserve.objects.recursive.Layer2;
 import org.conserve.objects.recursive.Layer3;
 import org.conserve.objects.schemaupdate.ChangedInheritance;
+import org.conserve.objects.schemaupdate.ChangedInheritanceContainer;
 import org.conserve.objects.schemaupdate.ContainerObject;
 import org.conserve.objects.schemaupdate.NewName;
 import org.conserve.objects.schemaupdate.NewNameContainer;
 import org.conserve.objects.schemaupdate.NotSubClass;
+import org.conserve.objects.schemaupdate.ObjectContainerObject;
 import org.conserve.objects.schemaupdate.OriginalObject;
 import org.conserve.objects.schemaupdate.RemovedColumn;
 import org.conserve.objects.schemaupdate.RenamedColumn;
@@ -2386,6 +2388,8 @@ public class PersistTest
 		//re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
 		//make sure we can retrieve the NewName object we stored previously
+		nnList = pm.getObjects(NewName.class);
+		assertEquals(2,nnList.size());
 		ncList = pm.getObjects(NewNameContainer.class);
 		assertEquals(2,ncList.size());
 		NewNameContainer nc1 = ncList.get(0);
@@ -2404,9 +2408,98 @@ public class PersistTest
 	@Test
 	public void testChangeInterfaceOfProperty() throws Exception
 	{
-		// TODO: Test changing the implemented interfaces of an object that is a property of
-		// another object
-		assertTrue("Not implemented",false);
+		//connect to database
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create test objects
+		OriginalObject one = new OriginalObject();
+		one.setValue(1);
+		OriginalObject two = new OriginalObject();
+		two.setValue(2);
+		ChangedInheritance three = new ChangedInheritance();
+		three.setValue(3);
+		
+		pm.saveObject(two);
+
+		ObjectContainerObject coOne = new ObjectContainerObject();
+		coOne.setFoo(one);
+		ObjectContainerObject coTwo = new ObjectContainerObject();
+		coTwo.setFoo(two);
+		ObjectContainerObject coThree = new ObjectContainerObject();
+		coThree.setFoo(three);
+
+		pm.saveObject(coOne);
+		pm.saveObject(coTwo);
+		pm.saveObject(coThree);
+		//make sure the right number of OriginalObjects were stored
+		List<OriginalObject>ooList = pm.getObjects(OriginalObject.class);
+		assertEquals(2,ooList.size());
+		//make sure the right number of ChangedInheritance objects were stored
+		List<ChangedInheritance>ciList = pm.getObjects(ChangedInheritance.class);
+		assertEquals(1,ciList.size());
+		//make sure the Serializable object was stored
+		List<Serializable>serList = pm.getObjects(Serializable.class);
+		assertEquals(1,serList.size());
+		pm.close();
+		
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//change ContainerObject to ChangedInheritanceContainer
+		pm.changeName(ObjectContainerObject.class, ChangedInheritanceContainer.class);
+		pm.close();
+		
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//update schema
+		pm.updateSchema(ChangedInheritanceContainer.class);
+		pm.close();
+		
+
+		//re-connect to database
+		pm = new PersistenceManager(driver, database, login, password);
+		//make sure the externally referenced OriginalObject survived intact
+		ooList = pm.getObjects(OriginalObject.class);
+		assertEquals(1,ooList.size());
+		assertEquals(2,ooList.get(0).getValue());
+		//make sure the ChangedInheritance object survived intact
+		ciList = pm.getObjects(ChangedInheritance.class);
+		assertEquals(1,ciList.size());
+		assertEquals(3,ciList.get(0).getValue());
+		//make sure all containers survived
+		List<ChangedInheritanceContainer>containerList = pm.getObjects(ChangedInheritanceContainer.class);
+		assertEquals(3,containerList.size());
+		
+		//check for the correct three values
+		boolean nullFound = false;
+		boolean origFound = false;
+		boolean chngFound = false;
+		for(ChangedInheritanceContainer cont:containerList)
+		{
+			if(cont.getFoo()==null)
+			{
+				nullFound = true;
+			}
+			else if(cont.getFoo() instanceof OriginalObject)
+			{
+				origFound = true;
+				assertEquals(1,((OriginalObject)cont.getFoo()).getValue());
+			}
+			else if(cont.getFoo() instanceof ChangedInheritance)
+			{
+				chngFound = true;
+				assertEquals(3,((ChangedInheritance)cont.getFoo()).getValue());
+			}
+			else
+			{
+				fail("Unknown foo reference in container object.");
+			}
+		}
+		assertTrue(nullFound);
+		assertTrue(origFound);
+		assertTrue(chngFound);
+		pm.close();
 
 	}
 

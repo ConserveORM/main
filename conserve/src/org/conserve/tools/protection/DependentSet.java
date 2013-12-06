@@ -28,7 +28,7 @@ import org.conserve.tools.Defaults;
 import org.conserve.tools.Tools;
 
 /**
- * Keeps track of all the objects that are referenced (directly or indirectly) by a certain object, as well as all
+ * Tracks all the objects that are referenced (directly or indirectly) by a certain object, as well as all
  * objects that reference them.
  * 
  * @author Erik Berglund
@@ -60,7 +60,9 @@ public class DependentSet
 		populateList(entries, candidates, cw);
 		// remove all objects that have references not in list
 		cullEntries(entries, cw);
-		// if the candidate is in the set, remove it
+		//entries now only contains objects that do not have external references.
+		// if the candidate is in entries, it does not have any references pointing to it and
+		// is not protected.
 		if (entries.contains(candidate))
 		{
 			protectedEntry = false;

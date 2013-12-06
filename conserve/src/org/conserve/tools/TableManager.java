@@ -1540,7 +1540,17 @@ public class TableManager
 			if (ObjectTools.isA(sourceClass, nuType))
 			{
 				//update the reference id
-				setReferenceTo(tableName,ownerId,colName,propertyId,cw);
+				if(nuType.isInterface())
+				{
+					//if the new type is an interface, cast to java.lang.Object
+					Long objectId = adapter.getPersist().getCastId(Object.class, sourceClass, propertyId, cw);
+					setReferenceTo(tableName,ownerId,colName,objectId,cw);
+				}
+				else
+				{
+					//if the new class is not an interface, update normally
+					setReferenceTo(tableName,ownerId,colName,propertyId,cw);
+				}
 			}
 			else
 			{
@@ -1550,10 +1560,10 @@ public class TableManager
 				// remove protection
 				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
 				// if entity is unprotected,
-				if (!pm.isProtected(propertyClassName, propertyId, cw))
+				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
 					// then delete the entity
-					adapter.getPersist().deleteObject(ObjectTools.lookUpClass(propertyClassName, adapter), propertyId,
+					adapter.getPersist().deleteObject(sourceClass, propertyId,
 							cw);
 				}
 			}
@@ -1676,11 +1686,9 @@ public class TableManager
 		statement.append("PROPERTY_CLASS");
 		statement.append(" FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_TABLE=? AND (");
+		statement.append(" WHERE OWNER_TABLE=? AND ");
 		statement.append(Defaults.RELATION_NAME_COL);
-		statement.append("=? OR ");
-		statement.append(Defaults.RELATION_NAME_COL);
-		statement.append(" IS NULL)");
+		statement.append("=?");
 
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		ps.setString(1, tableName);
@@ -1700,7 +1708,7 @@ public class TableManager
 				// remove protection
 				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
 				// if entity is unprotected,
-				if (!pm.isProtected(propertyClassName, propertyId, cw))
+				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
 					// then delete the entity
 					Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);

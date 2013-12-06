@@ -174,8 +174,20 @@ public class CompabilityCalculator
 			//arrays can not be converted
 			return false;
 		}
+		
 		//if we got this far it's a reference type
-		//check if fromClass is a subclass of toClass
-		return ObjectTools.isA(fromClass, toClass)||ObjectTools.isA(toClass,fromClass);
+		//check if fromClass is a subclass of toClass or vice versa
+		if(ObjectTools.isA(fromClass, toClass)||ObjectTools.isA(toClass,fromClass))
+		{
+			return true;
+		}		
+		//if either reference is to an interface, conversion may be possible
+		if(fromClass.isInterface() || toClass.isInterface())
+		{
+			return true;
+		}
+		
+		//don't know how  to treat this, probably not possible to convert
+		return false;
 	}
 }

@@ -36,9 +36,14 @@ public class ProtectionEntry
 	private String propertyClassName;
 	private String relationName;
 
-	public ProtectionEntry(String propertyTableName, Long id)
+	/**
+	 * Create a new protection entry for the given property.
+	 * @param propertyTableName table name of the property this entry protects.
+	 * @param propertyId database ID of the property this entry protects.
+	 */
+	public ProtectionEntry(String propertyTableName, Long propertyId)
 	{
-		this(propertyTableName, (String) null, id, (String) null);
+		this(propertyTableName, (String) null, propertyId, (String) null);
 	}
 
 	public ProtectionEntry(String propertyTableName, String propertyClassName,

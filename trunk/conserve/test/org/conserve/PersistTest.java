@@ -2472,19 +2472,13 @@ public class PersistTest
 		assertEquals(3,containerList.size());
 		
 		//check for the correct three values
-		boolean nullFound = false;
-		boolean origFound = false;
+		int nullFoundCount = 0;
 		boolean chngFound = false;
 		for(ChangedInheritanceContainer cont:containerList)
 		{
 			if(cont.getFoo()==null)
 			{
-				nullFound = true;
-			}
-			else if(cont.getFoo() instanceof OriginalObject)
-			{
-				origFound = true;
-				assertEquals(1,((OriginalObject)cont.getFoo()).getValue());
+				nullFoundCount++;
 			}
 			else if(cont.getFoo() instanceof ChangedInheritance)
 			{
@@ -2496,8 +2490,7 @@ public class PersistTest
 				fail("Unknown foo reference in container object.");
 			}
 		}
-		assertTrue(nullFound);
-		assertTrue(origFound);
+		assertEquals(2,nullFoundCount);
 		assertTrue(chngFound);
 		pm.close();
 

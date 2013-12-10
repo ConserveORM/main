@@ -329,13 +329,13 @@ public class Persist
 		int deletedCount = 0;
 		String className = ObjectTools.getSystemicName(clazz);
 		// find all matching objects
-		HashMap<Class<?>, ArrayList<Long>> objectDescr = getObjectDescriptors(
+		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(
 				clazz, className, where, null, cw);
-		for (Entry<Class<?>, ArrayList<Long>> en : objectDescr.entrySet())
+		for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
 		{
 			Class<?> c = en.getKey();
 			String tableName = NameGenerator.getTableName(c, adapter);
-			ArrayList<Long> ids = en.getValue();
+			List<Long> ids = en.getValue();
 			for (Long id : ids)
 			{
 				// delete objects from cache
@@ -553,19 +553,19 @@ public class Persist
 	 * must refer to the same class, so that clazz.getCanonincaName() ==
 	 * className.
 	 * 
-	 * @param clazz
-	 * @param className
-	 * @param clause
-	 * @return
+	 * @param clazz the class to search for (can be null if className is given).
+	 * @param className the name of the class to search for (can be null if clazz is given).
+	 * @param clause the clause to distinguish (can be null if id is given).
+	 * @return id the database id of the object to search for (can be null if clause is given).
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> HashMap<Class<?>, ArrayList<Long>> getObjectDescriptors(
+	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(
 			Class<T> clazz, String className, Clause clause, Long id,
 			ConnectionWrapper cw) throws ClassNotFoundException, SQLException
 	{
-		HashMap<Class<?>, ArrayList<Long>> res = new HashMap<Class<?>, ArrayList<Long>>();
+		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
 		if (className != null && className.equals(Defaults.ARRAY_TABLENAME))
 		{
 			// can't load array classes, so ignore
@@ -624,12 +624,12 @@ public class Persist
 				className = (String) map.get(Defaults.REAL_CLASS_COL);
 				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				// get the data for the real class
-				HashMap<Class<?>, ArrayList<Long>> tmpRes = getObjectDescriptors(
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(
 						null, className, null, dbId, cw);
-				for(Entry<Class<?>, ArrayList<Long>> en:tmpRes.entrySet())
+				for(Entry<Class<?>, List<Long>> en:tmpRes.entrySet())
 				{
 					Class<?>c = en.getKey();
-					ArrayList<Long> existingList = res.get(c);
+					List<Long> existingList = res.get(c);
 					if (existingList == null)
 					{
 						res.putAll(tmpRes);
@@ -644,7 +644,7 @@ public class Persist
 			{
 				// no REAL_CLASS_COL found, which means this is the actual class
 				// of the object
-				ArrayList<Long> idVector = res.get(clazz);
+				List<Long> idVector = res.get(clazz);
 				if (idVector == null)
 				{
 					idVector = new ArrayList<Long>();

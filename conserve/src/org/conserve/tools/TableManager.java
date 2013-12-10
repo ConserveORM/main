@@ -1199,7 +1199,7 @@ public class TableManager
 				this.setTableName(temporaryName, tableName, cw);
 			}
 			
-			//TODO: Change name in C__TYPE_TABLE
+			// Change name in C__TYPE_TABLE
 			StringBuilder stmt = new StringBuilder("UPDATE ");
 			stmt.append(Defaults.TYPE_TABLENAME);
 			stmt.append(" SET COLUMN_NAME = ? WHERE OWNER_TABLE  = ? AND COLUMN_NAME = ?");
@@ -1211,7 +1211,7 @@ public class TableManager
 			ps.execute();
 			ps.close();
 			
-			//TODO: Change name in C__HAS_A
+			//Change name in C__HAS_A
 			stmt = new StringBuilder("UPDATE ");
 			stmt.append(Defaults.HAS_A_TABLENAME);
 			stmt.append(" SET RELATION_NAME = ? WHERE OWNER_TABLE  = ? AND RELATION_NAME = ?");

@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
@@ -75,12 +77,10 @@ public class PersistenceManager
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	public PersistenceManager(String filename, boolean createSchema)
-			throws IOException, SQLException
+	public PersistenceManager(String filename, boolean createSchema) throws IOException, SQLException
 	{
 		Properties p = new Properties();
-		InputStream in = ClassLoader.getSystemClassLoader()
-				.getResourceAsStream(filename);
+		InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(filename);
 		if (in == null)
 		{
 			File f = new File(filename);
@@ -115,8 +115,7 @@ public class PersistenceManager
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	public PersistenceManager(InputStream in, boolean createSchema)
-			throws IOException, SQLException
+	public PersistenceManager(InputStream in, boolean createSchema) throws IOException, SQLException
 	{
 		Properties prop = new Properties();
 		prop.load(in);
@@ -149,14 +148,12 @@ public class PersistenceManager
 	 *            strings.
 	 * @throws SQLException
 	 */
-	public PersistenceManager(Properties prop, boolean createSchema)
-			throws SQLException
+	public PersistenceManager(Properties prop, boolean createSchema) throws SQLException
 	{
 		setup(prop, createSchema);
 	}
 
-	private void setup(Properties prop, boolean createSchema)
-			throws SQLException
+	private void setup(Properties prop, boolean createSchema) throws SQLException
 	{
 		persist = new Persist();
 		persist.setCreateSchema(createSchema);
@@ -175,8 +172,8 @@ public class PersistenceManager
 	 *            the database password.
 	 * @throws SQLException
 	 */
-	public PersistenceManager(String driver, String connectionstring,
-			String username, String password) throws SQLException
+	public PersistenceManager(String driver, String connectionstring, String username, String password)
+			throws SQLException
 	{
 		this(driver, connectionstring, username, password, true);
 	}
@@ -196,9 +193,8 @@ public class PersistenceManager
 	 *            whether to create database tables or not.
 	 * @throws SQLException
 	 */
-	public PersistenceManager(String driver, String connectionstring,
-			String username, String password, boolean createSchema)
-			throws SQLException
+	public PersistenceManager(String driver, String connectionstring, String username, String password,
+			boolean createSchema) throws SQLException
 	{
 		persist = new Persist();
 		persist.setCreateSchema(createSchema);
@@ -217,8 +213,7 @@ public class PersistenceManager
 	 *            the database password.
 	 * @throws SQLException
 	 */
-	public PersistenceManager(String connectionstring, String username,
-			String password) throws SQLException
+	public PersistenceManager(String connectionstring, String username, String password) throws SQLException
 	{
 		this(connectionstring, username, password, true);
 	}
@@ -237,8 +232,8 @@ public class PersistenceManager
 	 *            whether to create database tables or not.
 	 * @throws SQLException
 	 */
-	public PersistenceManager(String connectionstring, String username,
-			String password, boolean createSchema) throws SQLException
+	public PersistenceManager(String connectionstring, String username, String password, boolean createSchema)
+			throws SQLException
 	{
 
 		this(null, connectionstring, username, password, createSchema);
@@ -264,11 +259,9 @@ public class PersistenceManager
 	 *            the connection wrapper to use for this operation.
 	 * @return the number of deleted objects.
 	 */
-	public int deleteObjects(ConnectionWrapper cw, Object pattern)
-			throws SQLException
+	public int deleteObjects(ConnectionWrapper cw, Object pattern) throws SQLException
 	{
-		return persist
-				.deleteObjects(cw, pattern.getClass(), new Equal(pattern));
+		return persist.deleteObjects(cw, pattern.getClass(), new Equal(pattern));
 	}
 
 	/**
@@ -283,8 +276,7 @@ public class PersistenceManager
 	 * @param where
 	 * @return the number of deleted objects.
 	 */
-	public <T> int deleteObjects(Class<T> clazz, Clause where)
-			throws SQLException
+	public <T> int deleteObjects(Class<T> clazz, Clause where) throws SQLException
 	{
 		return persist.deleteObjects(clazz, where);
 	}
@@ -302,8 +294,7 @@ public class PersistenceManager
 	 *            the connection wrapper to use for this operation.
 	 * @return the number of deleted objects.
 	 */
-	public <T> int deleteObjects(ConnectionWrapper cw, Class<T> clazz,
-			Clause where) throws SQLException
+	public <T> int deleteObjects(ConnectionWrapper cw, Class<T> clazz, Clause where) throws SQLException
 	{
 		return persist.deleteObjects(cw, clazz, where);
 	}
@@ -335,8 +326,7 @@ public class PersistenceManager
 	 * @throws SQLException
 	 * @throws IOException
 	 */
-	public void saveObject(ConnectionWrapper cw, Object object)
-			throws SQLException, IOException
+	public void saveObject(ConnectionWrapper cw, Object object) throws SQLException, IOException
 	{
 		persist.saveObject(cw, object, true, null);
 	}
@@ -354,8 +344,7 @@ public class PersistenceManager
 	@SuppressWarnings("unchecked")
 	public <T> List<T> getObjectsMatching(T pattern) throws SQLException
 	{
-		return persist.getObjects((Class<T>) pattern.getClass(), new Equal(
-				pattern, (Class<T>) pattern.getClass()));
+		return persist.getObjects((Class<T>) pattern.getClass(), new Equal(pattern, (Class<T>) pattern.getClass()));
 	}
 
 	/**
@@ -369,8 +358,7 @@ public class PersistenceManager
 	 * @param pattern
 	 *            return only objects that match the pattern object.
 	 */
-	public <T> List<T> getObjectsMatching(Class<T> clazz, Object pattern)
-			throws SQLException
+	public <T> List<T> getObjectsMatching(Class<T> clazz, Object pattern) throws SQLException
 	{
 		return persist.getObjects(clazz, new Equal(pattern, clazz));
 	}
@@ -390,8 +378,7 @@ public class PersistenceManager
 	 * @return an ArrayList of the desired type.
 	 * @throws SQLException
 	 */
-	public <T> List<T> getObjects(Class<T> clazz, Clause... clause)
-			throws SQLException
+	public <T> List<T> getObjects(Class<T> clazz, Clause... clause) throws SQLException
 	{
 		return persist.getObjects(clazz, clause);
 	}
@@ -408,11 +395,9 @@ public class PersistenceManager
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<T> getObjectsMatching(ConnectionWrapper cw, T pattern)
-			throws SQLException
+	public <T> List<T> getObjectsMatching(ConnectionWrapper cw, T pattern) throws SQLException
 	{
-		return persist.getObjects(cw, (Class<T>) pattern.getClass(), new Equal(
-				pattern, (Class<T>) pattern.getClass()));
+		return persist.getObjects(cw, (Class<T>) pattern.getClass(), new Equal(pattern, (Class<T>) pattern.getClass()));
 	}
 
 	/**
@@ -424,8 +409,7 @@ public class PersistenceManager
 	 * @param pattern
 	 *            return only objects that match the pattern object.
 	 */
-	public <T> List<T> getObjectsMatching(ConnectionWrapper cw, Class<T> clazz,
-			Object pattern) throws SQLException
+	public <T> List<T> getObjectsMatching(ConnectionWrapper cw, Class<T> clazz, Object pattern) throws SQLException
 	{
 		return persist.getObjects(cw, clazz, new Equal(pattern, clazz));
 	}
@@ -446,8 +430,7 @@ public class PersistenceManager
 	 * @return an ArrayList of the desired type.
 	 * @throws SQLException
 	 */
-	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz,
-			Clause... clause) throws SQLException
+	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
 		return persist.getObjects(cw, clazz, clause);
 	}
@@ -480,8 +463,7 @@ public class PersistenceManager
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> long getCount(ConnectionWrapper cw, T pattern)
-			throws SQLException
+	public <T> long getCount(ConnectionWrapper cw, T pattern) throws SQLException
 	{
 		return getCount(cw, (Class<T>) pattern.getClass(), pattern);
 	}
@@ -514,8 +496,7 @@ public class PersistenceManager
 	 * @param cw
 	 *            the connection wrapper to use for this transaction.
 	 */
-	public long getCount(ConnectionWrapper cw, Class<?> clazz, Object pattern)
-			throws SQLException
+	public long getCount(ConnectionWrapper cw, Class<?> clazz, Object pattern) throws SQLException
 	{
 		return persist.getCount(cw, clazz, new Equal(pattern, clazz));
 	}
@@ -553,8 +534,7 @@ public class PersistenceManager
 	 *         satisfy clause.
 	 * @throws SQLException
 	 */
-	public <T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause clause)
-			throws SQLException
+	public <T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause clause) throws SQLException
 	{
 		return persist.getCount(cw, clazz, clause);
 	}
@@ -574,8 +554,7 @@ public class PersistenceManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id)
-			throws SQLException, ClassNotFoundException
+	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id) throws SQLException, ClassNotFoundException
 	{
 		return persist.getObject(cw, clazz, id);
 	}
@@ -661,23 +640,54 @@ public class PersistenceManager
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
-	public <T> T refresh(ConnectionWrapper cw, T obj)
-			throws IllegalArgumentException, SQLException
+	public <T> T refresh(ConnectionWrapper cw, T obj) throws IllegalArgumentException, SQLException
 	{
 		return persist.refresh(cw, obj);
 	}
-	
+
 	/**
-	 * Check if an object has been changed since it was loaded from the database.
+	 * Check if an object has been changed since it was loaded from the
+	 * database.
 	 * 
-	 * @param o the object to check for, will be unchanged.
+	 * @param o
+	 *            the object to check for, will be unchanged.
 	 * 
-	 * @return true if the object or any of its properties has changed or been deleted, false otherwise.
+	 * @return true if the object or any of its properties has changed or been
+	 *         deleted, false otherwise.
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
 	 */
-	public boolean hasChanged(Object o)
+	public boolean hasChanged(Object o) throws SQLException, ClassNotFoundException
 	{
-		//TODO: implement like this: Search using o as example, make sure returned object exists and has same
-		// table id number.
+		Long dbId = persist.getCache().getDatabaseId(o);
+		if (dbId != null)
+		{
+			ConnectionWrapper cw = null;
+			try
+			{
+				cw = persist.getConnectionWrapper();
+				// Search using o as example, make sure returned object exists
+				// and has same table id number.
+				HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(o.getClass(), null, new Equal(o),
+						null, cw);
+				List<Long> ids = res.get(o.getClass());
+				if (ids!=null && ids.contains(dbId))
+				{
+					return false;
+				}
+				else
+				{
+					return true;
+				}
+			}
+			finally
+			{
+				if (cw != null)
+				{
+					cw.commitAndDiscard();
+				}
+			}
+		}
 		return false;
 	}
 
@@ -795,7 +805,7 @@ public class PersistenceManager
 	 * * Remove a property.
 	 * <p/>
 	 * 
-	 * * Rename a property. 
+	 * * Rename a property.
 	 * <p/>
 	 * 
 	 * * Change a property from a primitive to the corresponding reference type,
@@ -811,7 +821,8 @@ public class PersistenceManager
 	 * from ArrayList to List, but not the other way around, without losing
 	 * data. Any non-compatible references will be dropped. If a property refers
 	 * to both List and ArrayList objects and is converted from List to
-	 * ArrayList (the 'wrong' way) all List references that are not also ArrayList references will be deleted.
+	 * ArrayList (the 'wrong' way) all List references that are not also
+	 * ArrayList references will be deleted.
 	 * <p/>
 	 * 
 	 * * Change a reference type to a primitive, or the other way around, for
@@ -873,8 +884,7 @@ public class PersistenceManager
 	 * @param newClass
 	 * @throws SQLException
 	 */
-	public void changeName(Class<?> oldClass, Class<?> newClass)
-			throws SQLException
+	public void changeName(Class<?> oldClass, Class<?> newClass) throws SQLException
 	{
 		ConnectionWrapper cw = getConnectionWrapper();
 		try
@@ -891,7 +901,6 @@ public class PersistenceManager
 		}
 	}
 
-
 	/**
 	 * Close the database connection and release all resources. After calling
 	 * this method any further use of this object is undefined.
@@ -903,9 +912,9 @@ public class PersistenceManager
 	}
 
 	/**
-	 * Get a wrapped SQL connection to the database used by this PersistenceManager
-	 * instance. To use the connection, call the getConnection() method on the
-	 * returned object.
+	 * Get a wrapped SQL connection to the database used by this
+	 * PersistenceManager instance. To use the connection, call the
+	 * getConnection() method on the returned object.
 	 * 
 	 * After you're done with the connection, it is important that you return it
 	 * to the connection pool - otherwise your application will soon run out of

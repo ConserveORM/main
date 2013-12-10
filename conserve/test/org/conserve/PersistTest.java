@@ -2647,4 +2647,99 @@ public class PersistTest
 			assertNotNull(r.getList().get(0));
 		}
 	}
+	
+	/**
+	 * Test if the change detection works.
+	 * 
+	 * The change detection will return true iff the queried object exists in the cache, 
+	 * but a search returns null or a different reference, false otherwise.
+	 * 
+	 * If there is no cache reference, the change detection returns false. 
+	 */
+	@Test
+	public void testChangeDetection() throws Exception
+	{
+		//create a database connection
+		PersistenceManager pm1 = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm1.dropTable(Object.class);
+		
+		//create two test objects
+		SimpleObject so1 = new SimpleObject();
+		so1.setAge(1l);
+		so1.setCount(1);
+		so1.setName("One");
+		so1.setScale(0.1);
+		so1.setValue(1.0);
+		SimpleObject so2 = new SimpleObject();
+		so2.setAge(2l);
+		so2.setCount(2);
+		so2.setName("Two");
+		so2.setScale(0.2);
+		so2.setValue(2.0);
+		
+		//make sure unknown objects do not count as changed
+		assertFalse(pm1.hasChanged(so1));
+		assertFalse(pm1.hasChanged(so2));
+		
+		//save one object
+		pm1.saveObject(so1);
+		
+		//make sure the object still count as un-changed
+		assertFalse(pm1.hasChanged(so1));
+		assertFalse(pm1.hasChanged(so2));
+		
+		//save other object
+		pm1.saveObject(so2);
+		
+		//make sure the objects still count as un-changed
+		assertFalse(pm1.hasChanged(so1));
+		assertFalse(pm1.hasChanged(so2));
+		
+		//create new database connection
+		PersistenceManager pm2 = new PersistenceManager(driver, database, login, password);
+		//make sure unknown objects do not count as changed
+		assertFalse(pm2.hasChanged(so1));
+		assertFalse(pm2.hasChanged(so2));
+		//change both objects in new connection
+		pm2.saveObject(so1);
+		pm2.saveObject(so2);
+		assertFalse(pm2.hasChanged(so1));
+		assertFalse(pm2.hasChanged(so2));
+		//modify so1
+		so1.setAge(3l);
+		//save it again
+		pm2.saveObject(so1);
+		
+		//make sure the new (non-existing) so1 is not found in pm1
+		assertTrue(pm1.hasChanged(so1));
+		assertFalse(pm2.hasChanged(so1));
+		//change so1 back so that it will be found
+		so1.setAge(1l);
+		pm2.saveObject(so1);
+		//make sure it is now detected as changed
+		assertFalse(pm1.hasChanged(so1));
+		assertFalse(pm2.hasChanged(so1));
+		
+		//delete the original so1
+		pm2.deleteObjects(so1);
+		//make sure not existing counts as a change
+		assertTrue(pm1.hasChanged(so1));
+		//the object should be cleared from cache
+		assertFalse(pm2.hasChanged(so1));
+		
+		//save so1 again, this time under a new database id
+		pm2.saveObject(so1);
+		//make sure the database id is checked
+		assertTrue(pm1.hasChanged(so1));
+		assertFalse(pm2.hasChanged(so1));
+		
+		//make sure pm2 still has not detected a change
+		assertFalse(pm2.hasChanged(so1));
+		assertFalse(pm2.hasChanged(so2));
+		
+		
+		
+		
+	}
 }

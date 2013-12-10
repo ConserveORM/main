@@ -215,7 +215,7 @@ public class ObjectRowMap implements Runnable
 		Object o = getObject(tableName, dbId);
 		if (o != null)
 		{
-			purge((long) System.identityHashCode(o));
+			purge(o);
 		}
 	}
 

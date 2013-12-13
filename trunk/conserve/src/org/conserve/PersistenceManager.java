@@ -323,9 +323,8 @@ public class PersistenceManager
 	 *            the connection wrapper to use for this operation.
 	 * 
 	 * @throws SQLException
-	 * @throws IOException
 	 */
-	public void saveObject(ConnectionWrapper cw, Object object) throws SQLException, IOException
+	public void saveObject(ConnectionWrapper cw, Object object) throws SQLException
 	{
 		persist.saveObject(cw, object, true, null);
 	}

@@ -18,7 +18,6 @@
  *******************************************************************************/
 package org.conserve.tools;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -56,7 +55,6 @@ public class ArrayEntryWriter
 	 * @param array
 	 *            the array to save.
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void addArrayEntries(ConnectionWrapper cw, Long arrayId,
 			Object array, DelayedInsertionBuffer delayBuffer)

@@ -2717,7 +2717,7 @@ public class PersistTest
 		//change so1 back so that it will be found
 		so1.setAge(1l);
 		pm2.saveObject(so1);
-		//make sure it is now detected as changed
+		//make sure it is now detected as un-changed
 		assertFalse(pm1.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so1));
 		
@@ -2739,7 +2739,129 @@ public class PersistTest
 		assertFalse(pm2.hasChanged(so2));
 		
 		
+		//drop all objects
+		pm1.dropTable(Object.class);
+		pm2.dropTable(Object.class);
+
+		pm1.close();
+		pm2.close();
+		pm1 = new PersistenceManager(driver, database, login, password);
+		pm2 = new PersistenceManager(driver, database, login, password);
 		
+		//insert both objects
+		pm1.saveObject(so1);
+		pm1.saveObject(so2);
+		
+		//get the same objects from the other database connection
+		List<SimpleObject> objects = pm2.getObjects(SimpleObject.class, new Equal(so1));
+		assertEquals(1, objects.size());
+		//make sure re-loading the object does not count as a change
+		assertFalse(pm1.hasChanged(so1));
+		assertFalse(pm1.hasChanged(so2));
+		
+		//change the object, re-save it
+		SimpleObject so1copy = objects.get(0);
+		so1copy.setAge(6l);
+		pm2.saveObject(so1copy);
+		
+		//make sure the change is detected in the first connection manager
+		assertTrue(pm1.hasChanged(so1));
+		assertFalse(pm1.hasChanged(so2));
+		
+		//make sure there are still only two objects
+		objects = pm1.getObjects(SimpleObject.class);
+		assertEquals(2,objects.size());
+		objects = pm2.getObjects(SimpleObject.class);
+		assertEquals(2,objects.size());
+		
+		
+		pm1.close();
+		pm2.close();
 		
 	}
+
+	/**
+	 * Test deleting objects, make sure the object cache is updated accordingly.
+	 */
+	@Test
+	public void testCacheUpdateOnDelete() throws Exception
+	{
+		//create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create two test objects
+		SimpleObject so1 = new SimpleObject();
+		so1.setAge(1l);
+		so1.setCount(1);
+		so1.setName("One");
+		so1.setScale(0.1);
+		so1.setValue(1.0);
+		
+		//save one object
+		pm.saveObject(so1);
+
+		//create a new persistence manager
+		PersistenceManager pm2 = new PersistenceManager(driver, database, login, password);
+		//delete object again, using new PM
+		pm2.deleteObjects(Object.class, new All());
+		pm2.close();
+		
+		//make sure all objects are gone
+		List<SimpleObject>objects = pm.getObjects(SimpleObject.class);
+		assertEquals(0,objects.size());
+		
+		//re-add the object
+		pm.saveObject(so1);
+		
+		//make sure it's found
+		objects = pm.getObjects(SimpleObject.class);
+		assertEquals(1,objects.size());
+		pm.close();
+		
+	}
+	
+	/**
+	 * Test dropping tables, make sure the object cache is updated accordingly.
+	 */
+	@Test
+	public void testCacheUpdateOnDrop() throws Exception
+	{
+
+		//create a database connection
+		PersistenceManager pm1 = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm1.dropTable(Object.class);
+		
+		//create two test objects
+		SimpleObject so1 = new SimpleObject();
+		so1.setAge(1l);
+		so1.setCount(1);
+		so1.setName("One");
+		so1.setScale(0.1);
+		so1.setValue(1.0);
+		
+		//save one object
+		pm1.saveObject(so1);
+		
+		//create a new persistence manager, drop all tables
+		PersistenceManager pm2 = new PersistenceManager(driver, database, login, password);
+		//drop all objects
+		pm2.dropTable(Object.class);
+		pm2.close();
+		
+		//make sure all objects are gone
+		List<SimpleObject>objects = pm1.getObjects(SimpleObject.class);
+		assertEquals(0,objects.size());
+		
+		//re-add the object
+		pm1.saveObject(so1);
+		
+		//make sure it's found
+		objects = pm1.getObjects(SimpleObject.class);
+		assertEquals(1,objects.size());
+		pm1.close();
+	}
+	
 }

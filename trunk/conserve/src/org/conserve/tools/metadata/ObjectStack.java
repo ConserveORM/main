@@ -18,7 +18,6 @@
  *******************************************************************************/
 package org.conserve.tools.metadata;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -282,8 +281,8 @@ public class ObjectStack
 	 * Create cache copy.
 	 * 
 	 * @param cw
+	 * 
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void save(ConnectionWrapper cw) throws SQLException
 	{
@@ -299,8 +298,8 @@ public class ObjectStack
 	 * 
 	 * @param cw
 	 * @param minLevel the at which to stop the inserts.
+	 * 
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void saveNoCache(ConnectionWrapper cw, int minLevel) throws SQLException
 	{

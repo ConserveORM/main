@@ -18,7 +18,6 @@
  *******************************************************************************/
 package org.conserve.tools.generators;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -60,8 +59,8 @@ public class SubclassMover
 	 * @param toStack
 	 * @param subClass
 	 * @param cw
+	 * 
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void move(ObjectStack fromStack, ObjectStack toStack, ObjectRepresentation subClass, ConnectionWrapper cw)
 			throws SQLException

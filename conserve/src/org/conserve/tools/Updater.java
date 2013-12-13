@@ -18,7 +18,6 @@
  *******************************************************************************/
 package org.conserve.tools;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,6 +26,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.metadata.ObjectRepresentation;
@@ -59,8 +59,8 @@ public class Updater
 	 *            database row.
 	 * @param tableName
 	 * @param databaseId
+	 * 
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void updateObject(ConnectionWrapper cw, Object nuValues,
 			String tableName, Long databaseId,
@@ -270,7 +270,6 @@ public class Updater
 	 * @param databaseId
 	 *            the id of the array to update.
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	private void updateArray(ConnectionWrapper cw, Object nuValues,
 			Long databaseId, DelayedInsertionBuffer delayBuffer)

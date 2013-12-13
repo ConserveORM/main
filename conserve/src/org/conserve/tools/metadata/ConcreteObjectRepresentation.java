@@ -1,6 +1,5 @@
 package org.conserve.tools.metadata;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -151,7 +150,6 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	 * @param subClassId
 	 *            the id of the subclass table row, if any. May be null.
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void save(ConnectionWrapper cw, String subClassName, Long subClassId)
 			throws SQLException
@@ -374,7 +372,6 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	 * 
 	 * @param ps
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public void fillRowInsertionStatement(PreparedStatement ps,
 			ConnectionWrapper cw) throws SQLException

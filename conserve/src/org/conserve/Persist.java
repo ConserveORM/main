@@ -733,7 +733,6 @@ public class Persist
 	 * @return the database id of the saved object, or null if the object was
 	 *         not saved.
 	 * @throws SQLException
-	 * @throws IOException
 	 */
 	public Long saveObjectUnprotected(ConnectionWrapper cw, Object object,
 			DelayedInsertionBuffer delayBuffer) throws SQLException
@@ -767,7 +766,20 @@ public class Persist
 		}
 		// check if the object exists
 		Long databaseId = cache.getDatabaseId(object);
-		if (databaseId == null)
+		if (databaseId != null && objectExists(cw, object.getClass(), databaseId))
+		{
+			//the object exists in the database
+			res = databaseId;
+			if (protect
+					&& !protectionManager.isProtectedExternal(tableName,
+							databaseId, cw))
+			{
+				protectionManager.protectObjectExternal(tableName, databaseId,
+						ObjectTools.getSystemicName(object.getClass()), cw);
+			}
+			updater.updateObject(cw, object, tableName, databaseId, delayBuffer);
+		}
+		else
 		{
 			// the object is unknown
 			ObjectStack stack = new ObjectStack(this.adapter,
@@ -780,18 +792,6 @@ public class Persist
 				protectionManager.protectObjectExternal(tableName, res,
 						ObjectTools.getSystemicName(object.getClass()), cw);
 			}
-		}
-		else
-		{
-			res = databaseId;
-			if (protect
-					&& !protectionManager.isProtectedExternal(tableName,
-							databaseId, cw))
-			{
-				protectionManager.protectObjectExternal(tableName, databaseId,
-						ObjectTools.getSystemicName(object.getClass()), cw);
-			}
-			updater.updateObject(cw, object, tableName, databaseId, delayBuffer);
 		}
 		// insert the objects in the delay buffer
 		delayBuffer.insertObjects(cw, protectionManager);
@@ -1077,7 +1077,6 @@ public class Persist
 	 * @param className
 	 * @param clauses
 	 * @return
-	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
@@ -1178,7 +1177,6 @@ public class Persist
 	 * @param className
 	 * @param clause
 	 * @return the number of matching objects.
-	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
 	private <T> long getCountNonInterface(ConnectionWrapper cw, Class<T> clazz,
@@ -1222,7 +1220,6 @@ public class Persist
 	 * @return the matching object.
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
-	 * @throws ClassNotFoundException
 	 */
 	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id)
 			throws SQLException, ClassNotFoundException
@@ -1330,6 +1327,51 @@ public class Persist
 		return res;
 	}
 
+	/**
+	 * Checks the database to see if an object of the given class with the given C__ID value exists.
+	 * If the corresponding table does not exist, the method return false.
+	 * 
+	 * @param cw a connection wrapper to use.
+	 * @param clazz the object class to search
+	 * @param id the C__ID value to check for - this is the database id.
+	 * 
+	 * @return true if the object exists, false otherwise.
+	 * 
+	 * @throws SQLException
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> boolean objectExists(ConnectionWrapper cw, Class<T> clazz, Long id) throws SQLException
+	{
+		boolean res = false;
+		if (clazz.isInterface())
+		{
+			clazz = (Class<T>) Object.class;
+		}
+		String tableName = NameGenerator.getTableName(clazz, adapter);
+		if (!tableManager.tableExists(tableName, cw))
+		{
+			return res;
+		}		
+
+		StringBuilder statement = new StringBuilder("SELECT COUNT(*) FROM ");
+		statement.append(tableName);
+		statement.append(" WHERE ");
+		statement.append(Defaults.ID_COL);
+		statement.append(" = ?");
+
+
+		PreparedStatement ps = cw.prepareStatement(statement.toString());
+		ps.setLong(1,id);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		if(rs.next() && rs.getLong(1)>0)
+		{
+			res = true;
+		}
+		ps.close();
+		return res;
+	}
+	
 	/**
 	 * Get a list of all classes persisted in this database. It does not include
 	 * classes representing primitives, e.g. java.lang.Integer, or array
@@ -1750,7 +1792,6 @@ public class Persist
 	 *            the connection wrapper.
 	 * @return the refreshed object or null if the object is no longer in the
 	 *         database.
-	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
 	<T> T refresh(ConnectionWrapper cw, T obj) throws SQLException

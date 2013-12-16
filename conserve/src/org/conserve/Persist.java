@@ -363,22 +363,66 @@ public class Persist
 	 *            the type of object to delete.
 	 * @param id
 	 *            the database id to delete.
-	 * @param cw
-	 *            the ConnectionWrapper to use for this transaction.
+	 *            
+	 * @return true if one object was deleted, false otherwise.
+	 *            
 	 * @throws SQLException
 	 */
-	public void deleteObject(Class<?> clazz, Long id, ConnectionWrapper cw)
+	public boolean deleteObject(Class<?> clazz, Long id)
+			throws SQLException
+	{
+		ConnectionWrapper cw = connectionPool.getConnectionWrapper();
+		boolean res = false;
+		try
+		{
+			res = deleteObject(clazz,id,cw);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
+	}
+
+	/**
+	 * Delete an object, recursively clearing corresponding entries in
+	 * superclass tables.
+	 * 
+	 * @param clazz
+	 *            the type of object to delete.
+	 * @param id
+	 *            the database id to delete.
+	 * @param cw
+	 *            the ConnectionWrapper to use for this transaction.
+	 *            
+	 * @return true if one object was deleted, false otherwise.
+	 * 
+	 * @throws SQLException
+	 */
+	public boolean deleteObject(Class<?> clazz, Long id, ConnectionWrapper cw)
 			throws SQLException
 	{
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		deleteObject(tableName, id, cw);
-		deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz),
+		return deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz),
 				id, cw);
 	}
 
-	public void deleteObject(String tableName, Long id, ConnectionWrapper cw)
+	/**
+	 * Delete one particular object.
+	 * 
+	 * @param tableName
+	 * @param id
+	 * @param cw
+	 * @return true if one object was deleted, false otherwise.
+	 * @throws SQLException
+	 */
+	public boolean deleteObject(String tableName, Long id, ConnectionWrapper cw)
 			throws SQLException
 	{
+		boolean res = false;
 		boolean isArray = false;
 		if (tableName.equals(Defaults.ARRAY_TABLENAME))
 		{
@@ -399,18 +443,20 @@ public class Persist
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		ps.setLong(1, id);
 		Tools.logFine(ps);
-		ps.execute();
+		res = ps.executeUpdate()==1;
 		ps.close();
 		if (!isArray)
 		{
 			// properties of non-arrays are deleted after the object itself
 			deletePropertiesOf(tableName, id, cw);
 		}
+		return res;
 	}
 
-	private void deleteObject(Class<?> clazz, String realClassName,
+	private boolean deleteObject(Class<?> clazz, String realClassName,
 			Long realId, ConnectionWrapper cw) throws SQLException
 	{
+		boolean res = false;
 		if (clazz != null)
 		{
 			String tableName = NameGenerator.getTableName(clazz, adapter);
@@ -429,7 +475,7 @@ public class Persist
 			ps.setLong(1, realId);
 			ps.setString(2, realClassName);
 			Tools.logFine(ps);
-			ps.execute();
+			res = ps.executeUpdate()==1;
 			ps.close();
 			// recurse
 			if (currentId != null)
@@ -439,6 +485,7 @@ public class Persist
 				deletePropertiesOf(tableName, currentId, cw);
 			}
 		}
+		return res;
 	}
 
 	/**

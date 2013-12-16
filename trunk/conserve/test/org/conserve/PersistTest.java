@@ -287,7 +287,7 @@ public class PersistTest
 	 * Test deleting objects.
 	 */
 	@Test
-	public void testDeleteObject() throws Exception
+	public void testDeleteObjects() throws Exception
 	{
 
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
@@ -2864,4 +2864,63 @@ public class PersistTest
 		pm1.close();
 	}
 	
+	/**
+	 * 
+	 * Test deleting a single object.
+	 * 
+	 * 
+	 * 
+	 */
+	@Test
+	public void testDeleteObject() throws Exception
+	{
+
+		//create a database connection
+		PersistenceManager pm1 = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm1.dropTable(Object.class);
+		
+		//create two test objects
+		SimpleObject so1 = new SimpleObject();
+		so1.setAge(1l);
+		so1.setCount(1);
+		so1.setName("One");
+		so1.setScale(0.1);
+		so1.setValue(1.0);
+		SimpleObject so2 = new SimpleObject();
+		so2.setAge(2l);
+		so2.setCount(2);
+		so2.setName("Two");
+		so2.setScale(0.2);
+		so2.setValue(2.0);
+		
+		pm1.saveObject(so1);
+		pm1.saveObject(so2);
+		
+		List<SimpleObject>list=pm1.getObjects(SimpleObject.class);
+		assertEquals(2,list.size());
+		
+		//delete the first object
+		assertTrue(pm1.deleteObject(so1));
+		list=pm1.getObjects(SimpleObject.class);
+		//make sure we only have one remaining object
+		assertEquals(1,list.size());
+		//make sure that object is so2
+		assertEquals(list.get(0).getCount(),so2.getCount());
+		
+		//make sure we can't delete the object again
+		assertFalse(pm1.deleteObject(so1));
+		
+		//delete the remaining object
+		assertTrue(pm1.deleteObject(so2));
+		//make sure it's gone
+		list = pm1.getObjects(SimpleObject.class);
+		assertEquals(0,list.size());
+		
+		//make sure we can't delete objects again
+		assertFalse(pm1.deleteObject(so1));
+		assertFalse(pm1.deleteObject(so2));
+		
+		pm1.close();
+	}
 }

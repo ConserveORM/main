@@ -239,6 +239,47 @@ public class PersistenceManager
 	}
 
 	/**
+	 * Delete one particular object from the database.
+	 * 
+	 * @param toDelete the object that will be deleted
+	 * @return true if the object existed and was deleted, false otherwise.
+	 * @throws SQLExcpetion
+	 */
+	public boolean deleteObject(Object toDelete) throws SQLException
+	{
+		boolean res = false;
+		
+		Long dbId = persist.getCache().getDatabaseId(toDelete);
+		if(dbId != null)
+		{
+			res = persist.deleteObject(toDelete.getClass(), dbId);
+		}
+		
+		return res;		
+	}
+	
+	/**
+	 * Delete one particular object from the database.
+	 * 
+	 * @param toDelete the object that will be deleted
+	 * @param cw the connection wrapper to use for the operation.
+	 * @return true if the object existed and was deleted, false otherwise.
+	 * @throws SQLExcpetion
+	 */
+	public boolean deleteObject(Object toDelete, ConnectionWrapper cw) throws SQLException
+	{
+		boolean res = false;
+		
+		Long dbId = persist.getCache().getDatabaseId(toDelete);
+		if(dbId != null)
+		{
+			res = persist.deleteObject(toDelete.getClass(), dbId,cw);
+		}
+		
+		return res;		
+	}
+
+	/**
 	 * Delete all objects that share properties with pattern. Convenience method
 	 * that does not require the user to supply a ConnectionWrapper.
 	 * 

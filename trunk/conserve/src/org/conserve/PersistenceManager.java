@@ -981,4 +981,34 @@ public class PersistenceManager
 	{
 		return persist.getConnectionWrapper();
 	}
+
+	/**
+	 * Returns an array containing the result of the SQL sum() function for each field.
+	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * 
+	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 * 
+	 * 
+	 * 
+	 * @param fieldName
+	 * @return
+	 */
+	public Number[] getSum(ConnectionWrapper cw,Class<?>clazz,Clause where, String... fieldName)
+	{
+		Number[] res = new Number[fieldName.length];
+		//TODO: Implement this
+		return res;		
+	}
+	/**
+	 * Convenience function that calculates the sum of one given field in all matching entries.
+	 * 
+	 * 
+	 * @param fieldName
+	 * @return
+	 */
+	public Number getSum(ConnectionWrapper cw,Class<?>clazz,Clause where, String fieldName)
+	{
+		Number [] tmp = getSum(cw, clazz,where,new String []{fieldName});
+		return tmp[0];
+	}
 }

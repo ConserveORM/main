@@ -1975,7 +1975,7 @@ public class Persist
 	void duplicate(Persist target) throws SQLException
 	{
 		// basic sanity check
-		if (this.equals(target))
+		if (this == target )
 		{
 			throw new IllegalArgumentException(
 					"Can not copy database into itself.");
@@ -1987,6 +1987,20 @@ public class Persist
 	public ObjectRowMap getCache()
 	{
 		return this.cache;
+	}
+
+	/**
+	 * @param cw
+	 * @param clazz
+	 * @param fieldNames
+	 * @param where
+	 * @return
+	 */
+	public Number[] getSum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
+	{
+		Number[] res = new Number[fieldNames.length];
+		//TODO: Implement this
+		return res;		
 	}
 
 }

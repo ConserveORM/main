@@ -990,25 +990,79 @@ public class PersistenceManager
 	 * 
 	 * 
 	 * 
-	 * @param fieldName
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the sum for.
+	 * @param fieldNames the names of the fields to calculate the sum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
 	 * @return
+	 * @throws SQLException 
 	 */
-	public Number[] getSum(ConnectionWrapper cw,Class<?>clazz,Clause where, String... fieldName)
+	public Number[] getSum(ConnectionWrapper cw,Class<?>clazz, String [] fieldNames,Clause... where)throws SQLException
 	{
-		Number[] res = new Number[fieldName.length];
-		//TODO: Implement this
-		return res;		
+		return persist.getSum(cw,clazz,fieldNames,where);
 	}
 	/**
 	 * Convenience function that calculates the sum of one given field in all matching entries.
 	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the sum for.
+	 * @param fieldName the name of the field to calculate the sum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
 	 * 
-	 * @param fieldName
 	 * @return
+	 * @throws SQLException 
 	 */
-	public Number getSum(ConnectionWrapper cw,Class<?>clazz,Clause where, String fieldName)
+	public Number getSum(ConnectionWrapper cw,Class<?>clazz, String fieldName,Clause... where)throws SQLException
 	{
-		Number [] tmp = getSum(cw, clazz,where,new String []{fieldName});
+		Number [] tmp = getSum(cw, clazz,new String []{fieldName},where);
+		return tmp[0];
+	}
+	/**
+	 * Returns an array containing the result of the SQL sum() function for each field.
+	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * 
+	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 * 
+	 * @param clazz the class of the object to calculate the sum for.
+	 * @param fieldNames the names of the fields to calculate the sum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getSum(Class<?>clazz, String [] fieldNames,Clause... where) throws SQLException
+	{
+		Number[] res=null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getSum(cw,clazz,fieldNames,where);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			// cancel the operation
+			cw.rollbackAndDiscard();
+			// re-throw the original exception
+			throw new SQLException(e);
+		}	
+		return res;
+	}
+	
+	/**
+	 * Convenience function that calculates the sum of one given field in all matching entries.
+	 * 
+	 * @param clazz the class of the object to calculate the sum for.
+	 * @param fieldName the name of the field to calculate the sum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number getSum(Class<?>clazz, String fieldName,Clause... where) throws SQLException
+	{
+		Number [] tmp = getSum(clazz,new String []{fieldName},where);
 		return tmp[0];
 	}
 }

@@ -2923,4 +2923,222 @@ public class PersistTest
 		
 		pm1.close();
 	}
+	
+	/**
+	 * Test calculating the SUM function in various ways.
+	 * 
+	 */
+	@Test
+	public void testSum() throws Exception
+	{
+		
+		int sum = (200*199)/2;
+
+		//create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create some test data
+		for(int x = 0;x<200;x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setAge((long)x);
+			so.setCount(x);
+			so.setValue(x);
+			pm.saveObject(so);
+		}
+		
+		//get the sum of the Long values
+		Number n = pm.getSum(SimpleObject.class, "getAge");
+		assertTrue(n instanceof Long);
+		assertEquals(sum,n.longValue());
+		
+		//get the sum of the int values
+		n = pm.getSum(SimpleObject.class, "getCount");
+		assertTrue(n instanceof Integer);
+		assertEquals(sum,n.intValue());
+		
+		//get the sum of the double values
+		n = pm.getSum(SimpleObject.class,"getValue");
+		assertTrue(n instanceof Double);
+		assertEquals(sum,n.doubleValue(),0.0001);
+		
+		//get the sum of the long, int, and double values
+		Number [] tmp = pm.getSum(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
+		assertEquals(3,tmp.length);
+		assertTrue(tmp[0] instanceof Integer);
+		assertTrue(tmp[1] instanceof Long);
+		assertTrue(tmp[2] instanceof Double);
+		
+		assertEquals(sum,tmp[0].intValue());
+		assertEquals(sum,tmp[1].longValue());
+		assertEquals(sum,tmp[2].doubleValue(),0.0001);
+		
+		pm.close();
+		
+	}
+	
+	/**
+	 * Test calculating the AVG function in various ways.
+	 * 
+	 */
+	@Test
+	public void testAvg() throws Exception
+	{
+		
+		double average = 199.0/2.0;
+
+		//create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create some test data
+		for(int x = 0;x<200;x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setAge((long)x);
+			so.setCount(x);
+			so.setValue(x);
+			pm.saveObject(so);
+		}
+		
+		//get the average of the Long values
+		Number n = pm.getAverage(SimpleObject.class, "getAge");
+		assertTrue(n instanceof Double);
+		assertEquals(average,n.doubleValue(),0.0001);
+		
+		//get the average of the int values
+		n = pm.getAverage(SimpleObject.class, "getCount");
+		assertTrue(n instanceof Double);
+		assertEquals(average,n.doubleValue(),0.0001);
+		
+		//get the average of the double values
+		n = pm.getAverage(SimpleObject.class,"getValue");
+		assertTrue(n instanceof Double);
+		assertEquals(average,n.doubleValue(),0.0001);
+		
+		//get the average of the long, int, and double values
+		Number [] tmp = pm.getAverage(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
+		assertEquals(3,tmp.length);
+		for (int x = 0; x < 3; x++)
+		{
+			assertTrue(tmp[x] instanceof Double);
+			assertEquals(average, tmp[x].doubleValue(), 0.0001);
+		}
+
+		pm.close();
+		
+	}
+	
+	/**
+	 * Test calculating the MAX function in various ways.
+	 * 
+	 */
+	@Test
+	public void testMax() throws Exception
+	{
+		
+		int max = 199;
+
+		//create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create some test data
+		for(int x = 0;x<200;x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setAge((long)x);
+			so.setCount(x);
+			so.setValue(x);
+			pm.saveObject(so);
+		}
+		
+		//get the max of the Long values
+		Number n = pm.getMaximum(SimpleObject.class, "getAge");
+		assertTrue(n instanceof Long);
+		assertEquals(max,n.longValue());
+		
+		//get the max of the int values
+		n = pm.getMaximum(SimpleObject.class, "getCount");
+		assertTrue(n instanceof Integer);
+		assertEquals(max,n.intValue());
+		
+		//get the max of the double values
+		n = pm.getMaximum(SimpleObject.class,"getValue");
+		assertTrue(n instanceof Double);
+		assertEquals(max,n.doubleValue(),0.0001);
+		
+		//get the sum of the long, int, and double values
+		Number [] tmp = pm.getMaximum(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
+		assertEquals(3,tmp.length);
+		assertTrue(tmp[0] instanceof Integer);
+		assertTrue(tmp[1] instanceof Long);
+		assertTrue(tmp[2] instanceof Double);
+		
+		assertEquals(max,tmp[0].intValue());
+		assertEquals(max,tmp[1].longValue());
+		assertEquals(max,tmp[2].doubleValue(),0.0001);
+		
+		pm.close();
+		
+	}
+
+	/**
+	 * Test calculating the MIN function in various ways.
+	 * 
+	 */
+	@Test
+	public void testMin() throws Exception
+	{
+		
+		int min = -100;
+
+		//create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create some test data
+		for(int x = -100;x<100;x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setAge((long)x);
+			so.setCount(x);
+			so.setValue(x);
+			pm.saveObject(so);
+		}
+		
+		//get the min of the Long values
+		Number n = pm.getMinimum(SimpleObject.class, "getAge");
+		assertTrue(n instanceof Long);
+		assertEquals(min,n.longValue());
+		
+		//get the min of the int values
+		n = pm.getMinimum(SimpleObject.class, "getCount");
+		assertTrue(n instanceof Integer);
+		assertEquals(min,n.intValue());
+		
+		//get the min of the double values
+		n = pm.getMinimum(SimpleObject.class,"getValue");
+		assertTrue(n instanceof Double);
+		assertEquals(min,n.doubleValue(),0.0001);
+		
+		//get the sum of the long, int, and double values
+		Number [] tmp = pm.getMinimum(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
+		assertEquals(3,tmp.length);
+		assertTrue(tmp[0] instanceof Integer);
+		assertTrue(tmp[1] instanceof Long);
+		assertTrue(tmp[2] instanceof Double);
+		
+		assertEquals(min,tmp[0].intValue());
+		assertEquals(min,tmp[1].longValue());
+		assertEquals(min,tmp[2].doubleValue(),0.0001);
+		
+		pm.close();
+		
+	}
 }

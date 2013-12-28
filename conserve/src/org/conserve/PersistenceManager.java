@@ -1065,4 +1065,257 @@ public class PersistenceManager
 		Number [] tmp = getSum(clazz,new String []{fieldName},where);
 		return tmp[0];
 	}
+
+
+	/**
+	 * Returns an array containing the result of the SQL avg() function for each field.
+	 * The corresponding entry is of type Double in all cases.
+	 * 
+	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the average for.
+	 * @param fieldNames the names of the fields to calculate the average for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getAverage(ConnectionWrapper cw,Class<?>clazz, String [] fieldNames,Clause... where)throws SQLException
+	{
+		return persist.getAverage(cw,clazz,fieldNames,where);
+	}
+	/**
+	 * Convenience function that calculates the average of one given field in all matching entries.
+	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the average for.
+	 * @param fieldNames the names of the fields to calculate the average for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Double getAverage(ConnectionWrapper cw,Class<?>clazz, String fieldName,Clause... where)throws SQLException
+	{
+		Number [] tmp = getAverage(cw, clazz,new String []{fieldName},where);
+		return (Double)tmp[0];
+	}
+	/**
+	 * Returns an array containing the result of the SQL avg() function for each field.
+	 * The corresponding entry is of type Double in all cases.
+	 * 
+	 * @param clazz the class of the object to calculate the average for.
+	 * @param fieldNames the names of the fields to calculate the average for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getAverage(Class<?>clazz, String [] fieldNames,Clause... where) throws SQLException
+	{
+		Number[] res=null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getAverage(cw,clazz,fieldNames,where);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			// cancel the operation
+			cw.rollbackAndDiscard();
+			// re-throw the original exception
+			throw new SQLException(e);
+		}	
+		return res;
+	}
+	
+	/**
+	 * Convenience function that calculates the average of one given field in all matching entries.
+	 * 
+	 * @param clazz the class of the object to calculate the average for.
+	 * @param fieldName the name of the field to calculate the average for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Double getAverage(Class<?>clazz, String fieldName,Clause... where) throws SQLException
+	{
+		Number [] tmp = getAverage(clazz,new String []{fieldName},where);
+		return (Double)tmp[0];
+	}
+	
+
+
+	/**
+	 * Returns an array containing the result of the SQL max() function for each field.
+	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * 
+	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 * 
+	 *  
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the maximum for.
+	 * @param fieldNames the names of the fields to calculate the maximum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getMaximum(ConnectionWrapper cw,Class<?>clazz, String [] fieldNames,Clause... where)throws SQLException
+	{
+		return persist.getMaximum(cw,clazz,fieldNames,where);
+	}
+	/**
+	 * Convenience function that calculates the maximum of one given field in all matching entries.
+	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the maximum for.
+	 * @param fieldNames the names of the fields to calculate the maximum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number getMaximum(ConnectionWrapper cw,Class<?>clazz, String fieldName,Clause... where)throws SQLException
+	{
+		Number [] tmp = getMaximum(cw, clazz,new String []{fieldName},where);
+		return tmp[0];
+	}
+	/**
+	 * Returns an array containing the result of the SQL max() function for each field.
+	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * 
+	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 *  
+	 * @param clazz the class of the object to calculate the maximum for.
+	 * @param fieldNames the names of the fields to calculate the maximum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getMaximum(Class<?>clazz, String [] fieldNames,Clause... where) throws SQLException
+	{
+		Number[] res=null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getMaximum(cw,clazz,fieldNames,where);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			// cancel the operation
+			cw.rollbackAndDiscard();
+			// re-throw the original exception
+			throw new SQLException(e);
+		}	
+		return res;
+	}
+	
+	/**
+	 * Convenience function that calculates the maximum of one given field in all matching entries.
+	 * 
+	 * @param clazz the class of the object to calculate the maximum for.
+	 * @param fieldName the name of the field to calculate the maximum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number getMaximum(Class<?>clazz, String fieldName,Clause... where) throws SQLException
+	{
+		Number [] tmp = getMaximum(clazz,new String []{fieldName},where);
+		return tmp[0];
+	}
+	
+
+
+
+	/**
+	 * Returns an array containing the result of the SQL min() function for each field.
+	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * 
+	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 * 
+	 *  
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the minimum for.
+	 * @param fieldNames the names of the fields to calculate the minimum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getMinimum(ConnectionWrapper cw,Class<?>clazz, String [] fieldNames,Clause... where)throws SQLException
+	{
+		return persist.getMinimum(cw,clazz,fieldNames,where);
+	}
+	/**
+	 * Convenience function that calculates the minimum of one given field in all matching entries.
+	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the minimum for.
+	 * @param fieldNames the names of the fields to calculate the minimum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number getMinimum(ConnectionWrapper cw,Class<?>clazz, String fieldName,Clause... where)throws SQLException
+	{
+		Number [] tmp = getMinimum(cw, clazz,new String []{fieldName},where);
+		return tmp[0];
+	}
+	/**
+	 * Returns an array containing the result of the SQL min() function for each field.
+	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * 
+	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 *  
+	 * @param clazz the class of the object to calculate the minimum for.
+	 * @param fieldNames the names of the fields to calculate the minimum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number[] getMinimum(Class<?>clazz, String [] fieldNames,Clause... where) throws SQLException
+	{
+		Number[] res=null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getMinimum(cw,clazz,fieldNames,where);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			// cancel the operation
+			cw.rollbackAndDiscard();
+			// re-throw the original exception
+			throw new SQLException(e);
+		}	
+		return res;
+	}
+	
+	/**
+	 * Convenience function that calculates the minimum of one given field in all matching entries.
+	 * 
+	 * @param clazz the class of the object to calculate the minimum for.
+	 * @param fieldName the name of the field to calculate the minimum for.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	public Number getMinimum(Class<?>clazz, String fieldName,Clause... where) throws SQLException
+	{
+		Number [] tmp = getMinimum(clazz,new String []{fieldName},where);
+		return tmp[0];
+	}
+	
+	
 }

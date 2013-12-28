@@ -1984,19 +1984,74 @@ public class Persist
 		dup.doCopy();
 	}
 
+	/**
+	 * Get the cache of objects currently loaded from the DB into memory.
+	 * 
+	 * @return a reference to the local cache.
+	 */
 	public ObjectRowMap getCache()
 	{
 		return this.cache;
 	}
 
 	/**
+	 * Get the sum of all the named fields that match all clauses.
+	 * 
 	 * @param cw
 	 * @param clazz
 	 * @param fieldNames
 	 * @param where
-	 * @return
+	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
 	 */
 	public Number[] getSum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
+	{
+		Number[] res = new Number[fieldNames.length];
+		//TODO: Implement this
+		return res;		
+	}
+
+	/**
+	 * Get the average of all the named fields that match all clauses.
+	 * 
+	 * @param cw
+	 * @param clazz
+	 * @param fieldNames
+	 * @param where
+	 * @return an array of Double instances in a Number array.
+	 */
+	public Number[] getAverage(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
+	{
+		Number[] res = new Number[fieldNames.length];
+		//TODO: Implement this
+		return res;		
+	}
+	
+	/**
+	 * Get the maximum of all the named fields that match all clauses.
+	 * 
+	 * @param cw
+	 * @param clazz
+	 * @param fieldNames
+	 * @param where
+	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
+	 */
+	public Number[] getMaximum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
+	{
+		Number[] res = new Number[fieldNames.length];
+		//TODO: Implement this
+		return res;		
+	}
+
+	/**
+	 * Get the minimum of all the named fields that match all clauses.
+	 * 
+	 * @param cw
+	 * @param clazz
+	 * @param fieldNames
+	 * @param where
+	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
+	 */
+	public Number[] getMinimum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
 	{
 		Number[] res = new Number[fieldNames.length];
 		//TODO: Implement this

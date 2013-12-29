@@ -54,10 +54,13 @@ import org.conserve.objects.ListContainingObject;
 import org.conserve.objects.SelfContainingObject;
 import org.conserve.objects.SimpleObject;
 import org.conserve.objects.SimplestObject;
+import org.conserve.objects.SubInterface;
 import org.conserve.objects.polymorphism.AbstractBar;
 import org.conserve.objects.polymorphism.ConcreteBar1;
 import org.conserve.objects.polymorphism.ConcreteBar2;
 import org.conserve.objects.polymorphism.ExtendedFooContainer;
+import org.conserve.objects.polymorphism.ImplementerA;
+import org.conserve.objects.polymorphism.ImplementerB;
 import org.conserve.objects.polymorphism.MyExtendedFooContainer;
 import org.conserve.objects.polymorphism.Foo;
 import org.conserve.objects.polymorphism.FooContainer;
@@ -3155,6 +3158,109 @@ public class PersistTest
 		assertEquals(min, tmp[0].intValue());
 		assertEquals(min, tmp[1].longValue());
 		assertEquals(min, tmp[2].doubleValue(), 0.0001);
+
+		pm.close();
+
+	}
+
+	/**
+	 * Test calculating the various SQL aggregate functions.
+	 * 
+	 */
+	@Test
+	public void testAggregate() throws Exception
+	{
+
+		int sum = (200 * 199) / 2;
+		int min = 0;
+		int max = 199;
+		double avg = 199 / 2;
+
+		// create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+
+		// create some test data
+		for (int x = 0; x < 200; x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setAge((long) x);
+			so.setCount(x);
+			so.setValue(x);
+			pm.saveObject(so);
+		}
+
+		// get the sum, max, min, and average of the long values
+		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Sum("getAge"),
+				new Maximum("getAge"), new Minimum("getAge"), new Average("getAge"), });
+		assertEquals(4, tmp.length);
+		//all aggregates of a long field are long...
+		assertTrue(tmp[0] instanceof Long);
+		assertTrue(tmp[1] instanceof Long);
+		assertTrue(tmp[2] instanceof Long);
+		//...except average, which is always double
+		assertTrue(tmp[3] instanceof Double);
+
+		//check that the correct values are returned
+		assertEquals(sum, tmp[0].longValue());
+		assertEquals(max, tmp[1].longValue());
+		assertEquals(min, tmp[2].longValue());
+		assertEquals(avg, tmp[3].doubleValue(), 0.0001);
+
+		pm.close();
+
+	}
+	
+	/**
+	 * Test calculating the various SQL aggregate functions on an interface.
+	 * 
+	 */
+	@Test
+	public void testAggregateOnInterface() throws Exception
+	{
+
+		int sum = (200 * 199) / 2;
+		int min = 0;
+		int max = 199;
+		double avg = 199 / 2;
+
+		// create a database connection
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+
+		// create some test data
+		int x = 0;
+		for (; x < 100; x++)
+		{
+			ImplementerA so = new ImplementerA();
+			so.setSomeValue(x);
+			pm.saveObject(so);
+		}
+		for (; x < 200; x++)
+		{
+			ImplementerB so = new ImplementerB();
+			so.setSomeValue(x);
+			pm.saveObject(so);
+		}
+
+		// get the sum, max, min, and average of the long values
+		Number[] tmp = pm.calculateAggregate(SubInterface.class, new AggregateFunction[] { new Sum("getSomeValue"),
+				new Maximum("getSomeValue"), new Minimum("getSomeValue"), new Average("getSomeValue"), });
+		assertEquals(4, tmp.length);
+		//all aggregates of a long field are long...
+		assertTrue(tmp[0] instanceof Long);
+		assertTrue(tmp[1] instanceof Long);
+		assertTrue(tmp[2] instanceof Long);
+		//...except average, which is always double
+		assertTrue(tmp[3] instanceof Double);
+
+		//check that the correct values are returned
+		assertEquals(sum, tmp[0].longValue());
+		assertEquals(max, tmp[1].longValue());
+		assertEquals(min, tmp[2].longValue());
+		assertEquals(avg, tmp[3].doubleValue(), 0.0001);
 
 		pm.close();
 

@@ -43,6 +43,7 @@ import org.conserve.adapter.MonetDbAdapter;
 import org.conserve.adapter.MySqlAdapter;
 import org.conserve.adapter.PostgreSqlAdapter;
 import org.conserve.adapter.SqLiteAdapter;
+import org.conserve.aggregate.AggregateFunction;
 import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
@@ -1995,67 +1996,20 @@ public class Persist
 	}
 
 	/**
-	 * Get the sum of all the named fields that match all clauses.
+	 * Get the result of all the aggregate functions of all the named fields that match all clauses.
 	 * 
-	 * @param cw
-	 * @param clazz
-	 * @param fieldNames
-	 * @param where
+	 * @param cw the connection to use for the query.
+	 * @param clazz the class to calculate aggregate functions on, can be an interface.
+	 * @param functions the aggregate functions to calculate
+	 * @param where 
 	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
 	 */
-	public Number[] getSum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
+	public Number[] calculateAggregate(ConnectionWrapper cw, Class<?> clazz, AggregateFunction[] functions, Clause[] where)
 	{
-		Number[] res = new Number[fieldNames.length];
+		Number[] res = new Number[functions.length];
 		//TODO: Implement this
 		return res;		
 	}
 
-	/**
-	 * Get the average of all the named fields that match all clauses.
-	 * 
-	 * @param cw
-	 * @param clazz
-	 * @param fieldNames
-	 * @param where
-	 * @return an array of Double instances in a Number array.
-	 */
-	public Number[] getAverage(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
-	{
-		Number[] res = new Number[fieldNames.length];
-		//TODO: Implement this
-		return res;		
-	}
-	
-	/**
-	 * Get the maximum of all the named fields that match all clauses.
-	 * 
-	 * @param cw
-	 * @param clazz
-	 * @param fieldNames
-	 * @param where
-	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
-	 */
-	public Number[] getMaximum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
-	{
-		Number[] res = new Number[fieldNames.length];
-		//TODO: Implement this
-		return res;		
-	}
-
-	/**
-	 * Get the minimum of all the named fields that match all clauses.
-	 * 
-	 * @param cw
-	 * @param clazz
-	 * @param fieldNames
-	 * @param where
-	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
-	 */
-	public Number[] getMinimum(ConnectionWrapper cw, Class<?> clazz, String[] fieldNames, Clause[] where)
-	{
-		Number[] res = new Number[fieldNames.length];
-		//TODO: Implement this
-		return res;		
-	}
 
 }

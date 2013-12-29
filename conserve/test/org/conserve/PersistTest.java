@@ -36,6 +36,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.conserve.PersistenceManager;
+import org.conserve.aggregate.AggregateFunction;
+import org.conserve.aggregate.Average;
+import org.conserve.aggregate.Maximum;
+import org.conserve.aggregate.Minimum;
+import org.conserve.aggregate.Sum;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.objects.Author;
 import org.conserve.objects.BaseInterface;
@@ -1622,24 +1627,24 @@ public class PersistTest
 	public void testDropTable() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		//add some data
+		// add some data
 		SimpleObject so = new SimpleObject();
 		persist.saveObject(so);
 		persist.close();
-		
-		//re-establish database connection
+
+		// re-establish database connection
 		persist = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		persist.dropTable(Object.class);
 		persist.close();
-		
-		//re-establish database connection
+
+		// re-establish database connection
 		persist = new PersistenceManager(driver, database, login, password);
-		//make sure no objects are in the database
+		// make sure no objects are in the database
 		List<Object> resObjs = persist.getObjects(Object.class);
-		assertEquals(0,resObjs.size());
+		assertEquals(0, resObjs.size());
 		List<SimpleObject> resSimpObjs = persist.getObjects(SimpleObject.class);
-		assertEquals(0,resSimpObjs.size());
+		assertEquals(0, resSimpObjs.size());
 		persist.close();
 	}
 
@@ -1854,7 +1859,7 @@ public class PersistTest
 		pm.updateSchema(RenamedColumn.class);
 		pm.close();
 
-		//re-establish connection
+		// re-establish connection
 		pm = new PersistenceManager(driver, database, login, password);
 		// get all RenamedColumn objects
 		List<RenamedColumn> res1 = pm.getObjects(RenamedColumn.class, new All());
@@ -1863,17 +1868,18 @@ public class PersistTest
 		RenamedColumn nn = res1.get(0);
 		assertEquals(value, nn.getValue());
 		assertEquals(name, nn.getName());
-		assertEquals(otherObject.getCount(), ((SimpleObject)nn.getOtherObject()).getCount());
-		assertEquals((double)redundantObject.getFoo(), (double)((SimplestObject)nn.getRenamedObject()).getFoo(),0.000001);
+		assertEquals(otherObject.getCount(), ((SimpleObject) nn.getOtherObject()).getCount());
+		assertEquals((double) redundantObject.getFoo(), (double) ((SimplestObject) nn.getRenamedObject()).getFoo(),
+				0.000001);
 
 		// change everything back
 		pm.changeName(RenamedColumn.class, OriginalObject.class);
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
-		
-		//re-establish database connection
+
+		// re-establish database connection
 		pm = new PersistenceManager(driver, database, login, password);
-		
+
 		// get all OriginalObject objects
 		List<OriginalObject> res2 = pm.getObjects(OriginalObject.class, new All());
 		assertEquals(res2.size(), 1);
@@ -1881,9 +1887,10 @@ public class PersistTest
 		oo = res2.get(0);
 		assertEquals(value, oo.getValue());
 		assertEquals(name, oo.getName());
-		assertEquals(otherObject.getCount(), ((SimpleObject)oo.getOtherObject()).getCount());
+		assertEquals(otherObject.getCount(), ((SimpleObject) oo.getOtherObject()).getCount());
 		// make sure the column that has been renamed is preserved
-		assertEquals((double)redundantObject.getFoo(), (double)((SimplestObject)oo.getRedundantObject()).getFoo(),0.000001);
+		assertEquals((double) redundantObject.getFoo(), (double) ((SimplestObject) oo.getRedundantObject()).getFoo(),
+				0.000001);
 
 		pm.close();
 	}
@@ -1901,7 +1908,7 @@ public class PersistTest
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
+
 		// create and store a new value
 		OriginalObject oo = new OriginalObject();
 		oo.setName(name);
@@ -1975,18 +1982,18 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToLong.class);
 		pm.close();
-		//check that objects exist/not exist
+		// check that objects exist/not exist
 		pm = new PersistenceManager(driver, database, login, password);
-		List<ObjectToLong>res = pm.getObjects(ObjectToLong.class, new All());
-		assertEquals(1,res.size());
+		List<ObjectToLong> res = pm.getObjects(ObjectToLong.class, new All());
+		assertEquals(1, res.size());
 		ObjectToLong tmp = res.get(0);
 		assertTrue(tmp.getName().equals(name));
 		assertNull(tmp.getOtherObject());
 		tmp.setOtherObject(42L);
 		pm.saveObject(tmp);
-		//check that the dependent object has been dropped
-		List<SimpleObject>dependents = pm.getObjects(SimpleObject.class, new All());
-		assertEquals(0,dependents.size());
+		// check that the dependent object has been dropped
+		List<SimpleObject> dependents = pm.getObjects(SimpleObject.class, new All());
+		assertEquals(0, dependents.size());
 		pm.close();
 		// change long to object
 		pm = new PersistenceManager(driver, database, login, password);
@@ -1996,15 +2003,15 @@ public class PersistTest
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
-		List<OriginalObject>res1 = pm.getObjects(OriginalObject.class, new All());
-		assertEquals(1,res1.size());
+		List<OriginalObject> res1 = pm.getObjects(OriginalObject.class, new All());
+		assertEquals(1, res1.size());
 		OriginalObject tmp1 = res1.get(0);
 		assertNull(tmp1.getOtherObject());
 		tmp1.setOtherObject(new SimpleObject());
 		pm.saveObject(tmp1);
 		pm.close();
 	}
-	
+
 	/**
 	 * Test changing the type of a column. Object <-> subclass.
 	 */
@@ -2038,38 +2045,41 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToSubclass.class);
 		pm.close();
-		//check that Object (oo1.otherObject) do not exist, and SimplestObject (oo2.otherObject) still exists
+		// check that Object (oo1.otherObject) do not exist, and SimplestObject
+		// (oo2.otherObject) still exists
 		pm = new PersistenceManager(driver, database, login, password);
 		ObjectToSubclass src = new ObjectToSubclass();
-		//get oo1
+		// get oo1
 		src.setValue(1);
-		List<ObjectToSubclass>res = pm.getObjects(ObjectToSubclass.class, new Equal(src));
-		assertEquals(1,res.size());
+		List<ObjectToSubclass> res = pm.getObjects(ObjectToSubclass.class, new Equal(src));
+		assertEquals(1, res.size());
 		ObjectToSubclass obj = res.get(0);
 		assertTrue(obj.getName().equals(name));
-		//make sure oo1.otherObject has been deleted, as it is not compatible with SimplestObject
+		// make sure oo1.otherObject has been deleted, as it is not compatible
+		// with SimplestObject
 		assertNull(obj.getOtherObject());
-		//get oo2
+		// get oo2
 		src.setValue(2);
 		res = pm.getObjects(ObjectToSubclass.class, new Equal(src));
-		assertEquals(1,res.size());
+		assertEquals(1, res.size());
 		obj = res.get(0);
 		assertTrue(obj.getName().equals(name));
-		//make sure oo2.otherObject still exists, as SimplestObject is an acceptable subclass
+		// make sure oo2.otherObject still exists, as SimplestObject is an
+		// acceptable subclass
 		assertNotNull(obj.getOtherObject());
-		
-		//change subclass to superclass
+
+		// change subclass to superclass
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.changeName(ObjectToSubclass.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
-		//verify that the object still exists
-		List<OriginalObject>res2 = pm.getObjects(OriginalObject.class, new All());
-		assertEquals(2,res2.size());
+		// verify that the object still exists
+		List<OriginalObject> res2 = pm.getObjects(OriginalObject.class, new All());
+		assertEquals(2, res2.size());
 		pm.close();
 	}
-	
+
 	/**
 	 * Test changing the type of a column. int <-> long.
 	 */
@@ -2100,30 +2110,30 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(IntToLong.class);
 		pm.close();
-		//check that the integer has been changed into a long
+		// check that the integer has been changed into a long
 		pm = new PersistenceManager(driver, database, login, password);
-		List<IntToLong>res1 = pm.getObjects(IntToLong.class,new All());
-		assertEquals(1,res1.size());
+		List<IntToLong> res1 = pm.getObjects(IntToLong.class, new All());
+		assertEquals(1, res1.size());
 		IntToLong obj1 = res1.get(0);
 		assertTrue(obj1.getName().equals(name));
-		assertEquals(1,obj1.getValue());
+		assertEquals(1, obj1.getValue());
 		pm.close();
-		
-		//change long to int
+
+		// change long to int
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.changeName(IntToLong.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
-		//check that the long is now null, since long can not fit in int
+		// check that the long is now null, since long can not fit in int
 		pm = new PersistenceManager(driver, database, login, password);
-		List<OriginalObject>res2 = pm.getObjects(OriginalObject.class,new All());
-		assertEquals(1,res2.size());
+		List<OriginalObject> res2 = pm.getObjects(OriginalObject.class, new All());
+		assertEquals(1, res2.size());
 		OriginalObject obj2 = res2.get(0);
-		assertEquals(0,obj2.getValue());
+		assertEquals(0, obj2.getValue());
 		pm.close();
-		
+
 	}
 
 	/**
@@ -2156,13 +2166,13 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(StringToLong.class);
 		pm.close();
-		//check that the long no longer exist
+		// check that the long no longer exist
 		pm = new PersistenceManager(driver, database, login, password);
-		List<StringToLong>res1 = pm.getObjects(StringToLong.class, new All());
-		assertEquals(1,res1.size());
+		List<StringToLong> res1 = pm.getObjects(StringToLong.class, new All());
+		assertEquals(1, res1.size());
 		StringToLong obj1 = res1.get(0);
 		assertNull(obj1.getName());
-		//save a long
+		// save a long
 		obj1.setName(1L);
 		pm.saveObject(obj1);
 		pm.close();
@@ -2176,12 +2186,13 @@ public class PersistTest
 		pm.close();
 		// check that the string no longer exist
 		pm = new PersistenceManager(driver, database, login, password);
-		List<OriginalObject>res2 = pm.getObjects(OriginalObject.class, new All());
-		assertEquals(1,res2.size());
+		List<OriginalObject> res2 = pm.getObjects(OriginalObject.class, new All());
+		assertEquals(1, res2.size());
 		OriginalObject obj2 = res2.get(0);
 		assertNull(obj2.getName());
 		pm.close();
 	}
+
 	/**
 	 * Test changing the type of a column. array <-> long.
 	 */
@@ -2202,7 +2213,7 @@ public class PersistTest
 		oo.setValue(value);
 		oo.setOtherObject(otherObject);
 		oo.setRedundantObject(redundantObject);
-		oo.setArray(new long[]{8,9,10,11});
+		oo.setArray(new long[] { 8, 9, 10, 11 });
 		pm.saveObject(oo);
 		pm.close();
 
@@ -2213,29 +2224,29 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ArrayToLong.class);
 		pm.close();
-		//check that array no longer exist
+		// check that array no longer exist
 		pm = new PersistenceManager(driver, database, login, password);
-		List<ArrayToLong>res1 = pm.getObjects(ArrayToLong.class, new All());
-		assertEquals(1,res1.size());
+		List<ArrayToLong> res1 = pm.getObjects(ArrayToLong.class, new All());
+		assertEquals(1, res1.size());
 		ArrayToLong obj1 = res1.get(0);
-		assertEquals(0,obj1.getArray());
-		//save a long
+		assertEquals(0, obj1.getArray());
+		// save a long
 		obj1.setArray(1);
 		pm.saveObject(obj1);
 		pm.close();
 
-		//change long to array
+		// change long to array
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.changeName(ArrayToLong.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
-		//make sure the array is null
+		// make sure the array is null
 		pm = new PersistenceManager(driver, database, login, password);
-		List<OriginalObject>res2 = pm.getObjects(OriginalObject.class, new All());
-		assertEquals(1,res2.size());
-		OriginalObject obj2  = res2.get(0);
+		List<OriginalObject> res2 = pm.getObjects(OriginalObject.class, new All());
+		assertEquals(1, res2.size());
+		OriginalObject obj2 = res2.get(0);
 		assertNull(obj2.getArray());
 		pm.close();
 	}
@@ -2261,12 +2272,12 @@ public class PersistTest
 		ns.setName("bar");
 		pm.saveObject(ns);
 		pm.close();
-		
+
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename NotSubClass to SubClass
 		pm.changeName(NotSubClass.class, SubClass.class);
 		pm.close();
-		
+
 		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(SubClass.class);
@@ -2313,114 +2324,119 @@ public class PersistTest
 	}
 
 	/**
-	 * Change a property of an object from OriginalObject to NewName, then back again.
+	 * Change a property of an object from OriginalObject to NewName, then back
+	 * again.
+	 * 
 	 * @throws Exception
 	 */
 	@Test
 	public void testChangeNameOfProperty() throws Exception
 	{
-		//connect to database
+		// connect to database
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create test objects
+
+		// create test objects
 		OriginalObject oo = new OriginalObject();
 		oo.setValue(76);
 		ContainerObject one = new ContainerObject();
 		ContainerObject two = new ContainerObject();
 		one.setFoo(oo);
-		
-		//store test objects
+
+		// store test objects
 		pm.saveObject(one);
 		pm.saveObject(two);
 		pm.close();
-		
-		//re-connect to database
+
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//change the name of the property class
+		// change the name of the property class
 		pm.changeName(OriginalObject.class, NewName.class);
 		pm.changeName(ContainerObject.class, NewNameContainer.class);
 		pm.close();
 
-		//re-connect to database
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//update schema
+		// update schema
 		pm.updateSchema(NewName.class);
 		pm.close();
-		
-		//re-connect to database
+
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//make sure there is one NewName object
-		List<NewName>nnList = pm.getObjects(NewName.class);
-		assertEquals(1,nnList.size());
-		//make sure there are two NewNameContainer objects
-		List<NewNameContainer>ncList = pm.getObjects(NewNameContainer.class);
-		assertEquals(2,ncList.size());
-		//make sure one of the NewNameContainer objects contain the correct NewName object.
-		if(ncList.get(0).getFoo()!=null)
+		// make sure there is one NewName object
+		List<NewName> nnList = pm.getObjects(NewName.class);
+		assertEquals(1, nnList.size());
+		// make sure there are two NewNameContainer objects
+		List<NewNameContainer> ncList = pm.getObjects(NewNameContainer.class);
+		assertEquals(2, ncList.size());
+		// make sure one of the NewNameContainer objects contain the correct
+		// NewName object.
+		if (ncList.get(0).getFoo() != null)
 		{
-			assertEquals(76,ncList.get(0).getFoo().getValue());
+			assertEquals(76, ncList.get(0).getFoo().getValue());
 		}
-		else if(ncList.get(1).getFoo()!=null)
+		else if (ncList.get(1).getFoo() != null)
 		{
-			assertEquals(76,ncList.get(1).getFoo().getValue());
+			assertEquals(76, ncList.get(1).getFoo().getValue());
 		}
 		else
 		{
 			fail("Reference not preserved.");
 		}
-		//store a new NewName object in the empty NewNameContainer object
+		// store a new NewName object in the empty NewNameContainer object
 		NewName nu = new NewName();
 		nu.setValue(18);
-		if(ncList.get(0).getFoo()==null)
+		if (ncList.get(0).getFoo() == null)
 		{
 			ncList.get(0).setFoo(nu);
 			pm.saveObject(ncList.get(0));
 		}
-		else if(ncList.get(1).getFoo()==null)
+		else if (ncList.get(1).getFoo() == null)
 		{
-			ncList.get(1).setFoo(nu);	
-			pm.saveObject(ncList.get(1));		
+			ncList.get(1).setFoo(nu);
+			pm.saveObject(ncList.get(1));
 		}
 		pm.close();
 
-		//re-connect to database
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//make sure we can retrieve the NewName object we stored previously
+		// make sure we can retrieve the NewName object we stored previously
 		nnList = pm.getObjects(NewName.class);
-		assertEquals(2,nnList.size());
+		assertEquals(2, nnList.size());
 		ncList = pm.getObjects(NewNameContainer.class);
-		assertEquals(2,ncList.size());
+		assertEquals(2, ncList.size());
 		NewNameContainer nc1 = ncList.get(0);
 		NewNameContainer nc2 = ncList.get(1);
-		assertTrue((nc1.getFoo().getValue()==18 && nc2.getFoo().getValue()==76)||(nc1.getFoo().getValue()==76 && nc2.getFoo().getValue()==18));
+		assertTrue((nc1.getFoo().getValue() == 18 && nc2.getFoo().getValue() == 76)
+				|| (nc1.getFoo().getValue() == 76 && nc2.getFoo().getValue() == 18));
 		pm.close();
-		
+
 	}
 
 	/**
-	 * Change a property of an object from a class implementing an interface to a class that does not implement that interface.
-	 * Make sure objects are deleted or not as appropriate.
+	 * Change a property of an object from a class implementing an interface to
+	 * a class that does not implement that interface. Make sure objects are
+	 * deleted or not as appropriate.
 	 * 
 	 * @throws Exception
 	 */
 	@Test
 	public void testChangeInterfaceOfProperty() throws Exception
 	{
-		//connect to database
+		// connect to database
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create test objects
+
+		// create test objects
 		OriginalObject one = new OriginalObject();
 		one.setValue(1);
 		OriginalObject two = new OriginalObject();
 		two.setValue(2);
 		ChangedInheritance three = new ChangedInheritance();
 		three.setValue(3);
-		
+
 		pm.saveObject(two);
 
 		ObjectContainerObject coOne = new ObjectContainerObject();
@@ -2433,64 +2449,63 @@ public class PersistTest
 		pm.saveObject(coOne);
 		pm.saveObject(coTwo);
 		pm.saveObject(coThree);
-		//make sure the right number of OriginalObjects were stored
-		List<OriginalObject>ooList = pm.getObjects(OriginalObject.class);
-		assertEquals(2,ooList.size());
-		//make sure the right number of ChangedInheritance objects were stored
-		List<ChangedInheritance>ciList = pm.getObjects(ChangedInheritance.class);
-		assertEquals(1,ciList.size());
-		//make sure the Serializable object was stored
-		List<Serializable>serList = pm.getObjects(Serializable.class);
-		assertEquals(1,serList.size());
+		// make sure the right number of OriginalObjects were stored
+		List<OriginalObject> ooList = pm.getObjects(OriginalObject.class);
+		assertEquals(2, ooList.size());
+		// make sure the right number of ChangedInheritance objects were stored
+		List<ChangedInheritance> ciList = pm.getObjects(ChangedInheritance.class);
+		assertEquals(1, ciList.size());
+		// make sure the Serializable object was stored
+		List<Serializable> serList = pm.getObjects(Serializable.class);
+		assertEquals(1, serList.size());
 		pm.close();
-		
-		//re-connect to database
+
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//change ContainerObject to ChangedInheritanceContainer
+		// change ContainerObject to ChangedInheritanceContainer
 		pm.changeName(ObjectContainerObject.class, ChangedInheritanceContainer.class);
 		pm.close();
-		
-		//re-connect to database
+
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//update schema
+		// update schema
 		pm.updateSchema(ChangedInheritanceContainer.class);
 		pm.close();
-		
 
-		//re-connect to database
+		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
-		//make sure the externally referenced OriginalObject survived intact
+		// make sure the externally referenced OriginalObject survived intact
 		ooList = pm.getObjects(OriginalObject.class);
-		assertEquals(1,ooList.size());
-		assertEquals(2,ooList.get(0).getValue());
-		//make sure the ChangedInheritance object survived intact
+		assertEquals(1, ooList.size());
+		assertEquals(2, ooList.get(0).getValue());
+		// make sure the ChangedInheritance object survived intact
 		ciList = pm.getObjects(ChangedInheritance.class);
-		assertEquals(1,ciList.size());
-		assertEquals(3,ciList.get(0).getValue());
-		//make sure all containers survived
-		List<ChangedInheritanceContainer>containerList = pm.getObjects(ChangedInheritanceContainer.class);
-		assertEquals(3,containerList.size());
-		
-		//check for the correct three values
+		assertEquals(1, ciList.size());
+		assertEquals(3, ciList.get(0).getValue());
+		// make sure all containers survived
+		List<ChangedInheritanceContainer> containerList = pm.getObjects(ChangedInheritanceContainer.class);
+		assertEquals(3, containerList.size());
+
+		// check for the correct three values
 		int nullFoundCount = 0;
 		boolean chngFound = false;
-		for(ChangedInheritanceContainer cont:containerList)
+		for (ChangedInheritanceContainer cont : containerList)
 		{
-			if(cont.getFoo()==null)
+			if (cont.getFoo() == null)
 			{
 				nullFoundCount++;
 			}
-			else if(cont.getFoo() instanceof ChangedInheritance)
+			else if (cont.getFoo() instanceof ChangedInheritance)
 			{
 				chngFound = true;
-				assertEquals(3,((ChangedInheritance)cont.getFoo()).getValue());
+				assertEquals(3, ((ChangedInheritance) cont.getFoo()).getValue());
 			}
 			else
 			{
 				fail("Unknown foo reference in container object.");
 			}
 		}
-		assertEquals(2,nullFoundCount);
+		assertEquals(2, nullFoundCount);
 		assertTrue(chngFound);
 		pm.close();
 
@@ -2647,24 +2662,25 @@ public class PersistTest
 			assertNotNull(r.getList().get(0));
 		}
 	}
-	
+
 	/**
 	 * Test if the change detection works.
 	 * 
-	 * The change detection will return true iff the queried object exists in the cache, 
-	 * but a search returns null or a different reference, false otherwise.
+	 * The change detection will return true iff the queried object exists in
+	 * the cache, but a search returns null or a different reference, false
+	 * otherwise.
 	 * 
-	 * If there is no cache reference, the change detection returns false. 
+	 * If there is no cache reference, the change detection returns false.
 	 */
 	@Test
 	public void testChangeDetection() throws Exception
 	{
-		//create a database connection
+		// create a database connection
 		PersistenceManager pm1 = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm1.dropTable(Object.class);
-		
-		//create two test objects
+
+		// create two test objects
 		SimpleObject so1 = new SimpleObject();
 		so1.setAge(1l);
 		so1.setCount(1);
@@ -2677,69 +2693,68 @@ public class PersistTest
 		so2.setName("Two");
 		so2.setScale(0.2);
 		so2.setValue(2.0);
-		
-		//make sure unknown objects do not count as changed
+
+		// make sure unknown objects do not count as changed
 		assertFalse(pm1.hasChanged(so1));
 		assertFalse(pm1.hasChanged(so2));
-		
-		//save one object
+
+		// save one object
 		pm1.saveObject(so1);
-		
-		//make sure the object still count as un-changed
+
+		// make sure the object still count as un-changed
 		assertFalse(pm1.hasChanged(so1));
 		assertFalse(pm1.hasChanged(so2));
-		
-		//save other object
+
+		// save other object
 		pm1.saveObject(so2);
-		
-		//make sure the objects still count as un-changed
+
+		// make sure the objects still count as un-changed
 		assertFalse(pm1.hasChanged(so1));
 		assertFalse(pm1.hasChanged(so2));
-		
-		//create new database connection
+
+		// create new database connection
 		PersistenceManager pm2 = new PersistenceManager(driver, database, login, password);
-		//make sure unknown objects do not count as changed
+		// make sure unknown objects do not count as changed
 		assertFalse(pm2.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so2));
-		//change both objects in new connection
+		// change both objects in new connection
 		pm2.saveObject(so1);
 		pm2.saveObject(so2);
 		assertFalse(pm2.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so2));
-		//modify so1
+		// modify so1
 		so1.setAge(3l);
-		//save it again
+		// save it again
 		pm2.saveObject(so1);
-		
-		//make sure the new (non-existing) so1 is not found in pm1
+
+		// make sure the new (non-existing) so1 is not found in pm1
 		assertTrue(pm1.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so1));
-		//change so1 back so that it will be found
+		// change so1 back so that it will be found
 		so1.setAge(1l);
 		pm2.saveObject(so1);
-		//make sure it is now detected as un-changed
+		// make sure it is now detected as un-changed
 		assertFalse(pm1.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so1));
-		
-		//delete the original so1
+
+		// delete the original so1
 		pm2.deleteObjects(so1);
-		//make sure not existing counts as a change
+		// make sure not existing counts as a change
 		assertTrue(pm1.hasChanged(so1));
-		//the object should be cleared from cache
+		// the object should be cleared from cache
 		assertFalse(pm2.hasChanged(so1));
-		
-		//save so1 again, this time under a new database id
+
+		// save so1 again, this time under a new database id
 		pm2.saveObject(so1);
-		//make sure the database id is checked
+		// make sure the database id is checked
 		assertTrue(pm1.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so1));
-		
-		//make sure pm2 still has not detected a change
+
+		// make sure pm2 still has not detected a change
 		assertFalse(pm2.hasChanged(so1));
 		assertFalse(pm2.hasChanged(so2));
-		
-		
-		//drop all objects
+
+		// drop all objects
 		pm1.dropTable(Object.class);
 		pm2.dropTable(Object.class);
 
@@ -2747,37 +2762,36 @@ public class PersistTest
 		pm2.close();
 		pm1 = new PersistenceManager(driver, database, login, password);
 		pm2 = new PersistenceManager(driver, database, login, password);
-		
-		//insert both objects
+
+		// insert both objects
 		pm1.saveObject(so1);
 		pm1.saveObject(so2);
-		
-		//get the same objects from the other database connection
+
+		// get the same objects from the other database connection
 		List<SimpleObject> objects = pm2.getObjects(SimpleObject.class, new Equal(so1));
 		assertEquals(1, objects.size());
-		//make sure re-loading the object does not count as a change
+		// make sure re-loading the object does not count as a change
 		assertFalse(pm1.hasChanged(so1));
 		assertFalse(pm1.hasChanged(so2));
-		
-		//change the object, re-save it
+
+		// change the object, re-save it
 		SimpleObject so1copy = objects.get(0);
 		so1copy.setAge(6l);
 		pm2.saveObject(so1copy);
-		
-		//make sure the change is detected in the first connection manager
+
+		// make sure the change is detected in the first connection manager
 		assertTrue(pm1.hasChanged(so1));
 		assertFalse(pm1.hasChanged(so2));
-		
-		//make sure there are still only two objects
+
+		// make sure there are still only two objects
 		objects = pm1.getObjects(SimpleObject.class);
-		assertEquals(2,objects.size());
+		assertEquals(2, objects.size());
 		objects = pm2.getObjects(SimpleObject.class);
-		assertEquals(2,objects.size());
-		
-		
+		assertEquals(2, objects.size());
+
 		pm1.close();
 		pm2.close();
-		
+
 	}
 
 	/**
@@ -2786,42 +2800,42 @@ public class PersistTest
 	@Test
 	public void testCacheUpdateOnDelete() throws Exception
 	{
-		//create a database connection
+		// create a database connection
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create two test objects
+
+		// create two test objects
 		SimpleObject so1 = new SimpleObject();
 		so1.setAge(1l);
 		so1.setCount(1);
 		so1.setName("One");
 		so1.setScale(0.1);
 		so1.setValue(1.0);
-		
-		//save one object
+
+		// save one object
 		pm.saveObject(so1);
 
-		//create a new persistence manager
+		// create a new persistence manager
 		PersistenceManager pm2 = new PersistenceManager(driver, database, login, password);
-		//delete object again, using new PM
+		// delete object again, using new PM
 		pm2.deleteObjects(Object.class, new All());
 		pm2.close();
-		
-		//make sure all objects are gone
-		List<SimpleObject>objects = pm.getObjects(SimpleObject.class);
-		assertEquals(0,objects.size());
-		
-		//re-add the object
+
+		// make sure all objects are gone
+		List<SimpleObject> objects = pm.getObjects(SimpleObject.class);
+		assertEquals(0, objects.size());
+
+		// re-add the object
 		pm.saveObject(so1);
-		
-		//make sure it's found
+
+		// make sure it's found
 		objects = pm.getObjects(SimpleObject.class);
-		assertEquals(1,objects.size());
+		assertEquals(1, objects.size());
 		pm.close();
-		
+
 	}
-	
+
 	/**
 	 * Test dropping tables, make sure the object cache is updated accordingly.
 	 */
@@ -2829,41 +2843,41 @@ public class PersistTest
 	public void testCacheUpdateOnDrop() throws Exception
 	{
 
-		//create a database connection
+		// create a database connection
 		PersistenceManager pm1 = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm1.dropTable(Object.class);
-		
-		//create two test objects
+
+		// create two test objects
 		SimpleObject so1 = new SimpleObject();
 		so1.setAge(1l);
 		so1.setCount(1);
 		so1.setName("One");
 		so1.setScale(0.1);
 		so1.setValue(1.0);
-		
-		//save one object
+
+		// save one object
 		pm1.saveObject(so1);
-		
-		//create a new persistence manager, drop all tables
+
+		// create a new persistence manager, drop all tables
 		PersistenceManager pm2 = new PersistenceManager(driver, database, login, password);
-		//drop all objects
+		// drop all objects
 		pm2.dropTable(Object.class);
 		pm2.close();
-		
-		//make sure all objects are gone
-		List<SimpleObject>objects = pm1.getObjects(SimpleObject.class);
-		assertEquals(0,objects.size());
-		
-		//re-add the object
+
+		// make sure all objects are gone
+		List<SimpleObject> objects = pm1.getObjects(SimpleObject.class);
+		assertEquals(0, objects.size());
+
+		// re-add the object
 		pm1.saveObject(so1);
-		
-		//make sure it's found
+
+		// make sure it's found
 		objects = pm1.getObjects(SimpleObject.class);
-		assertEquals(1,objects.size());
+		assertEquals(1, objects.size());
 		pm1.close();
 	}
-	
+
 	/**
 	 * 
 	 * Test deleting a single object.
@@ -2875,12 +2889,12 @@ public class PersistTest
 	public void testDeleteObject() throws Exception
 	{
 
-		//create a database connection
+		// create a database connection
 		PersistenceManager pm1 = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm1.dropTable(Object.class);
-		
-		//create two test objects
+
+		// create two test objects
 		SimpleObject so1 = new SimpleObject();
 		so1.setAge(1l);
 		so1.setCount(1);
@@ -2893,37 +2907,37 @@ public class PersistTest
 		so2.setName("Two");
 		so2.setScale(0.2);
 		so2.setValue(2.0);
-		
+
 		pm1.saveObject(so1);
 		pm1.saveObject(so2);
-		
-		List<SimpleObject>list=pm1.getObjects(SimpleObject.class);
-		assertEquals(2,list.size());
-		
-		//delete the first object
+
+		List<SimpleObject> list = pm1.getObjects(SimpleObject.class);
+		assertEquals(2, list.size());
+
+		// delete the first object
 		assertTrue(pm1.deleteObject(so1));
-		list=pm1.getObjects(SimpleObject.class);
-		//make sure we only have one remaining object
-		assertEquals(1,list.size());
-		//make sure that object is so2
-		assertEquals(list.get(0).getCount(),so2.getCount());
-		
-		//make sure we can't delete the object again
-		assertFalse(pm1.deleteObject(so1));
-		
-		//delete the remaining object
-		assertTrue(pm1.deleteObject(so2));
-		//make sure it's gone
 		list = pm1.getObjects(SimpleObject.class);
-		assertEquals(0,list.size());
-		
-		//make sure we can't delete objects again
+		// make sure we only have one remaining object
+		assertEquals(1, list.size());
+		// make sure that object is so2
+		assertEquals(list.get(0).getCount(), so2.getCount());
+
+		// make sure we can't delete the object again
+		assertFalse(pm1.deleteObject(so1));
+
+		// delete the remaining object
+		assertTrue(pm1.deleteObject(so2));
+		// make sure it's gone
+		list = pm1.getObjects(SimpleObject.class);
+		assertEquals(0, list.size());
+
+		// make sure we can't delete objects again
 		assertFalse(pm1.deleteObject(so1));
 		assertFalse(pm1.deleteObject(so2));
-		
+
 		pm1.close();
 	}
-	
+
 	/**
 	 * Test calculating the SUM function in various ways.
 	 * 
@@ -2931,54 +2945,55 @@ public class PersistTest
 	@Test
 	public void testSum() throws Exception
 	{
-		
-		int sum = (200*199)/2;
 
-		//create a database connection
+		int sum = (200 * 199) / 2;
+
+		// create a database connection
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create some test data
-		for(int x = 0;x<200;x++)
+
+		// create some test data
+		for (int x = 0; x < 200; x++)
 		{
 			SimpleObject so = new SimpleObject();
-			so.setAge((long)x);
+			so.setAge((long) x);
 			so.setCount(x);
 			so.setValue(x);
 			pm.saveObject(so);
 		}
-		
-		//get the sum of the Long values
-		Number n = pm.getSum(SimpleObject.class, "getAge");
+
+		// get the sum of the Long values
+		Number n = pm.calculateAggregate(SimpleObject.class, new Sum("getAge"));
 		assertTrue(n instanceof Long);
-		assertEquals(sum,n.longValue());
-		
-		//get the sum of the int values
-		n = pm.getSum(SimpleObject.class, "getCount");
+		assertEquals(sum, n.longValue());
+
+		// get the sum of the int values
+		n = pm.calculateAggregate(SimpleObject.class, new Sum("getCount"));
 		assertTrue(n instanceof Integer);
-		assertEquals(sum,n.intValue());
-		
-		//get the sum of the double values
-		n = pm.getSum(SimpleObject.class,"getValue");
+		assertEquals(sum, n.intValue());
+
+		// get the sum of the double values
+		n = pm.calculateAggregate(SimpleObject.class, new Sum("getValue"));
 		assertTrue(n instanceof Double);
-		assertEquals(sum,n.doubleValue(),0.0001);
-		
-		//get the sum of the long, int, and double values
-		Number [] tmp = pm.getSum(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
-		assertEquals(3,tmp.length);
+		assertEquals(sum, n.doubleValue(), 0.0001);
+
+		// get the sum of the long, int, and double values
+		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Sum("getAge"),
+				new Sum("getCount"), new Sum("getValue") });
+		assertEquals(3, tmp.length);
 		assertTrue(tmp[0] instanceof Integer);
 		assertTrue(tmp[1] instanceof Long);
 		assertTrue(tmp[2] instanceof Double);
-		
-		assertEquals(sum,tmp[0].intValue());
-		assertEquals(sum,tmp[1].longValue());
-		assertEquals(sum,tmp[2].doubleValue(),0.0001);
-		
+
+		assertEquals(sum, tmp[0].intValue());
+		assertEquals(sum, tmp[1].longValue());
+		assertEquals(sum, tmp[2].doubleValue(), 0.0001);
+
 		pm.close();
-		
+
 	}
-	
+
 	/**
 	 * Test calculating the AVG function in various ways.
 	 * 
@@ -2986,42 +3001,43 @@ public class PersistTest
 	@Test
 	public void testAvg() throws Exception
 	{
-		
-		double average = 199.0/2.0;
 
-		//create a database connection
+		double average = 199.0 / 2.0;
+
+		// create a database connection
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create some test data
-		for(int x = 0;x<200;x++)
+
+		// create some test data
+		for (int x = 0; x < 200; x++)
 		{
 			SimpleObject so = new SimpleObject();
-			so.setAge((long)x);
+			so.setAge((long) x);
 			so.setCount(x);
 			so.setValue(x);
 			pm.saveObject(so);
 		}
-		
-		//get the average of the Long values
-		Number n = pm.getAverage(SimpleObject.class, "getAge");
+
+		// get the average of the Long values
+		Number n = pm.calculateAggregate(SimpleObject.class, new Average("getAge"));
 		assertTrue(n instanceof Double);
-		assertEquals(average,n.doubleValue(),0.0001);
-		
-		//get the average of the int values
-		n = pm.getAverage(SimpleObject.class, "getCount");
+		assertEquals(average, n.doubleValue(), 0.0001);
+
+		// get the average of the int values
+		n = pm.calculateAggregate(SimpleObject.class, new Average("getCount"));
 		assertTrue(n instanceof Double);
-		assertEquals(average,n.doubleValue(),0.0001);
-		
-		//get the average of the double values
-		n = pm.getAverage(SimpleObject.class,"getValue");
+		assertEquals(average, n.doubleValue(), 0.0001);
+
+		// get the average of the double values
+		n = pm.calculateAggregate(SimpleObject.class, new Average("getValue"));
 		assertTrue(n instanceof Double);
-		assertEquals(average,n.doubleValue(),0.0001);
-		
-		//get the average of the long, int, and double values
-		Number [] tmp = pm.getAverage(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
-		assertEquals(3,tmp.length);
+		assertEquals(average, n.doubleValue(), 0.0001);
+
+		// get the average of the long, int, and double values
+		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Average("getAge"),
+				new Average("getCount"), new Average("getValue") });
+		assertEquals(3, tmp.length);
 		for (int x = 0; x < 3; x++)
 		{
 			assertTrue(tmp[x] instanceof Double);
@@ -3029,9 +3045,9 @@ public class PersistTest
 		}
 
 		pm.close();
-		
+
 	}
-	
+
 	/**
 	 * Test calculating the MAX function in various ways.
 	 * 
@@ -3039,52 +3055,53 @@ public class PersistTest
 	@Test
 	public void testMax() throws Exception
 	{
-		
+
 		int max = 199;
 
-		//create a database connection
+		// create a database connection
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create some test data
-		for(int x = 0;x<200;x++)
+
+		// create some test data
+		for (int x = 0; x < 200; x++)
 		{
 			SimpleObject so = new SimpleObject();
-			so.setAge((long)x);
+			so.setAge((long) x);
 			so.setCount(x);
 			so.setValue(x);
 			pm.saveObject(so);
 		}
-		
-		//get the max of the Long values
-		Number n = pm.getMaximum(SimpleObject.class, "getAge");
+
+		// get the max of the Long values
+		Number n = pm.calculateAggregate(SimpleObject.class, new Maximum("getAge"));
 		assertTrue(n instanceof Long);
-		assertEquals(max,n.longValue());
-		
-		//get the max of the int values
-		n = pm.getMaximum(SimpleObject.class, "getCount");
+		assertEquals(max, n.longValue());
+
+		// get the max of the int values
+		n = pm.calculateAggregate(SimpleObject.class, new Maximum("getCount"));
 		assertTrue(n instanceof Integer);
-		assertEquals(max,n.intValue());
-		
-		//get the max of the double values
-		n = pm.getMaximum(SimpleObject.class,"getValue");
+		assertEquals(max, n.intValue());
+
+		// get the max of the double values
+		n = pm.calculateAggregate(SimpleObject.class, new Maximum("getValue"));
 		assertTrue(n instanceof Double);
-		assertEquals(max,n.doubleValue(),0.0001);
-		
-		//get the sum of the long, int, and double values
-		Number [] tmp = pm.getMaximum(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
-		assertEquals(3,tmp.length);
+		assertEquals(max, n.doubleValue(), 0.0001);
+
+		// get the sum of the long, int, and double values
+		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Maximum("getAge"),
+				new Maximum("getCount"), new Maximum("getValue") });
+		assertEquals(3, tmp.length);
 		assertTrue(tmp[0] instanceof Integer);
 		assertTrue(tmp[1] instanceof Long);
 		assertTrue(tmp[2] instanceof Double);
-		
-		assertEquals(max,tmp[0].intValue());
-		assertEquals(max,tmp[1].longValue());
-		assertEquals(max,tmp[2].doubleValue(),0.0001);
-		
+
+		assertEquals(max, tmp[0].intValue());
+		assertEquals(max, tmp[1].longValue());
+		assertEquals(max, tmp[2].doubleValue(), 0.0001);
+
 		pm.close();
-		
+
 	}
 
 	/**
@@ -3094,51 +3111,52 @@ public class PersistTest
 	@Test
 	public void testMin() throws Exception
 	{
-		
+
 		int min = -100;
 
-		//create a database connection
+		// create a database connection
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
-		//create some test data
-		for(int x = -100;x<100;x++)
+
+		// create some test data
+		for (int x = -100; x < 100; x++)
 		{
 			SimpleObject so = new SimpleObject();
-			so.setAge((long)x);
+			so.setAge((long) x);
 			so.setCount(x);
 			so.setValue(x);
 			pm.saveObject(so);
 		}
-		
-		//get the min of the Long values
-		Number n = pm.getMinimum(SimpleObject.class, "getAge");
+
+		// get the min of the Long values
+		Number n = pm.calculateAggregate(SimpleObject.class, new Minimum("getAge"));
 		assertTrue(n instanceof Long);
-		assertEquals(min,n.longValue());
-		
-		//get the min of the int values
-		n = pm.getMinimum(SimpleObject.class, "getCount");
+		assertEquals(min, n.longValue());
+
+		// get the min of the int values
+		n = pm.calculateAggregate(SimpleObject.class, new Minimum("getCount"));
 		assertTrue(n instanceof Integer);
-		assertEquals(min,n.intValue());
-		
-		//get the min of the double values
-		n = pm.getMinimum(SimpleObject.class,"getValue");
+		assertEquals(min, n.intValue());
+
+		// get the min of the double values
+		n = pm.calculateAggregate(SimpleObject.class, new Minimum("getValue"));
 		assertTrue(n instanceof Double);
-		assertEquals(min,n.doubleValue(),0.0001);
-		
-		//get the sum of the long, int, and double values
-		Number [] tmp = pm.getMinimum(SimpleObject.class,new String[]{"getAge","getCount","getValue"});
-		assertEquals(3,tmp.length);
+		assertEquals(min, n.doubleValue(), 0.0001);
+
+		// get the sum of the long, int, and double values
+		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Minimum("getAge"),
+				new Minimum("getCount"), new Minimum("getValue") });
+		assertEquals(3, tmp.length);
 		assertTrue(tmp[0] instanceof Integer);
 		assertTrue(tmp[1] instanceof Long);
 		assertTrue(tmp[2] instanceof Double);
-		
-		assertEquals(min,tmp[0].intValue());
-		assertEquals(min,tmp[1].longValue());
-		assertEquals(min,tmp[2].doubleValue(),0.0001);
-		
+
+		assertEquals(min, tmp[0].intValue());
+		assertEquals(min, tmp[1].longValue());
+		assertEquals(min, tmp[2].doubleValue(), 0.0001);
+
 		pm.close();
-		
+
 	}
 }

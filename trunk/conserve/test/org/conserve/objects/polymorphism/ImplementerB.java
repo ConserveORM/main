@@ -8,6 +8,7 @@ import org.conserve.objects.SubInterface;
  */
 public class ImplementerB implements SubInterface
 {
+	private static final long serialVersionUID = -137024254160693215L;
 	private int someValue;
 	
 	public void setSomeValue(int v)

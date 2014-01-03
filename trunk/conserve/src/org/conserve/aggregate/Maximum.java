@@ -26,4 +26,13 @@ public class Maximum extends AggregateFunction
 		return "MAX";
 	}
 
+	/**
+	 * @see org.conserve.aggregate.AggregateFunction#translateReturnType(java.lang.Class)
+	 */
+	@Override
+	protected Class<?> translateReturnType(Class<?> clazz)
+	{
+		//no widening used for Maximum
+		return clazz;
+	}
 }

@@ -1021,9 +1021,15 @@ public class PersistenceManager
 	}
 	/**
 	 * Returns an array containing the result of the SQL sum() function for each field.
-	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
+	 * If the field is an integer type, the corresponding entry is  Long, Integer, Byte, or Short type, whichever is appropriate.
 	 * 
-	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
+	 * If the field is a floating point type, the corresponding entry will be Double or Float, whichever is appropriate.
+	 * 
+	 * If the function is Average, the corresponding entry in the returned array will be Double, no matter what the field type is.
+	 * 
+	 * If the function is Sum the corresponding entry in the returned array will be Double or Long, as appropriate.
+	 * 
+	 * This function is undefined for non-numeric fields.
 	 * 
 	 * @param clazz the class of the object to calculate the sum for.
 	 * @param functions the functions to calculate - each entry will get a corresponding entry in the returned array.

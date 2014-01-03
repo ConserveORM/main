@@ -44,6 +44,10 @@ import org.conserve.adapter.MySqlAdapter;
 import org.conserve.adapter.PostgreSqlAdapter;
 import org.conserve.adapter.SqLiteAdapter;
 import org.conserve.aggregate.AggregateFunction;
+import org.conserve.aggregate.Average;
+import org.conserve.aggregate.Maximum;
+import org.conserve.aggregate.Minimum;
+import org.conserve.aggregate.Sum;
 import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
@@ -116,12 +120,10 @@ public class Persist
 	void initialize(Properties prop) throws SQLException
 	{
 		String driver = prop.getProperty("org.conserve.driver");
-		String connectionString = prop
-				.getProperty("org.conserve.connectionstring");
+		String connectionString = prop.getProperty("org.conserve.connectionstring");
 		if (connectionString == null)
 		{
-			throw new SQLException(
-					"Property org.conserve.connectionstring not found.");
+			throw new SQLException("Property org.conserve.connectionstring not found.");
 		}
 		String userName = prop.getProperty("org.conserve.username");
 		if (userName == null)
@@ -137,18 +139,15 @@ public class Persist
 		cache.start();
 	}
 
-	void initialize(String driver, String connectionstring, String username,
-			String password) throws SQLException
+	void initialize(String driver, String connectionstring, String username, String password) throws SQLException
 	{
 		this.connectionString = connectionstring;
 		// create the pool
-		connectionPool = new DataConnectionPool(1, driver, connectionstring,
-				username, password);
+		connectionPool = new DataConnectionPool(1, driver, connectionstring, username, password);
 		// set up the default adapter
 		adapter = selectAdapter(connectionstring);
-		LOGGER.fine("Selected adapter: "
-				+ ObjectTools.getSystemicName(adapter.getClass())
-				+ " for connection " + connectionstring);
+		LOGGER.fine("Selected adapter: " + ObjectTools.getSystemicName(adapter.getClass()) + " for connection "
+				+ connectionstring);
 		// set up a new protection manager
 		protectionManager = new ProtectionManager();
 		// set up the object responsible for updating objects
@@ -157,8 +156,7 @@ public class Persist
 		arrayEntryWriter = new ArrayEntryWriter(adapter);
 
 		// set up a manager for system tables and table creation
-		tableManager = new TableManager(this.isCreateSchema(), connectionPool,
-				adapter);
+		tableManager = new TableManager(this.isCreateSchema(), connectionPool, adapter);
 		try
 		{
 			tableManager.initializeSystemTables();
@@ -295,8 +293,7 @@ public class Persist
 	 *            the connection wrapper to use for this operation.
 	 * @return the number of deleted objects.
 	 */
-	public <T> int deleteObjects(ConnectionWrapper cw, Class<T> clazz,
-			Clause where) throws SQLException
+	public <T> int deleteObjects(ConnectionWrapper cw, Class<T> clazz, Clause where) throws SQLException
 	{
 		int res = 0;
 		try
@@ -308,8 +305,7 @@ public class Persist
 			else
 			{
 				// get all implementing classes, too
-				List<Class<? extends T>> subClasses = getImplementingClasses(
-						clazz, cw);
+				List<Class<? extends T>> subClasses = getImplementingClasses(clazz, cw);
 				for (Class<? extends T> subClass : subClasses)
 				{
 					// recurse for all all implementing classes
@@ -324,14 +320,13 @@ public class Persist
 		return res;
 	}
 
-	private int deleteObjectsNonInterface(ConnectionWrapper cw, Class<?> clazz,
-			Clause where) throws ClassNotFoundException, SQLException
+	private int deleteObjectsNonInterface(ConnectionWrapper cw, Class<?> clazz, Clause where)
+			throws ClassNotFoundException, SQLException
 	{
 		int deletedCount = 0;
 		String className = ObjectTools.getSystemicName(clazz);
 		// find all matching objects
-		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(
-				clazz, className, where, null, cw);
+		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(clazz, className, where, null, cw);
 		for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
 		{
 			Class<?> c = en.getKey();
@@ -364,19 +359,18 @@ public class Persist
 	 *            the type of object to delete.
 	 * @param id
 	 *            the database id to delete.
-	 *            
+	 * 
 	 * @return true if one object was deleted, false otherwise.
-	 *            
+	 * 
 	 * @throws SQLException
 	 */
-	public boolean deleteObject(Class<?> clazz, Long id)
-			throws SQLException
+	public boolean deleteObject(Class<?> clazz, Long id) throws SQLException
 	{
 		ConnectionWrapper cw = connectionPool.getConnectionWrapper();
 		boolean res = false;
 		try
 		{
-			res = deleteObject(clazz,id,cw);
+			res = deleteObject(clazz, id, cw);
 			cw.commitAndDiscard();
 		}
 		catch (Exception e)
@@ -397,18 +391,16 @@ public class Persist
 	 *            the database id to delete.
 	 * @param cw
 	 *            the ConnectionWrapper to use for this transaction.
-	 *            
+	 * 
 	 * @return true if one object was deleted, false otherwise.
 	 * 
 	 * @throws SQLException
 	 */
-	public boolean deleteObject(Class<?> clazz, Long id, ConnectionWrapper cw)
-			throws SQLException
+	public boolean deleteObject(Class<?> clazz, Long id, ConnectionWrapper cw) throws SQLException
 	{
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		deleteObject(tableName, id, cw);
-		return deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz),
-				id, cw);
+		return deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz), id, cw);
 	}
 
 	/**
@@ -420,8 +412,7 @@ public class Persist
 	 * @return true if one object was deleted, false otherwise.
 	 * @throws SQLException
 	 */
-	public boolean deleteObject(String tableName, Long id, ConnectionWrapper cw)
-			throws SQLException
+	public boolean deleteObject(String tableName, Long id, ConnectionWrapper cw) throws SQLException
 	{
 		boolean res = false;
 		boolean isArray = false;
@@ -432,8 +423,7 @@ public class Persist
 			deletePropertiesOf(tableName, id, cw);
 			// all arrays also have an entry in the java.lang.Object table, so
 			// we must delete this as well
-			deleteObject(java.lang.Object.class, Defaults.ARRAY_TABLENAME, id,
-					cw);
+			deleteObject(java.lang.Object.class, Defaults.ARRAY_TABLENAME, id, cw);
 			isArray = true;
 		}
 		StringBuilder statement = new StringBuilder("DELETE FROM ");
@@ -444,7 +434,7 @@ public class Persist
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		ps.setLong(1, id);
 		Tools.logFine(ps);
-		res = ps.executeUpdate()==1;
+		res = ps.executeUpdate() == 1;
 		ps.close();
 		if (!isArray)
 		{
@@ -454,8 +444,8 @@ public class Persist
 		return res;
 	}
 
-	private boolean deleteObject(Class<?> clazz, String realClassName,
-			Long realId, ConnectionWrapper cw) throws SQLException
+	private boolean deleteObject(Class<?> clazz, String realClassName, Long realId, ConnectionWrapper cw)
+			throws SQLException
 	{
 		boolean res = false;
 		if (clazz != null)
@@ -476,13 +466,12 @@ public class Persist
 			ps.setLong(1, realId);
 			ps.setString(2, realClassName);
 			Tools.logFine(ps);
-			res = ps.executeUpdate()==1;
+			res = ps.executeUpdate() == 1;
 			ps.close();
 			// recurse
 			if (currentId != null)
 			{
-				deleteObject(clazz.getSuperclass(),
-						ObjectTools.getSystemicName(clazz), currentId, cw);
+				deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz), currentId, cw);
 				deletePropertiesOf(tableName, currentId, cw);
 			}
 		}
@@ -498,12 +487,10 @@ public class Persist
 	 *            the id of the object who's properties we are deleting.
 	 * @throws SQLException
 	 */
-	private void deletePropertiesOf(String tableName, Long id,
-			ConnectionWrapper cw) throws SQLException
+	private void deletePropertiesOf(String tableName, Long id, ConnectionWrapper cw) throws SQLException
 	{
 		// find all properties
-		StringBuilder statement = new StringBuilder(
-				"SELECT PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
+		StringBuilder statement = new StringBuilder("SELECT PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
 		PreparedStatement query = cw.prepareStatement(statement.toString());
@@ -517,8 +504,7 @@ public class Persist
 			Long propertyId = subObjects.getLong(2);
 			String propertyClassName = subObjects.getString(3);
 			// unprotect the sub-object relative to the current object
-			protectionManager.unprotectObjectInternal(tableName, id,
-					propertyTable, propertyId, cw);
+			protectionManager.unprotectObjectInternal(tableName, id, propertyTable, propertyId, cw);
 			// check if the property is unprotected
 			if (!protectionManager.isProtected(propertyTable, propertyId, cw))
 			{
@@ -526,15 +512,14 @@ public class Persist
 				try
 				{
 					if (propertyTable.equals(Defaults.ARRAY_TABLENAME)
-							|| propertyTable
-									.startsWith(Defaults.ARRAY_MEMBER_TABLENAME)
+							|| propertyTable.startsWith(Defaults.ARRAY_MEMBER_TABLENAME)
 							|| propertyClassName.contains("["))
 					{
 						deleteObject(propertyTable, propertyId, cw);
 					}
 					else
 					{
-						Class<?> c = ObjectTools.lookUpClass(propertyClassName,adapter);
+						Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);
 						deleteObject(c, propertyId, cw);
 					}
 				}
@@ -558,8 +543,7 @@ public class Persist
 	 * @return
 	 * @throws SQLException
 	 */
-	private Long getId(Class<?> clazz, String realClassName, Long realId,
-			ConnectionWrapper ec) throws SQLException
+	private Long getId(Class<?> clazz, String realClassName, Long realId, ConnectionWrapper ec) throws SQLException
 	{
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		StringBuilder statement = new StringBuilder("SELECT ");
@@ -601,16 +585,20 @@ public class Persist
 	 * must refer to the same class, so that clazz.getCanonincaName() ==
 	 * className.
 	 * 
-	 * @param clazz the class to search for (can be null if className is given).
-	 * @param className the name of the class to search for (can be null if clazz is given).
-	 * @param clause the clause to distinguish (can be null if id is given).
-	 * @return id the database id of the object to search for (can be null if clause is given).
+	 * @param clazz
+	 *            the class to search for (can be null if className is given).
+	 * @param className
+	 *            the name of the class to search for (can be null if clazz is
+	 *            given).
+	 * @param clause
+	 *            the clause to distinguish (can be null if id is given).
+	 * @return id the database id of the object to search for (can be null if
+	 *         clause is given).
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(
-			Class<T> clazz, String className, Clause clause, Long id,
+	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(Class<T> clazz, String className, Clause clause, Long id,
 			ConnectionWrapper cw) throws ClassNotFoundException, SQLException
 	{
 		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
@@ -621,8 +609,7 @@ public class Persist
 		}
 		if (clazz == null)
 		{
-			clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(
-					className);
+			clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 
 		}
 		String tableName = NameGenerator.getTableName(clazz, adapter);
@@ -631,13 +618,11 @@ public class Persist
 			return res;
 		}
 
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(
-				adapter);
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		whereGenerator.setClauses(clause);
 		StatementPrototype sp = whereGenerator.generate(clazz, true);
 		// get the id of clazz
-		String shortName = whereGenerator.getTypeStack()
-				.getActualRepresentation().getAsName();
+		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
 
 		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(shortName);
@@ -672,11 +657,10 @@ public class Persist
 				className = (String) map.get(Defaults.REAL_CLASS_COL);
 				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(
-						null, className, null, dbId, cw);
-				for(Entry<Class<?>, List<Long>> en:tmpRes.entrySet())
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, className, null, dbId, cw);
+				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 				{
-					Class<?>c = en.getKey();
+					Class<?> c = en.getKey();
 					List<Long> existingList = res.get(c);
 					if (existingList == null)
 					{
@@ -711,12 +695,10 @@ public class Persist
 	 * 
 	 * @throws SQLException
 	 */
-	public long getLastId(ConnectionWrapper cw, String tableName)
-			throws SQLException
+	public long getLastId(ConnectionWrapper cw, String tableName) throws SQLException
 	{
 		long res = 0;
-		PreparedStatement ps = cw.prepareStatement(adapter
-				.getLastInsertedIdentity(tableName));
+		PreparedStatement ps = cw.prepareStatement(adapter.getLastInsertedIdentity(tableName));
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		if (rs.next())
@@ -765,8 +747,7 @@ public class Persist
 	 * 
 	 * @throws SQLException
 	 */
-	public void saveObjectUnprotected(ConnectionWrapper cw, Object object)
-			throws SQLException, IOException
+	public void saveObjectUnprotected(ConnectionWrapper cw, Object object) throws SQLException, IOException
 	{
 		saveObject(cw, object, false, null);
 	}
@@ -782,14 +763,14 @@ public class Persist
 	 *         not saved.
 	 * @throws SQLException
 	 */
-	public Long saveObjectUnprotected(ConnectionWrapper cw, Object object,
-			DelayedInsertionBuffer delayBuffer) throws SQLException
+	public Long saveObjectUnprotected(ConnectionWrapper cw, Object object, DelayedInsertionBuffer delayBuffer)
+			throws SQLException
 	{
 		return saveObject(cw, object, false, delayBuffer);
 	}
 
-	public Long saveObject(ConnectionWrapper cw, Object object, boolean protect,
-			DelayedInsertionBuffer delayBuffer) throws SQLException
+	public Long saveObject(ConnectionWrapper cw, Object object, boolean protect, DelayedInsertionBuffer delayBuffer)
+			throws SQLException
 	{
 		Long id = (long) System.identityHashCode(object);
 		if (delayBuffer == null)
@@ -816,11 +797,9 @@ public class Persist
 		Long databaseId = cache.getDatabaseId(object);
 		if (databaseId != null && objectExists(cw, object.getClass(), databaseId))
 		{
-			//the object exists in the database
+			// the object exists in the database
 			res = databaseId;
-			if (protect
-					&& !protectionManager.isProtectedExternal(tableName,
-							databaseId, cw))
+			if (protect && !protectionManager.isProtectedExternal(tableName, databaseId, cw))
 			{
 				protectionManager.protectObjectExternal(tableName, databaseId,
 						ObjectTools.getSystemicName(object.getClass()), cw);
@@ -830,15 +809,14 @@ public class Persist
 		else
 		{
 			// the object is unknown
-			ObjectStack stack = new ObjectStack(this.adapter,
-					object.getClass(), object, delayBuffer);
+			ObjectStack stack = new ObjectStack(this.adapter, object.getClass(), object, delayBuffer);
 			stack.save(cw);
 			res = stack.getActualRepresentation().getId();
 			// label the object as having been inserted by the outside
 			if (protect)
 			{
-				protectionManager.protectObjectExternal(tableName, res,
-						ObjectTools.getSystemicName(object.getClass()), cw);
+				protectionManager.protectObjectExternal(tableName, res, ObjectTools.getSystemicName(object.getClass()),
+						cw);
 			}
 		}
 		// insert the objects in the delay buffer
@@ -861,8 +839,7 @@ public class Persist
 	 * @return an ArrayList of the desired type.
 	 * @throws SQLException
 	 */
-	public <T> List<T> getObjects(Class<T> clazz, Clause... clause)
-			throws SQLException
+	public <T> List<T> getObjects(Class<T> clazz, Clause... clause) throws SQLException
 	{
 		List<T> res = null;
 		ConnectionWrapper cw = getConnectionWrapper();
@@ -895,8 +872,7 @@ public class Persist
 	 * @return an ArrayList of the desired type.
 	 * @throws SQLException
 	 */
-	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz,
-			Clause... clause) throws SQLException
+	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
 		ArrayList<T> res = new ArrayList<T>();
 		try
@@ -909,8 +885,7 @@ public class Persist
 			else
 			{
 				// get all implementing classes, too
-				List<Class<? extends T>> implementingClasses = getImplementingClasses(
-						clazz, cw);
+				List<Class<? extends T>> implementingClasses = getImplementingClasses(clazz, cw);
 				removeDuplicateSubClasses(implementingClasses);
 				for (Class<? extends T> implementingClass : implementingClasses)
 				{
@@ -940,7 +915,7 @@ public class Persist
 	 *         satisfy clause.
 	 * @throws SQLException
 	 */
-	<T> long getCount(Class<T> clazz, Clause clause) throws SQLException
+	<T> long getCount(Class<T> clazz, Clause... clause) throws SQLException
 	{
 		long res = 0;
 		ConnectionWrapper cw = getConnectionWrapper();
@@ -971,8 +946,7 @@ public class Persist
 	 *         satisfy clause.
 	 * @throws SQLException
 	 */
-	<T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause clause)
-			throws SQLException
+	<T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
 		long res = 0;
 		try
@@ -985,8 +959,7 @@ public class Persist
 			else
 			{
 				// get all implementing classes, too
-				List<Class<? extends T>> subClasses = getImplementingClasses(
-						clazz, cw);
+				List<Class<? extends T>> subClasses = getImplementingClasses(clazz, cw);
 				removeDuplicateSubClasses(subClasses);
 				for (Class<? extends T> subClass : subClasses)
 				{
@@ -1009,8 +982,7 @@ public class Persist
 	 * @param subClasses
 	 *            the List to check for subclasses.
 	 */
-	private <T> void removeDuplicateSubClasses(
-			List<Class<? extends T>> subClasses)
+	private <T> void removeDuplicateSubClasses(List<Class<? extends T>> subClasses)
 	{
 		for (int x = 0; x < subClasses.size(); x++)
 		{
@@ -1077,8 +1049,8 @@ public class Persist
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> List<Class<? extends T>> getImplementingClasses(Class<T> clazz,
-			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	private <T> List<Class<? extends T>> getImplementingClasses(Class<T> clazz, ConnectionWrapper cw)
+			throws SQLException, ClassNotFoundException
 	{
 		ArrayList<Class<? extends T>> res = new ArrayList<Class<? extends T>>();
 		StringBuilder sb = new StringBuilder();
@@ -1093,8 +1065,7 @@ public class Persist
 		while (rs.next())
 		{
 			String subClassName = rs.getString(1);
-			Class<? extends T> c = (Class<? extends T>) ClassLoader
-					.getSystemClassLoader().loadClass(subClassName);
+			Class<? extends T> c = (Class<? extends T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
 			if (c.isInterface())
 			{
 				res.addAll(getImplementingClasses(c, cw));
@@ -1129,9 +1100,8 @@ public class Persist
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> List<T> getObjectsNonInterface(Class<T> clazz,
-			ConnectionWrapper cw, Clause... clauses) throws SQLException,
-			ClassNotFoundException
+	private <T> List<T> getObjectsNonInterface(Class<T> clazz, ConnectionWrapper cw, Clause... clauses)
+			throws SQLException, ClassNotFoundException
 	{
 		for (Clause clause : clauses)
 		{
@@ -1143,12 +1113,10 @@ public class Persist
 			return res;
 		}
 
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(
-				adapter);
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		whereGenerator.setClauses(clauses);
 		StatementPrototype sp = whereGenerator.generate(clazz, true);
-		PreparedStatement ps = sp.toPreparedStatement(cw,
-				sp.getSelectStartQuery());
+		PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
@@ -1170,12 +1138,10 @@ public class Persist
 				else
 				{
 					// load the real class
-					clazz = (Class<T>) ClassLoader.getSystemClassLoader()
-							.loadClass(className);
+					clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 					// primitives are not loaded in response to queries, only as
 					// parts of other objects
-					if (!ObjectTools.isDatabasePrimitive(clazz)
-							&& !(clazz.equals(MapEntry.class))
+					if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class))
 							&& !(clazz.equals(Number.class)))
 					{
 						// get the subclass-specific data
@@ -1183,8 +1149,7 @@ public class Persist
 						// load the real class info
 						className = (String) map.get(Defaults.REAL_CLASS_COL);
 						dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
-						clazz = (Class<T>) ClassLoader.getSystemClassLoader()
-								.loadClass(className);
+						clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 
 					}
 					else
@@ -1202,8 +1167,7 @@ public class Persist
 				{
 					// object was not found in cache
 					// create new object
-					T nuObject = ObjectFactory.createObject(adapter, cache,
-							map, clazz, cw, tableName, dbId);
+					T nuObject = ObjectFactory.createObject(adapter, cache, map, clazz, cw, tableName, dbId);
 					res.add(nuObject);
 					// add object to cache
 					cache.storeObject(tableName, nuObject, dbId);
@@ -1227,8 +1191,7 @@ public class Persist
 	 * @return the number of matching objects.
 	 * @throws SQLException
 	 */
-	private <T> long getCountNonInterface(ConnectionWrapper cw, Class<T> clazz,
-			Clause... clause) throws SQLException
+	private <T> long getCountNonInterface(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
 		long res = 0;
 		if (!tableManager.tableExists(clazz, cw))
@@ -1236,13 +1199,12 @@ public class Persist
 			return res;
 		}
 
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(
-				adapter);
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		whereGenerator.setClauses(clause);
 		StatementPrototype sp = whereGenerator.generate(clazz, true);
 		String tableId = sp.getIdStatementGenerator().getJoinTableIds().get(0);
-		StringBuilder statement = new StringBuilder("SELECT COUNT(DISTINCT("
-				+ tableId + "." + Defaults.ID_COL + ")) FROM ");
+		StringBuilder statement = new StringBuilder("SELECT COUNT(DISTINCT(" + tableId + "." + Defaults.ID_COL
+				+ ")) FROM ");
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
 		ResultSet rs = ps.executeQuery();
 		if (rs.next())
@@ -1269,15 +1231,14 @@ public class Persist
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
-	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id)
-			throws SQLException, ClassNotFoundException
+	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id) throws SQLException, ClassNotFoundException
 	{
 		return getObject(cw, clazz, id, this.cache);
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id,
-			ObjectRowMap cache) throws SQLException, ClassNotFoundException
+	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id, ObjectRowMap cache) throws SQLException,
+			ClassNotFoundException
 	{
 		if (clazz.isInterface())
 		{
@@ -1285,22 +1246,18 @@ public class Persist
 		}
 		String className = ObjectTools.getSystemicName(clazz);
 		T res = null;
-		if (!tableManager.tableExists(
-				NameGenerator.getTableName(clazz, adapter), cw))
+		if (!tableManager.tableExists(NameGenerator.getTableName(clazz, adapter), cw))
 		{
 			return res;
 		}
 
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(
-				adapter);
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		StatementPrototype sp = whereGenerator.generate(clazz, true);
-		String shortName = whereGenerator.getTypeStack()
-				.getRepresentation(clazz).getAsName();
+		String shortName = whereGenerator.getTypeStack().getRepresentation(clazz).getAsName();
 
 		sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
 
-		PreparedStatement ps = sp.toPreparedStatement(cw,
-				sp.getSelectStartQuery());
+		PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
@@ -1316,8 +1273,7 @@ public class Persist
 				if (!className.equals(Defaults.ARRAY_TABLENAME))
 				{
 					// load the real class
-					clazz = (Class<T>) ClassLoader.getSystemClassLoader()
-							.loadClass(className);
+					clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 					// get the subclass-specific data
 					getSubClassData(map, clazz, dbId, cw);
 					// load the real class info
@@ -1331,15 +1287,13 @@ public class Persist
 			{
 
 				// the referenced object is an array, so load it
-				Object cachedObject = cache.getObject(
-						Defaults.ARRAY_TABLENAME, dbId);
+				Object cachedObject = cache.getObject(Defaults.ARRAY_TABLENAME, dbId);
 
 				if (cachedObject == null)
 				{
 					// object was not found in cache
 					// create new array object
-					ArrayLoader arrayLoader = new ArrayLoader(this.adapter,
-							cache, cw);
+					ArrayLoader arrayLoader = new ArrayLoader(this.adapter, cache, cw);
 					arrayLoader.loadArray(dbId);
 					T nuObject = (T) arrayLoader.getArray();
 					res = nuObject;
@@ -1354,16 +1308,14 @@ public class Persist
 			{
 				// load an ordinary object
 				// check if the object is known
-				clazz = (Class<T>) ClassLoader.getSystemClassLoader()
-						.loadClass(className);
+				clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 				String tableName = NameGenerator.getTableName(clazz, adapter);
 				Object cachedObject = cache.getObject(tableName, dbId);
 				if (cachedObject == null)
 				{
 					// object was not found in cache
 					// create new object
-					res = ObjectFactory.createObject(adapter, cache, map,
-							clazz, cw, tableName, dbId);
+					res = ObjectFactory.createObject(adapter, cache, map, clazz, cw, tableName, dbId);
 				}
 				else
 				{
@@ -1376,12 +1328,16 @@ public class Persist
 	}
 
 	/**
-	 * Checks the database to see if an object of the given class with the given C__ID value exists.
-	 * If the corresponding table does not exist, the method return false.
+	 * Checks the database to see if an object of the given class with the given
+	 * C__ID value exists. If the corresponding table does not exist, the method
+	 * return false.
 	 * 
-	 * @param cw a connection wrapper to use.
-	 * @param clazz the object class to search
-	 * @param id the C__ID value to check for - this is the database id.
+	 * @param cw
+	 *            a connection wrapper to use.
+	 * @param clazz
+	 *            the object class to search
+	 * @param id
+	 *            the C__ID value to check for - this is the database id.
 	 * 
 	 * @return true if the object exists, false otherwise.
 	 * 
@@ -1399,7 +1355,7 @@ public class Persist
 		if (!tableManager.tableExists(tableName, cw))
 		{
 			return res;
-		}		
+		}
 
 		StringBuilder statement = new StringBuilder("SELECT COUNT(*) FROM ");
 		statement.append(tableName);
@@ -1407,19 +1363,18 @@ public class Persist
 		statement.append(Defaults.ID_COL);
 		statement.append(" = ?");
 
-
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		ps.setLong(1,id);
+		ps.setLong(1, id);
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
-		if(rs.next() && rs.getLong(1)>0)
+		if (rs.next() && rs.getLong(1) > 0)
 		{
 			res = true;
 		}
 		ps.close();
 		return res;
 	}
-	
+
 	/**
 	 * Get a list of all classes persisted in this database. It does not include
 	 * classes representing primitives, e.g. java.lang.Integer, or array
@@ -1444,8 +1399,7 @@ public class Persist
 				String subClassName = rs.getString("SUBCLASS");
 				try
 				{
-					Class<?> superClass = ObjectTools
-							.lookUpClass(superClassName,adapter);
+					Class<?> superClass = ObjectTools.lookUpClass(superClassName, adapter);
 					if (superClass != null && !res.contains(superClass))
 					{
 						res.add(superClass);
@@ -1457,7 +1411,7 @@ public class Persist
 				}
 				try
 				{
-					Class<?> subClass = ObjectTools.lookUpClass(subClassName,adapter);
+					Class<?> subClass = ObjectTools.lookUpClass(subClassName, adapter);
 					if (subClass != null && !res.contains(subClass))
 					{
 						res.add(subClass);
@@ -1496,16 +1450,14 @@ public class Persist
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> void getSubClassData(HashMap<String, Object> map,
-			Class<T> clazz, Long dbId, ConnectionWrapper cw)
+	private <T> void getSubClassData(HashMap<String, Object> map, Class<T> clazz, Long dbId, ConnectionWrapper cw)
 			throws ClassNotFoundException, SQLException
 	{
 		String realClassName = (String) map.get(Defaults.REAL_CLASS_COL);
 		// erase the 'real' class entry
 		map.remove(Defaults.REAL_CLASS_COL);
 		StringBuilder statement = new StringBuilder("SELECT * FROM ");
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(
-				adapter);
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		StatementPrototype sp = whereGenerator.generate(clazz, false);
 		sp.addEqualsClause(Defaults.ID_COL, dbId);
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
@@ -1513,8 +1465,8 @@ public class Persist
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		if (propertyVector.size() != 1)
 		{
-			throw new SQLException("Wrong number of subclass entities found: "
-					+ propertyVector.size() + ", expected 1.");
+			throw new SQLException("Wrong number of subclass entities found: " + propertyVector.size()
+					+ ", expected 1.");
 		}
 		ps.close();
 		HashMap<String, Object> subMap = propertyVector.get(0);
@@ -1524,10 +1476,8 @@ public class Persist
 		String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
 		if (subClassName != null)
 		{
-			Class<?> subClass = (Class<T>) ClassLoader.getSystemClassLoader()
-					.loadClass(subClassName);
-			getSubClassData(map, subClass,
-					((Number) map.get(Defaults.REAL_ID_COL)).longValue(), cw);
+			Class<?> subClass = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
+			getSubClassData(map, subClass, ((Number) map.get(Defaults.REAL_ID_COL)).longValue(), cw);
 		}
 		else
 		{
@@ -1544,8 +1494,7 @@ public class Persist
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<HashMap<String, Object>> createPropertyVector(ResultSet rs)
-			throws SQLException
+	private List<HashMap<String, Object>> createPropertyVector(ResultSet rs) throws SQLException
 	{
 		ArrayList<HashMap<String, Object>> res = new ArrayList<HashMap<String, Object>>();
 		whileLoop: while (rs.next())
@@ -1589,8 +1538,7 @@ public class Persist
 	 * @param map
 	 * @throws SQLException
 	 */
-	private void fillValues(ResultSet rs, HashMap<String, Object> map)
-			throws SQLException
+	private void fillValues(ResultSet rs, HashMap<String, Object> map) throws SQLException
 	{
 
 		ResultSetMetaData md = rs.getMetaData();
@@ -1617,8 +1565,7 @@ public class Persist
 			try
 			{
 				cw = getConnectionWrapper();
-				PreparedStatement ps = cw.prepareStatement(adapter
-						.getShutdownCommand());
+				PreparedStatement ps = cw.prepareStatement(adapter.getShutdownCommand());
 				ps.execute();
 				ps.close();
 				cw.commitAndDiscard();
@@ -1644,8 +1591,7 @@ public class Persist
 		{
 			try
 			{
-				Connection c = DriverManager.getConnection(adapter
-						.getDriverManagerShutdownCommand());
+				Connection c = DriverManager.getConnection(adapter.getDriverManagerShutdownCommand());
 				if (c != null)
 				{
 					c.close();
@@ -1676,8 +1622,7 @@ public class Persist
 	 *         to class c.
 	 * @throws SQLException
 	 */
-	public Long getCastId(Class<?> c, Class<?> realClass, long id,
-			ConnectionWrapper cw) throws SQLException
+	public Long getCastId(Class<?> c, Class<?> realClass, long id, ConnectionWrapper cw) throws SQLException
 	{
 		if (c.equals(realClass))
 		{
@@ -1686,25 +1631,17 @@ public class Persist
 		}
 		else
 		{
-			StatementPrototypeGenerator gen = new StatementPrototypeGenerator(
-					adapter);
+			StatementPrototypeGenerator gen = new StatementPrototypeGenerator(adapter);
 
 			StatementPrototype sp = gen.generate(realClass, true);
-			sp.addEqualsClause(
-					gen.getTypeStack()
-							.getRepresentation(
-									gen.getTypeStack().getLevel(realClass))
-							.getAsName()
-							+ "." + Defaults.ID_COL, id);
+			sp.addEqualsClause(gen.getTypeStack().getRepresentation(gen.getTypeStack().getLevel(realClass)).getAsName()
+					+ "." + Defaults.ID_COL, id);
 			StringBuilder prepend = new StringBuilder("SELECT ");
-			prepend.append(gen.getTypeStack()
-					.getRepresentation(gen.getTypeStack().getLevel(c))
-					.getAsName());
+			prepend.append(gen.getTypeStack().getRepresentation(gen.getTypeStack().getLevel(c)).getAsName());
 			prepend.append(".");
 			prepend.append(Defaults.ID_COL);
 			prepend.append(" FROM ");
-			PreparedStatement ps = sp.toPreparedStatement(cw,
-					prepend.toString());
+			PreparedStatement ps = sp.toPreparedStatement(cw, prepend.toString());
 			try
 			{
 				Tools.logFine(ps);
@@ -1777,12 +1714,11 @@ public class Persist
 	 *         id value for that table.
 	 * @throws SQLException
 	 */
-	public ClassIdTuple getRealTableNameAndId(ConnectionWrapper cw,
-			Class<?> propertyClass, Long propertyId) throws SQLException
+	public ClassIdTuple getRealTableNameAndId(ConnectionWrapper cw, Class<?> propertyClass, Long propertyId)
+			throws SQLException
 	{
 		ClassIdTuple res = null;
-		String propertyTable = NameGenerator.getTableName(propertyClass,
-				adapter);
+		String propertyTable = NameGenerator.getTableName(propertyClass, adapter);
 		StringBuilder query = new StringBuilder("SELECT ");
 		query.append(Defaults.REAL_CLASS_COL);
 		query.append(",");
@@ -1808,7 +1744,7 @@ public class Persist
 				try
 				{
 					// convert to table name
-					Class<?> realClass = ObjectTools.lookUpClass(realName,adapter);
+					Class<?> realClass = ObjectTools.lookUpClass(realName, adapter);
 					res = getRealTableNameAndId(cw, realClass, realId);
 				}
 				catch (ClassNotFoundException e)
@@ -1821,8 +1757,7 @@ public class Persist
 		else
 		{
 			ps.close();
-			throw new SQLException("Could not find entry in " + propertyTable
-					+ " with id " + propertyId);
+			throw new SQLException("Could not find entry in " + propertyTable + " with id " + propertyId);
 		}
 		ps.close();
 		return res;
@@ -1851,18 +1786,15 @@ public class Persist
 			Long dbId = cache.getDatabaseId(obj);
 			ObjectRowMap tmpCache = new ObjectRowMap();
 			tmpCache.start();
-			Object nuObject = this
-					.getObject(cw, obj.getClass(), dbId, tmpCache);
+			Object nuObject = this.getObject(cw, obj.getClass(), dbId, tmpCache);
 			if (nuObject == null)
 			{
 				res = null;
 			}
 			else
 			{
-				ObjectRepresentation orig = new ConcreteObjectRepresentation(adapter,
-						obj.getClass(), obj, null);
-				ObjectRepresentation nu = new ConcreteObjectRepresentation(adapter,
-						nuObject.getClass(), nuObject, null);
+				ObjectRepresentation orig = new ConcreteObjectRepresentation(adapter, obj.getClass(), obj, null);
+				ObjectRepresentation nu = new ConcreteObjectRepresentation(adapter, nuObject.getClass(), nuObject, null);
 				ArrayList<Long> idList = new ArrayList<Long>();
 				refresh(orig, cache, nu, tmpCache, idList);
 			}
@@ -1882,10 +1814,9 @@ public class Persist
 		}
 	}
 
-	private void refresh(ObjectRepresentation orig, ObjectRowMap origCache,
-			ObjectRepresentation nu, ObjectRowMap nuCache,
-			ArrayList<Long> idList) throws IllegalArgumentException,
-			IllegalAccessException, InvocationTargetException
+	private void refresh(ObjectRepresentation orig, ObjectRowMap origCache, ObjectRepresentation nu,
+			ObjectRowMap nuCache, ArrayList<Long> idList) throws IllegalArgumentException, IllegalAccessException,
+			InvocationTargetException
 	{
 		for (int x = 0; x < orig.getPropertyCount(); x++)
 		{
@@ -1896,8 +1827,7 @@ public class Persist
 				if (nuProperty != null)
 				{
 					orig.setPropertyValue(x, nuProperty);
-					origCache.storeObject(orig.getTableName(), nuProperty,
-							nuCache.getDatabaseId(nuProperty));
+					origCache.storeObject(orig.getTableName(), nuProperty, nuCache.getDatabaseId(nuProperty));
 				}
 			}
 			else if (nuProperty == null)
@@ -1928,24 +1858,20 @@ public class Persist
 					{
 						// the id, and therefore the objects, are unchanged.
 						// recurse
-						ObjectRepresentation origPropertyPresentation = new ConcreteObjectRepresentation(
-								adapter, origProperty.getClass(), origProperty,
-								null);
-						ObjectRepresentation nuPropertyPresentation = new ConcreteObjectRepresentation(
-								adapter, nuProperty.getClass(), nuProperty,
-								null);
+						ObjectRepresentation origPropertyPresentation = new ConcreteObjectRepresentation(adapter,
+								origProperty.getClass(), origProperty, null);
+						ObjectRepresentation nuPropertyPresentation = new ConcreteObjectRepresentation(adapter,
+								nuProperty.getClass(), nuProperty, null);
 						if (!idList.contains(origDbId))
 						{
 							idList.add(origDbId);
-							refresh(origPropertyPresentation, origCache,
-									nuPropertyPresentation, nuCache, idList);
+							refresh(origPropertyPresentation, origCache, nuPropertyPresentation, nuCache, idList);
 						}
 					}
 					else
 					{
 						orig.setPropertyValue(x, nuProperty);
-						origCache.storeObject(orig.getTableName(), nuProperty,
-								nuDbId);
+						origCache.storeObject(orig.getTableName(), nuProperty, nuDbId);
 					}
 				}
 			}
@@ -1976,10 +1902,9 @@ public class Persist
 	void duplicate(Persist target) throws SQLException
 	{
 		// basic sanity check
-		if (this == target )
+		if (this == target)
 		{
-			throw new IllegalArgumentException(
-					"Can not copy database into itself.");
+			throw new IllegalArgumentException("Can not copy database into itself.");
 		}
 		Duplicator dup = new Duplicator(this, target);
 		dup.doCopy();
@@ -1996,20 +1921,280 @@ public class Persist
 	}
 
 	/**
-	 * Get the result of all the aggregate functions of all the named fields that match all clauses.
+	 * Get the result of all the aggregate functions of all the named fields
+	 * that match all clauses.
 	 * 
-	 * @param cw the connection to use for the query.
-	 * @param clazz the class to calculate aggregate functions on, can be an interface.
-	 * @param functions the aggregate functions to calculate
-	 * @param where 
-	 * @return an array of appropriate Number sublasses (Double, Integer, Long, Short, Byte, Float).
+	 * @param <T>
+	 * 
+	 * @param cw
+	 *            the connection to use for the query.
+	 * @param clazz
+	 *            the class to calculate aggregate functions on, can be an
+	 *            interface.
+	 * @param functions
+	 *            the aggregate functions to calculate
+	 * @param where
+	 * @return an array of appropriate Number sublasses (Double, Integer, Long,
+	 *         Short, Byte, Float).
+	 * @throws SQLException
 	 */
-	public Number[] calculateAggregate(ConnectionWrapper cw, Class<?> clazz, AggregateFunction[] functions, Clause[] where)
+	public <T> Number[] calculateAggregate(ConnectionWrapper cw, Class<T> clazz, AggregateFunction[] functions,
+			Clause[] where) throws SQLException
 	{
-		Number[] res = new Number[functions.length];
-		//TODO: Implement this
-		return res;		
+		Number[] res = null;
+		try
+		{
+			if (!clazz.isInterface())
+			{
+				// get an actual value from the database
+				res = calculateAggregateNonInterface(cw, clazz, functions, where);
+			}
+			else
+			{
+				res = new Number[functions.length];
+				// an array to keep track of counts for average calculations
+				long[] counts = new long[functions.length];
+				// get all implementing classes, too
+				List<Class<? extends T>> implementingClasses = getImplementingClasses(clazz, cw);
+				removeDuplicateSubClasses(implementingClasses);
+
+				// combine the results of all implementing classes
+				for (Class<? extends T> implementingClass : implementingClasses)
+				{
+					Number[] tmp = calculateAggregate(cw, implementingClass, functions, where);
+					for (int x = 0; x < tmp.length; x++)
+					{
+						if (functions[x] instanceof Average)
+						{
+							// get the count
+							long count = getCount(cw, implementingClass, where);
+							tmp[x] = ((Double) tmp[x].doubleValue()) * count;
+							counts[x] += count;
+						}
+						res[x] = combineResults(res[x], tmp[x], functions[x]);
+					}
+				}
+				for (int x = 0; x < res.length; x++)
+				{
+					// re-calculate averages based on counts
+					if (functions[x] instanceof Average && counts[x] > 0)
+					{
+						res[x] = res[x].doubleValue() / counts[x];
+					}
+				}
+			}
+		}
+		catch (ClassNotFoundException e)
+		{
+			throw new SQLException(e);
+		}
+		catch (NoSuchMethodException e)
+		{
+			throw new SQLException(e);
+		}
+		catch (SecurityException e)
+		{
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
+	/**
+	 * Combine the two numbers according to the type of operation, return the
+	 * result.
+	 * 
+	 * @param number
+	 * @param number2
+	 * @param function
+	 * @return
+	 */
+	private Number combineResults(Number number, Number number2, AggregateFunction function)
+	{
+		Number res = null;
+		if (number == null)
+		{
+			res = number2;
+		}
+		else if (function instanceof Sum || function instanceof Average)
+		{
+			// add the result
+			if (number instanceof Long || number instanceof Integer || number instanceof Short
+					|| number instanceof Byte)
+			{
+				res = number.longValue() + number2.longValue();
+			}
+			else if (number instanceof Double || number instanceof Float)
+			{
+				res = number.doubleValue() + number2.doubleValue();
+			}
+		}
+		else if (function instanceof Minimum)
+		{
+			// get the smallest value
+			if (number instanceof Long)
+			{
+				res = Math.min(number.longValue(), number2.longValue());
+			}
+			else if (number instanceof Integer)
+			{
+				res = Math.min(number.intValue(), number2.intValue());
+			}
+			else if (number instanceof Short)
+			{
+				res = (short) Math.min(number.intValue(), number2.intValue());
+			}
+			else if (number instanceof Byte)
+			{
+				res = (byte) Math.min(number.intValue(), number2.intValue());
+			}
+			else if (number instanceof Double)
+			{
+				res = Math.min(number.doubleValue(), number2.doubleValue());
+			}
+			else if (number instanceof Float)
+			{
+				res = Math.min(number.floatValue(), number2.floatValue());
+			}
+		}
+		else if (function instanceof Maximum)
+		{
+			// get the largest value
+			if (number instanceof Long)
+			{
+				res = Math.max(number.longValue(), number2.longValue());
+			}
+			else if (number instanceof Integer)
+			{
+				res = Math.max(number.intValue(), number2.intValue());
+			}
+			else if (number instanceof Short)
+			{
+				res = (short) Math.max(number.intValue(), number2.intValue());
+			}
+			else if (number instanceof Byte)
+			{
+				res = (byte) Math.max(number.intValue(), number2.intValue());
+			}
+			else if (number instanceof Double)
+			{
+				res = Math.max(number.doubleValue(), number2.doubleValue());
+			}
+			else if (number instanceof Float)
+			{
+				res = Math.max(number.floatValue(), number2.floatValue());
+			}
+		}
+		return res;
+	}
+
+	/**
+	 * Get the result of all the aggregate functions of all the named fields
+	 * that match all clauses.
+	 * 
+	 * @param cw
+	 *            the connection to use for the query.
+	 * @param clazz
+	 *            the class to calculate aggregate functions on, can not be an
+	 *            interface.
+	 * @param functions
+	 *            the aggregate functions to calculate
+	 * @param where
+	 * @return an array of appropriate Number sublasses (Double, Integer, Long,
+	 *         Short, Byte, Float).
+	 * @throws SQLException
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 */
+	private Number[] calculateAggregateNonInterface(ConnectionWrapper cw, Class<?> clazz,
+			AggregateFunction[] functions, Clause[] where) throws SQLException, NoSuchMethodException,
+			SecurityException
+	{
+		// create an array to hold the results
+		Number[] res = new Number[functions.length];
+
+		// generate the WHERE part of the statement
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+		whereGenerator.setClauses(where);
+		StatementPrototype sp = whereGenerator.generate(clazz, true);
+
+		// generate the SELECT part of the statement
+		StringBuilder selection = new StringBuilder("SELECT ");
+		for (int x = 0; x < functions.length; x++)
+		{
+			AggregateFunction af = functions[x];
+			selection.append(af.getStringRepresentation(whereGenerator.getTypeStack()));
+			if (x < functions.length - 1)
+			{
+				selection.append(",");
+			}
+		}
+		selection.append(" FROM ");
+
+		// generate query
+		PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
+
+		// execute query
+		ResultSet rs = ps.executeQuery();
+
+		// parse results
+		if (rs.next())
+		{
+			for (int x = 0; x < functions.length; x++)
+			{
+
+				res[x] = getValueFromQuery(rs, functions[x], whereGenerator.getTypeStack(), x + 1);
+			}
+		}
+
+		ps.close();
+
+		return res;
+	}
+
+	/**
+	 * @param rs
+	 * @param aggregateFunction
+	 * @param i
+	 * @return
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws SQLException
+	 */
+	private Number getValueFromQuery(ResultSet rs, AggregateFunction function, ObjectStack stack, int column)
+			throws NoSuchMethodException, SecurityException, SQLException
+	{
+		Number res = null;
+		Class<?> number = function.getReturnType(stack);
+		// get the smallest value
+		if (number == Long.class || number == long.class)
+		{
+			res = rs.getLong(column);
+		}
+		else if (number == Integer.class || number == int.class)
+		{
+			res = rs.getInt(column);
+		}
+		else if (number == Short.class || number == short.class)
+		{
+			res = rs.getShort(column);
+		}
+		else if (number == Byte.class || number == byte.class)
+		{
+			res = rs.getByte(column);
+		}
+		else if (number == Double.class || number == double.class)
+		{
+			res = rs.getDouble(column);
+		}
+		else if (number == Float.class || number == float.class)
+		{
+			res = rs.getFloat(column);
+		}
+		else
+		{
+			throw new SQLException("Don't know how to " + function.getStringRepresentation(stack) + " as "+number);
+		}
+		return res;
+	}
 
 }

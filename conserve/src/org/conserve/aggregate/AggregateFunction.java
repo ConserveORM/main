@@ -50,6 +50,32 @@ public abstract class AggregateFunction
 	}
 	
 	/**
+	 * Find the return type of this type of operation on the particular field and object.
+	 * @param stack
+	 * @return
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 */
+	public Class<?> getReturnType(ObjectStack stack) throws NoSuchMethodException, SecurityException
+	{
+		Method method = stack.getActualRepresentation().getRepresentedClass().getMethod(fieldName);
+		String colname = NameGenerator.getColumnName(method);
+		ObjectRepresentation rep = stack.getRepresentation(colname);
+		Class<?> clazz = rep.getReturnType(colname);
+		return translateReturnType(clazz);
+	}
+	
+	/**
+	 * Return a class that indicates how the specific return type will be handled by the aggregate function.
+	 * 
+	 * Usually, the result will be subject to a widening cast or no cast at all, e.g. Float will return Float or Double.
+	 * 
+	 * @param clazz
+	 * @return
+	 */
+	protected abstract Class<?> translateReturnType(Class<?>clazz);
+	
+	/**
 	 * Get the name of the SQL aggregate function this class represents.
 	 * @return
 	 */

@@ -26,4 +26,13 @@ public class Minimum extends AggregateFunction
 		return "MIN";
 	}
 
+	/**
+	 * @see org.conserve.aggregate.AggregateFunction#translateReturnType(java.lang.Class)
+	 */
+	@Override
+	protected Class<?> translateReturnType(Class<?> clazz)
+	{
+		//no widening used for Minimum
+		return clazz;
+	}
 }

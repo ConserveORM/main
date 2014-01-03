@@ -37,7 +37,7 @@ public class Average extends AggregateFunction
 	@Override
 	public String getStringRepresentation(ObjectStack stack) throws NoSuchMethodException, SecurityException
 	{
-		Method method = stack.getActualRepresentation().getRepresentedClass().getMethod(fieldName);
+		Method method = stack.getActualRepresentation().getRepresentedClass().getMethod(methodName);
 		String colname = NameGenerator.getColumnName(method);
 		ObjectRepresentation rep = stack.getRepresentation(colname);
 		

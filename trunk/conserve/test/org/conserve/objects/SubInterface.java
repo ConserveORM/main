@@ -22,5 +22,5 @@ import java.io.Serializable;
 
 public interface SubInterface extends BaseInterface, Serializable
 {
-	public int getSomeValue();
+	public Integer getSomeValue();
 }

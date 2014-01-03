@@ -45,6 +45,7 @@ import org.conserve.adapter.PostgreSqlAdapter;
 import org.conserve.adapter.SqLiteAdapter;
 import org.conserve.aggregate.AggregateFunction;
 import org.conserve.aggregate.Average;
+import org.conserve.aggregate.Count;
 import org.conserve.aggregate.Maximum;
 import org.conserve.aggregate.Minimum;
 import org.conserve.aggregate.Sum;
@@ -948,31 +949,8 @@ public class Persist
 	 */
 	<T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
-		long res = 0;
-		try
-		{
-			if (!clazz.isInterface())
-			{
-				// get an actual object from the database
-				res += getCountNonInterface(cw, clazz, clause);
-			}
-			else
-			{
-				// get all implementing classes, too
-				List<Class<? extends T>> subClasses = getImplementingClasses(clazz, cw);
-				removeDuplicateSubClasses(subClasses);
-				for (Class<? extends T> subClass : subClasses)
-				{
-					// recurse for all subclasses
-					res += getCount(subClass, clause);
-				}
-			}
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new SQLException(e);
-		}
-		return res;
+		Number [] res = calculateAggregate(cw, clazz, new AggregateFunction[]{new Count()}, clause);
+		return (Long)res[0];
 	}
 
 	/**
@@ -1179,39 +1157,6 @@ public class Persist
 				}
 			}
 		}
-		return res;
-	}
-
-	/**
-	 * Get the number of objects of class clazz that satisfy the clause.
-	 * 
-	 * @param clazz
-	 * @param className
-	 * @param clause
-	 * @return the number of matching objects.
-	 * @throws SQLException
-	 */
-	private <T> long getCountNonInterface(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
-	{
-		long res = 0;
-		if (!tableManager.tableExists(clazz, cw))
-		{
-			return res;
-		}
-
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-		whereGenerator.setClauses(clause);
-		StatementPrototype sp = whereGenerator.generate(clazz, true);
-		String tableId = sp.getIdStatementGenerator().getJoinTableIds().get(0);
-		StringBuilder statement = new StringBuilder("SELECT COUNT(DISTINCT(" + tableId + "." + Defaults.ID_COL
-				+ ")) FROM ");
-		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
-		ResultSet rs = ps.executeQuery();
-		if (rs.next())
-		{
-			res = rs.getLong(1);
-		}
-		ps.close();
 		return res;
 	}
 
@@ -1967,9 +1912,10 @@ public class Persist
 						if (functions[x] instanceof Average)
 						{
 							// get the count
-							long count = getCount(cw, implementingClass, where);
-							tmp[x] = ((Double) tmp[x].doubleValue()) * count;
-							counts[x] += count;
+							Number [] count = calculateAggregate(cw, implementingClass, new AggregateFunction[] { new Count(
+									functions[x].getMethodName()) }, where);
+							tmp[x] = ((Double) tmp[x]) * (Long)count[0];
+							counts[x] += (Long)count[0];
 						}
 						res[x] = combineResults(res[x], tmp[x], functions[x]);
 					}
@@ -2192,7 +2138,7 @@ public class Persist
 		}
 		else
 		{
-			throw new SQLException("Don't know how to " + function.getStringRepresentation(stack) + " as "+number);
+			throw new SQLException("Don't know how to " + function.getStringRepresentation(stack) + " as " + number);
 		}
 		return res;
 	}

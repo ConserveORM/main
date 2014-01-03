@@ -45,7 +45,7 @@ public class LessSimpleObject extends SimpleObject implements SubInterface, Runn
 	}
 
 	@Override
-	public int getSomeValue()
+	public Integer getSomeValue()
 	{
 		return 0;
 	}

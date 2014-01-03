@@ -3244,6 +3244,13 @@ public class PersistTest
 			so.setSomeValue(x);
 			pm.saveObject(so);
 		}
+		//add some null values
+		for (; x < 300; x++)
+		{
+			ImplementerB so = new ImplementerB();
+			pm.saveObject(so);
+		}
+		
 
 		// get the sum, max, min, and average of the long values
 		Number[] tmp = pm.calculateAggregate(SubInterface.class, new AggregateFunction[] { new Sum("getSomeValue"),

@@ -9,9 +9,9 @@ import org.conserve.objects.SubInterface;
 public class ImplementerA implements SubInterface
 {
 	private static final long serialVersionUID = -5436610031137796305L;
-	private int someValue;
+	private Integer someValue;
 	
-	public void setSomeValue(int v)
+	public void setSomeValue(Integer v)
 	{
 		this.someValue = v;
 	}
@@ -20,7 +20,7 @@ public class ImplementerA implements SubInterface
 	 * @see org.conserve.objects.SubInterface#getSomeValue()
 	 */
 	@Override
-	public int getSomeValue()
+	public Integer getSomeValue()
 	{
 		return someValue;
 	}

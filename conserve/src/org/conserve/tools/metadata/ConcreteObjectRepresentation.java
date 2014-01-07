@@ -28,12 +28,6 @@ import org.conserve.tools.protection.ProtectionStack;
 public class ConcreteObjectRepresentation extends ObjectRepresentation
 {
 
-	public ConcreteObjectRepresentation(AdapterBase adapter, Class<?> c,
-			DelayedInsertionBuffer delayBuffer)
-	{
-		this(adapter, c, null, delayBuffer);
-	}
-
 	public ConcreteObjectRepresentation(AdapterBase adapter, Class<?> c, Object o,
 			DelayedInsertionBuffer delayBuffer)
 	{

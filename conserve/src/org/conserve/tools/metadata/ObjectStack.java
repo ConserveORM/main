@@ -58,15 +58,7 @@ public class ObjectStack
 		this.adapter = adapter;
 		while (c != null)
 		{
-			ObjectRepresentation rep = null;
-			if (o != null)
-			{
-				rep = new ConcreteObjectRepresentation(adapter, c, o, delayBuffer);
-			}
-			else
-			{
-				rep = new ConcreteObjectRepresentation(adapter, c, delayBuffer);
-			}
+			ObjectRepresentation rep = new ConcreteObjectRepresentation(adapter, c,o, delayBuffer);
 			representations.add(0, rep);
 			c = c.getSuperclass();
 		}

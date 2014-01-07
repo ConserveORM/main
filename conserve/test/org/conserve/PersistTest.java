@@ -2968,26 +2968,26 @@ public class PersistTest
 
 		// get the sum of the Long values
 		Number n = pm.calculateAggregate(SimpleObject.class, new Sum("getAge"));
-		assertEquals(Long.class,n.getClass());
+		assertEquals(Long.class, n.getClass());
 		assertEquals(sum, n.longValue());
 
 		// get the sum of the int values
 		n = pm.calculateAggregate(SimpleObject.class, new Sum("getCount"));
-		assertEquals(Long.class,n.getClass());
+		assertEquals(Long.class, n.getClass());
 		assertEquals(sum, n.longValue());
 
 		// get the sum of the double values
 		n = pm.calculateAggregate(SimpleObject.class, new Sum("getValue"));
-		assertEquals(Double.class,n.getClass());
+		assertEquals(Double.class, n.getClass());
 		assertEquals(sum, n.doubleValue(), 0.0001);
 
 		// get the sum of the long, int, and double values
 		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Sum("getAge"),
 				new Sum("getCount"), new Sum("getValue") });
 		assertEquals(3, tmp.length);
-		assertEquals(Long.class,tmp[0].getClass());
-		assertEquals(Long.class,tmp[1].getClass());
-		assertEquals(Double.class,tmp[2].getClass());
+		assertEquals(Long.class, tmp[0].getClass());
+		assertEquals(Long.class, tmp[1].getClass());
+		assertEquals(Double.class, tmp[2].getClass());
 
 		assertEquals(sum, tmp[0].longValue());
 		assertEquals(sum, tmp[1].longValue());
@@ -3024,17 +3024,17 @@ public class PersistTest
 
 		// get the average of the Long values
 		Number n = pm.calculateAggregate(SimpleObject.class, new Average("getAge"));
-		assertEquals(Double.class,n.getClass());
-		//assertEquals(average, n.doubleValue(), 0.0001);
+		assertEquals(Double.class, n.getClass());
+		// assertEquals(average, n.doubleValue(), 0.0001);
 
 		// get the average of the int values
 		n = pm.calculateAggregate(SimpleObject.class, new Average("getCount"));
-		assertEquals(Double.class,n.getClass());
-		//assertEquals(average, n.doubleValue(), 0.0001);
+		assertEquals(Double.class, n.getClass());
+		// assertEquals(average, n.doubleValue(), 0.0001);
 
 		// get the average of the double values
 		n = pm.calculateAggregate(SimpleObject.class, new Average("getValue"));
-		assertEquals(Double.class,n.getClass());
+		assertEquals(Double.class, n.getClass());
 		assertEquals(average, n.doubleValue(), 0.0001);
 
 		// get the average of the long, int, and double values
@@ -3095,9 +3095,9 @@ public class PersistTest
 		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Maximum("getAge"),
 				new Maximum("getCount"), new Maximum("getValue") });
 		assertEquals(3, tmp.length);
-		assertEquals(Long.class,tmp[0].getClass());
-		assertEquals(Integer.class,tmp[1].getClass());
-		assertEquals(Double.class,tmp[2].getClass());
+		assertEquals(Long.class, tmp[0].getClass());
+		assertEquals(Integer.class, tmp[1].getClass());
+		assertEquals(Double.class, tmp[2].getClass());
 
 		assertEquals(max, tmp[0].intValue());
 		assertEquals(max, tmp[1].longValue());
@@ -3151,9 +3151,9 @@ public class PersistTest
 		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Minimum("getAge"),
 				new Minimum("getCount"), new Minimum("getValue") });
 		assertEquals(3, tmp.length);
-		assertEquals(Long.class,tmp[0].getClass());
-		assertEquals(Integer.class,tmp[1].getClass());
-		assertEquals(Double.class,tmp[2].getClass());
+		assertEquals(Long.class, tmp[0].getClass());
+		assertEquals(Integer.class, tmp[1].getClass());
+		assertEquals(Double.class, tmp[2].getClass());
 
 		assertEquals(min, tmp[0].intValue());
 		assertEquals(min, tmp[1].longValue());
@@ -3195,14 +3195,14 @@ public class PersistTest
 		Number[] tmp = pm.calculateAggregate(SimpleObject.class, new AggregateFunction[] { new Sum("getAge"),
 				new Maximum("getAge"), new Minimum("getAge"), new Average("getAge"), });
 		assertEquals(4, tmp.length);
-		//all aggregates of a long field are long...
-		assertEquals(Long.class,tmp[0].getClass());
-		assertEquals(Long.class,tmp[1].getClass());
-		assertEquals(Long.class,tmp[2].getClass());
-		//...except average, which is always double
-		assertEquals(Double.class,tmp[3].getClass());
+		// all aggregates of a long field are long...
+		assertEquals(Long.class, tmp[0].getClass());
+		assertEquals(Long.class, tmp[1].getClass());
+		assertEquals(Long.class, tmp[2].getClass());
+		// ...except average, which is always double
+		assertEquals(Double.class, tmp[3].getClass());
 
-		//check that the correct values are returned
+		// check that the correct values are returned
 		assertEquals(sum, tmp[0].longValue());
 		assertEquals(max, tmp[1].longValue());
 		assertEquals(min, tmp[2].longValue());
@@ -3211,7 +3211,7 @@ public class PersistTest
 		pm.close();
 
 	}
-	
+
 	/**
 	 * Test calculating the various SQL aggregate functions on an interface.
 	 * 
@@ -3244,28 +3244,27 @@ public class PersistTest
 			so.setSomeValue(x);
 			pm.saveObject(so);
 		}
-		//add some null values
+		// add some null values
 		for (; x < 300; x++)
 		{
 			ImplementerB so = new ImplementerB();
 			pm.saveObject(so);
 		}
-		
 
 		// get the sum, max, min, and average of the long values
 		Number[] tmp = pm.calculateAggregate(SubInterface.class, new AggregateFunction[] { new Sum("getSomeValue"),
 				new Maximum("getSomeValue"), new Minimum("getSomeValue"), new Average("getSomeValue"), });
 		assertEquals(4, tmp.length);
-		//sum of an int field are long...
-		assertEquals(Long.class,tmp[0].getClass());
-		//max of an int field is int
-		assertEquals(Integer.class,tmp[1].getClass());
-		//min of an int field is int
-		assertEquals(Integer.class,tmp[2].getClass());
-		//...and average is always double
+		// sum of an int field are long...
+		assertEquals(Long.class, tmp[0].getClass());
+		// max of an int field is int
+		assertEquals(Integer.class, tmp[1].getClass());
+		// min of an int field is int
+		assertEquals(Integer.class, tmp[2].getClass());
+		// ...and average is always double
 		assertTrue(tmp[3] instanceof Double);
 
-		//check that the correct values are returned
+		// check that the correct values are returned
 		assertEquals(sum, tmp[0].longValue());
 		assertEquals(max, tmp[1].intValue());
 		assertEquals(min, tmp[2].intValue());
@@ -3274,4 +3273,272 @@ public class PersistTest
 		pm.close();
 
 	}
+
+	/**
+	 * Test if protection entries are correctly handled when we perform schema
+	 * update task move subclass from one class to another.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testProtectionEntryMaintenanceOnMoveClass() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+
+		// Test 1: Move property from one superclass to another, incompatible,
+		// one.
+		// drop all tables
+		pm.dropTable(Object.class);
+		// create two OriginalObjects to give OriginalObject and SubClass
+		// different IDs
+		pm.saveObject(new OriginalObject());
+		pm.saveObject(new OriginalObject());
+		// create two SubClass, store them in ContainerObject
+		SubClass ns = new SubClass();
+		ns.setName("foo");
+		ContainerObject co = new ContainerObject();
+		co.setFoo(ns);
+		pm.saveObject(co);
+
+		ns = new SubClass();
+		ns.setName("bar");
+		co = new ContainerObject();
+		co.setFoo(ns);
+		pm.saveObject(co);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// rename SubClass to NotSubClass, move from OrignialObject to Object
+		pm.changeName(SubClass.class, NotSubClass.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// change the database schema
+		pm.updateSchema(NotSubClass.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// pm should now contain two ContainerObjects where foo == null.
+		List<ContainerObject> coList = pm.getObjects(ContainerObject.class);
+		assertEquals(2, coList.size());
+		assertNull(coList.get(0).getFoo());
+		assertNull(coList.get(1).getFoo());
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+
+		pm.close();
+
+		// Test 2: Move property from one superclass to subclass.
+		pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		// create two OriginalObjects to give OriginalObject and SubClass
+		// different IDs
+		pm.saveObject(new OriginalObject());
+		pm.saveObject(new OriginalObject());
+		// create two OriginalObject, store them in ContainerObject
+		OriginalObject oo = new OriginalObject();
+		oo.setName("foo");
+		co = new ContainerObject();
+		co.setFoo(oo);
+		pm.saveObject(co);
+
+		oo = new OriginalObject();
+		oo.setName("bar");
+		co = new ContainerObject();
+		co.setFoo(oo);
+		pm.saveObject(co);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// rename OriginalObject to SubClass, move from superclass to subclass
+		pm.changeName(OriginalObject.class, SubClass.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// change the database schema
+		pm.updateSchema(SubClass.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// deleting all OriginalObject or SubClass should now result in no
+		// change, as they are protected by ContainerObject
+		// assert that there are still four OriginalObject and two SubClass
+		// items
+		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(4, pm.getCount(SubClass.class, new All()));
+		// delete all OriginalObject/SubClass items
+		pm.deleteObjects(OriginalObject.class, new All());
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SubClass.class, new All()));
+		pm.deleteObjects(SubClass.class);
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SubClass.class, new All()));
+		// deleting all ContainerObject should delete all SubClass and
+		// OriginalObject, as they have no external reference
+		pm.deleteObjects(ContainerObject.class);
+		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
+
+		pm.close();
+
+		// Test 3: Move property from one subclass to superclass.
+		pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		// create two OriginalObjects to give OriginalObject and SubClass
+		// different IDs
+		pm.saveObject(new OriginalObject());
+		pm.saveObject(new OriginalObject());
+		// create two SubClass, store them in ContainerObject
+		ns = new SubClass();
+		ns.setName("foo");
+		co = new ContainerObject();
+		co.setFoo(ns);
+		pm.saveObject(co);
+
+		ns = new SubClass();
+		ns.setName("bar");
+		co = new ContainerObject();
+		co.setFoo(ns);
+		pm.saveObject(co);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// rename SubClass to OriginalObject, move from subclass to superclass
+		pm.changeName(SubClass.class, OriginalObject.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// change the database schema
+		pm.updateSchema(OriginalObject.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// deleting all OriginalObject or SubClass should now result in no
+		// change, as they are protected by ContainerObject
+		// assert that there are still four OriginalObject and two SubClass
+		// items
+		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
+		// delete all OriginalObject/SubClass items
+		pm.deleteObjects(OriginalObject.class, new All());
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
+		pm.deleteObjects(SubClass.class);
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
+		// deleting all ContainerObject should delete all SubClass and
+		// OriginalObject, as they have no external reference
+		pm.deleteObjects(ContainerObject.class, new All());
+		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
+
+		pm.close();
+	}
+
+	/**
+	 * Test if protection entries are correctly maintained when moving a field
+	 * up or down in a class hierarchy.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testProtectionEntryMaintenanceOnMoveField() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+
+		// create some test data
+		// move a field up in the hierarchy
+		// check that the protection entry has been updated to point from the
+		// new containing class
+
+		fail("Not implemented");
+		pm.close();
+	}
+
+	/**
+	 * Test if protection entries are correctly maintained when removing a field
+	 * from a class.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testProtectionEntryMaintenanceOnDeleteField() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		// Test 1: Create some entries that are part of another object
+		// then drop that row from the containing object class
+		// make sure the contained objects are gone
+
+		// Test 2: Create some entries that are part of another object.
+		// Search for and return the contained objects,
+		// then drop the row from the containing object class
+		// make sure the contained objects are still there
+
+		fail("Not implemented");
+
+		pm.close();
+	}
+
+	/**
+	 * Test if protection entries are correctly maintained when changing the
+	 * type of a field.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testProtectionEntryMaintenanceOnChangeField() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		// Test 1: Create some entries that are part of another object
+		// then change the field from reference to Long
+		// make sure the contained objects are gone
+
+		// Test 2: Create some entries that are part of another object.
+		// Search for and return the contained objects,
+		// then change the field from reference to Long
+		// make sure the contained objects are still there
+
+		fail("Not implemented");
+
+		pm.close();
+	}
+
+	/**
+	 * Test if protection entries are correctly maintained when removing an
+	 * interface from a class.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testProtectionEntryMaintenanceOnDeleteInterface() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+
+		// Test 1: Create some entries that are part of another object
+		// the containing object references an interface that the contained
+		// objects implement
+		// remove the interface from the contained objects
+		// make sure the contained objects are gone
+
+		// Test 2: Create some entries that are part of another object
+		// Search and return the contained objects, so that an external
+		// reference is created.
+		// the containing object references an interface that the contained
+		// objects implement
+		// remove the interface from the contained objects
+		// make sure the contained objects are still there.
+
+		fail("Not implemented");
+		pm.close();
+	}
+
 }

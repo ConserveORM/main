@@ -488,7 +488,7 @@ public class PersistenceManager
 	@SuppressWarnings("unchecked")
 	public <T> long getCount(T pattern) throws SQLException
 	{
-		return getCount((Class<T>) pattern.getClass(), pattern);
+ 		return getCount((Class<T>) pattern.getClass(), new Equal(pattern));
 	}
 
 	/**
@@ -506,22 +506,6 @@ public class PersistenceManager
 	public <T> long getCount(ConnectionWrapper cw, T pattern) throws SQLException
 	{
 		return getCount(cw, (Class<T>) pattern.getClass(), pattern);
-	}
-
-	/**
-	 * Get the number of objects that match the non-null properties of pattern.
-	 * The fields with non-null values in the pattern are matched to database
-	 * fields. Convenience method that does not require the user to supply a
-	 * ConnectionWrapper.
-	 * 
-	 * @param clazz
-	 *            the class of the objects to look for.
-	 * @param pattern
-	 *            return only objects that match the pattern object.
-	 */
-	public long getCount(Class<?> clazz, Object pattern) throws SQLException
-	{
-		return persist.getCount(clazz, new Equal(pattern, clazz));
 	}
 
 	/**
@@ -555,7 +539,7 @@ public class PersistenceManager
 	 *         satisfy clause.
 	 * @throws SQLException
 	 */
-	public <T> long getCount(Class<T> clazz, Clause clause) throws SQLException
+	public <T> long getCount(Class<T> clazz, Clause... clause) throws SQLException
 	{
 		return persist.getCount(clazz, clause);
 	}
@@ -574,7 +558,7 @@ public class PersistenceManager
 	 *         satisfy clause.
 	 * @throws SQLException
 	 */
-	public <T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause clause) throws SQLException
+	public <T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
 		return persist.getCount(cw, clazz, clause);
 	}

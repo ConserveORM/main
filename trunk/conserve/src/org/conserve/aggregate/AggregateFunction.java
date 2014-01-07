@@ -59,7 +59,7 @@ public abstract class AggregateFunction
 		}
 		else
 		{
-			//count all rows
+			//no name given, use wildcard
 			res.append("(*)");
 		}
 		return res.toString();
@@ -84,6 +84,7 @@ public abstract class AggregateFunction
 			ObjectRepresentation rep = stack.getRepresentation(colname);
 			clazz = rep.getReturnType(colname);
 		}
+		//if methodName is null, hopefully the subclass will handle it correctly
 		return translateReturnType(clazz);
 	}
 

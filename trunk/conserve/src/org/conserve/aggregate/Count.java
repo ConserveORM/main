@@ -43,5 +43,4 @@ public class Count extends AggregateFunction
 	{
 		return "COUNT";
 	}
-
 }

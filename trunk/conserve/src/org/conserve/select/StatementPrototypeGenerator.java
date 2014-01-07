@@ -156,7 +156,7 @@ public class StatementPrototypeGenerator
 							{
 								Selector sel = (Selector) subClauses[x];
 
-								ObjectStack oStack = new ObjectStack(adapter, sel.getSelectionObject().getClass(),
+								ObjectStack oStack = new ObjectStack(adapter, sel.getSelectionClass(),
 										sel.getSelectionObject(), new DelayedInsertionBuffer(adapter.getPersist()));
 								typeIds.nameStack(oStack);
 								generateClause(oStack, sel, sp, sorted);

@@ -3470,16 +3470,66 @@ public class PersistTest
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
+		
 		// Test 1: Create some entries that are part of another object
+		OriginalObject oo = new OriginalObject();
+		oo.setRedundantObject(new SimpleObject());
+		pm.saveObject(oo);
+		oo = new OriginalObject();
+		oo.setRedundantObject(new SimpleObject());
+		pm.saveObject(oo);
+		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
 		// then drop that row from the containing object class
+		pm.changeName(OriginalObject.class, RemovedColumn.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// change the database schema
+		pm.updateSchema(RemovedColumn.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
 		// make sure the contained objects are gone
+		assertEquals(2,pm.getCount(RemovedColumn.class, new All()));
+		assertEquals(0,pm.getCount(SimpleObject.class, new All()));
+		pm.close();
 
+		pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
 		// Test 2: Create some entries that are part of another object.
-		// Search for and return the contained objects,
-		// then drop the row from the containing object class
-		// make sure the contained objects are still there
+		oo = new OriginalObject();
+		oo.setRedundantObject(new SimpleObject());
+		pm.saveObject(oo);
+		//also create an external reference for the contained object
+		pm.saveObject(oo.getRedundantObject());
+		oo = new OriginalObject();
+		oo.setRedundantObject(new SimpleObject());
+		pm.saveObject(oo);
+		pm.saveObject(oo.getRedundantObject());
+		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		// then drop that row from the containing object class
+		pm.changeName(OriginalObject.class, RemovedColumn.class);
+		pm.close();
 
-		fail("Not implemented");
+		pm = new PersistenceManager(driver, database, login, password);
+		// change the database schema
+		pm.updateSchema(RemovedColumn.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// make sure the contained objects are still there
+		assertEquals(2,pm.getCount(RemovedColumn.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		
+		//delete the former containing objects
+		pm.deleteObjects(RemovedColumn.class, new All());
+		//make sure former contained objects are still there
+		assertEquals(0,pm.getCount(RemovedColumn.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
 
 		pm.close();
 	}
@@ -3497,15 +3547,57 @@ public class PersistTest
 		// drop all tables
 		pm.dropTable(Object.class);
 		// Test 1: Create some entries that are part of another object
+		OriginalObject oo = new OriginalObject();
+		oo.setOtherObject(new SimpleObject());
+		pm.saveObject(oo);
+		oo = new OriginalObject();
+		oo.setOtherObject(new SimpleObject());
+		pm.saveObject(oo);
+		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
 		// then change the field from reference to Long
+		pm.changeName(OriginalObject.class, ObjectToLong.class);
+		pm.updateSchema(ObjectToLong.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
 		// make sure the contained objects are gone
+		assertEquals(2,pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(0,pm.getCount(SimpleObject.class, new All()));
+		pm.close();
 
+		pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
 		// Test 2: Create some entries that are part of another object.
-		// Search for and return the contained objects,
+		oo = new OriginalObject();
+		oo.setOtherObject(new SimpleObject());
+		pm.saveObject(oo);
+		//save reference to the contained object
+		pm.saveObject(oo.getOtherObject());
+		oo = new OriginalObject();
+		oo.setOtherObject(new SimpleObject());
+		pm.saveObject(oo);
+		pm.saveObject(oo.getOtherObject());
+		//check that insertion worked
+		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
 		// then change the field from reference to Long
-		// make sure the contained objects are still there
+		pm.changeName(OriginalObject.class, ObjectToLong.class);
+		pm.updateSchema(ObjectToLong.class);
+		pm.close();
 
-		fail("Not implemented");
+		pm = new PersistenceManager(driver, database, login, password);
+		// make sure the contained objects are still there
+		assertEquals(2,pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		
+		//delete the former containing objects
+		pm.deleteObjects(ObjectToLong.class, new All());
+		//make sure the former contained objects are still there
+		assertEquals(0,pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
 
 		pm.close();
 	}

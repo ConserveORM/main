@@ -13,9 +13,9 @@ public class ChangedInheritanceContainer
 {
 	private Serializable foo;
 	public ChangedInheritanceContainer()
-	{
-		
+	{	
 	}
+	
 	/**
 	 * @return the foo
 	 */
@@ -23,6 +23,7 @@ public class ChangedInheritanceContainer
 	{
 		return foo;
 	}
+	
 	/**
 	 * @param foo the foo to set
 	 */

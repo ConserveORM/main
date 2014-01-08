@@ -21,6 +21,8 @@ package org.conserve;
 import static org.junit.Assert.*;
 
 import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -66,6 +68,7 @@ import org.conserve.objects.polymorphism.Foo;
 import org.conserve.objects.polymorphism.FooContainer;
 import org.conserve.objects.polymorphism.FooContainerOwner;
 import org.conserve.objects.polymorphism.MyFooContainer;
+import org.conserve.objects.polymorphism.MyNonFooContainer;
 import org.conserve.objects.recursive.Layer1;
 import org.conserve.objects.recursive.Layer2;
 import org.conserve.objects.recursive.Layer3;
@@ -85,6 +88,10 @@ import org.conserve.objects.schemaupdate.changedcolumns.IntToLong;
 import org.conserve.objects.schemaupdate.changedcolumns.ObjectToLong;
 import org.conserve.objects.schemaupdate.changedcolumns.ObjectToSubclass;
 import org.conserve.objects.schemaupdate.changedcolumns.StringToLong;
+import org.conserve.objects.schemaupdate.copydown.AfterBottom;
+import org.conserve.objects.schemaupdate.copydown.AfterTop;
+import org.conserve.objects.schemaupdate.copydown.BeforeBottom;
+import org.conserve.objects.schemaupdate.copydown.BeforeTop;
 import org.conserve.objects.schemaupdate.copydown.ModifiedBottom;
 import org.conserve.objects.schemaupdate.copydown.ModifiedMiddle;
 import org.conserve.objects.schemaupdate.copydown.OriginalBottom;
@@ -102,6 +109,8 @@ import org.conserve.select.discriminators.LessOrEqual;
 import org.conserve.sort.Ascending;
 import org.conserve.sort.Descending;
 import org.conserve.sort.Order;
+import org.conserve.tools.Defaults;
+import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 import org.junit.After;
 import org.junit.Before;
@@ -3352,9 +3361,6 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename OriginalObject to SubClass, move from superclass to subclass
 		pm.changeName(OriginalObject.class, SubClass.class);
-		pm.close();
-
-		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(SubClass.class);
 		pm.close();
@@ -3376,6 +3382,7 @@ public class PersistTest
 		// deleting all ContainerObject should delete all SubClass and
 		// OriginalObject, as they have no external reference
 		pm.deleteObjects(ContainerObject.class);
+		assertEquals(0, pm.getCount(ContainerObject.class, new All()));
 		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(0, pm.getCount(SubClass.class, new All()));
 
@@ -3406,9 +3413,6 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename SubClass to OriginalObject, move from subclass to superclass
 		pm.changeName(SubClass.class, OriginalObject.class);
-		pm.close();
-
-		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
@@ -3450,11 +3454,39 @@ public class PersistTest
 		pm.dropTable(Object.class);
 
 		// create some test data
+		BeforeBottom bb = new BeforeBottom();
+		bb.setFoo(new OriginalObject());
+		pm.saveObject(bb);
+		bb = new BeforeBottom();
+		bb.setFoo(new OriginalObject());
+		pm.saveObject(bb);
+
 		// move a field up in the hierarchy
+		pm.changeName(BeforeBottom.class, AfterBottom.class);
+		pm.changeName(BeforeTop.class, AfterTop.class);
+		pm.updateSchema(AfterBottom.class);
+		pm.close();
+
 		// check that the protection entry has been updated to point from the
 		// new containing class
-
-		fail("Not implemented");
+		pm = new PersistenceManager(driver, database, login, password);
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		StringBuilder query = new StringBuilder("SELECT COUNT(*) FROM ");
+		query.append(Defaults.HAS_A_TABLENAME);
+		query.append(" WHERE OWNER_TABLE = ? AND PROPERTY_TABLE = ?");
+		PreparedStatement ps = cw.prepareStatement(query.toString());
+		ps.setString(1,"ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_COPYDOWN_AFTERTOP");
+		ps.setString(2, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_ORIGINALOBJECT");
+		
+		ResultSet rs = ps.executeQuery();
+		if(rs.next())
+		{
+			assertEquals(2,rs.getInt(1));
+		}
+		else
+		{
+			fail("No results returned");
+		}
 		pm.close();
 	}
 
@@ -3470,7 +3502,7 @@ public class PersistTest
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
+
 		// Test 1: Create some entries that are part of another object
 		OriginalObject oo = new OriginalObject();
 		oo.setRedundantObject(new SimpleObject());
@@ -3478,8 +3510,8 @@ public class PersistTest
 		oo = new OriginalObject();
 		oo.setRedundantObject(new SimpleObject());
 		pm.saveObject(oo);
-		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then drop that row from the containing object class
 		pm.changeName(OriginalObject.class, RemovedColumn.class);
 		pm.close();
@@ -3491,26 +3523,26 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// make sure the contained objects are gone
-		assertEquals(2,pm.getCount(RemovedColumn.class, new All()));
-		assertEquals(0,pm.getCount(SimpleObject.class, new All()));
+		assertEquals(2, pm.getCount(RemovedColumn.class, new All()));
+		assertEquals(0, pm.getCount(SimpleObject.class, new All()));
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
+
 		// Test 2: Create some entries that are part of another object.
 		oo = new OriginalObject();
 		oo.setRedundantObject(new SimpleObject());
 		pm.saveObject(oo);
-		//also create an external reference for the contained object
+		// also create an external reference for the contained object
 		pm.saveObject(oo.getRedundantObject());
 		oo = new OriginalObject();
 		oo.setRedundantObject(new SimpleObject());
 		pm.saveObject(oo);
 		pm.saveObject(oo.getRedundantObject());
-		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then drop that row from the containing object class
 		pm.changeName(OriginalObject.class, RemovedColumn.class);
 		pm.close();
@@ -3522,14 +3554,19 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// make sure the contained objects are still there
-		assertEquals(2,pm.getCount(RemovedColumn.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
-		
-		//delete the former containing objects
+		assertEquals(2, pm.getCount(RemovedColumn.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
+
+		// delete the former containing objects
 		pm.deleteObjects(RemovedColumn.class, new All());
-		//make sure former contained objects are still there
-		assertEquals(0,pm.getCount(RemovedColumn.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		// make sure former contained objects are still there
+		assertEquals(0, pm.getCount(RemovedColumn.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
+
+		// drop the former containing object table
+		pm.dropTable(RemovedColumn.class);
+		// make sure the former contained objects are still there
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 
 		pm.close();
 	}
@@ -3553,8 +3590,8 @@ public class PersistTest
 		oo = new OriginalObject();
 		oo.setOtherObject(new SimpleObject());
 		pm.saveObject(oo);
-		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then change the field from reference to Long
 		pm.changeName(OriginalObject.class, ObjectToLong.class);
 		pm.updateSchema(ObjectToLong.class);
@@ -3562,27 +3599,27 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// make sure the contained objects are gone
-		assertEquals(2,pm.getCount(ObjectToLong.class, new All()));
-		assertEquals(0,pm.getCount(SimpleObject.class, new All()));
+		assertEquals(2, pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(0, pm.getCount(SimpleObject.class, new All()));
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
-		
+
 		// Test 2: Create some entries that are part of another object.
 		oo = new OriginalObject();
 		oo.setOtherObject(new SimpleObject());
 		pm.saveObject(oo);
-		//save reference to the contained object
+		// save reference to the contained object
 		pm.saveObject(oo.getOtherObject());
 		oo = new OriginalObject();
 		oo.setOtherObject(new SimpleObject());
 		pm.saveObject(oo);
 		pm.saveObject(oo.getOtherObject());
-		//check that insertion worked
-		assertEquals(2,pm.getCount(OriginalObject.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		// check that insertion worked
+		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then change the field from reference to Long
 		pm.changeName(OriginalObject.class, ObjectToLong.class);
 		pm.updateSchema(ObjectToLong.class);
@@ -3590,14 +3627,19 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// make sure the contained objects are still there
-		assertEquals(2,pm.getCount(ObjectToLong.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
-		
-		//delete the former containing objects
+		assertEquals(2, pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
+
+		// delete the former containing objects
 		pm.deleteObjects(ObjectToLong.class, new All());
-		//make sure the former contained objects are still there
-		assertEquals(0,pm.getCount(ObjectToLong.class, new All()));
-		assertEquals(2,pm.getCount(SimpleObject.class, new All()));
+		// make sure the former contained objects are still there
+		assertEquals(0, pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
+
+		// drop the former containing class
+		pm.dropTable(ObjectToLong.class);
+		// make sure the former contained objects are still there
+		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 
 		pm.close();
 	}
@@ -3618,18 +3660,57 @@ public class PersistTest
 		// Test 1: Create some entries that are part of another object
 		// the containing object references an interface that the contained
 		// objects implement
+		FooContainerOwner fco = new FooContainerOwner();
+		fco.setFooContainer(new MyFooContainer());
+		pm.saveObject(fco);
+		fco = new FooContainerOwner();
+		fco.setFooContainer(new MyFooContainer());
+		pm.saveObject(fco);
+		// make sure everything is saved
+		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
+		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
 		// remove the interface from the contained objects
+		pm.changeName(MyFooContainer.class, MyNonFooContainer.class);
+		pm.updateSchema(MyNonFooContainer.class);
+		pm.close();
 		// make sure the contained objects are gone
+		pm = new PersistenceManager(driver, database, login, password);
+		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
+		assertEquals(0, pm.getCount(MyNonFooContainer.class, new All()));
+		pm.close();
 
 		// Test 2: Create some entries that are part of another object
-		// Search and return the contained objects, so that an external
-		// reference is created.
-		// the containing object references an interface that the contained
-		// objects implement
+		fco = new FooContainerOwner();
+		fco.setFooContainer(new MyFooContainer());
+		pm.saveObject(fco);
+		// create external reference to contained object
+		pm.saveObject(fco.getFooContainer());
+		fco = new FooContainerOwner();
+		fco.setFooContainer(new MyFooContainer());
+		pm.saveObject(fco);
+		pm.saveObject(fco.getFooContainer());
+		// make sure everything is saved
+		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
+		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
 		// remove the interface from the contained objects
+		pm.changeName(MyFooContainer.class, MyNonFooContainer.class);
+		pm.updateSchema(MyNonFooContainer.class);
+		pm.close();
 		// make sure the contained objects are still there.
+		pm = new PersistenceManager(driver, database, login, password);
+		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
+		assertEquals(2, pm.getCount(MyNonFooContainer.class, new All()));
 
-		fail("Not implemented");
+		// delete the FooContainerOwner
+		pm.deleteObjects(FooContainerOwner.class, new All());
+		// make sure MyNonFooContainer objects are still there
+		assertEquals(2, pm.getCount(MyNonFooContainer.class, new All()));
+
+		// drop FooContainerOwern table
+		pm.dropTable(FooContainerOwner.class);
+		// make sure MyNonFooContainer objects are still there
+		assertEquals(2, pm.getCount(MyNonFooContainer.class, new All()));
+
 		pm.close();
 	}
 

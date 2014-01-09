@@ -168,7 +168,7 @@ public class DelayedInsertionBuffer
 					}
 					protectionManager.protectObjectInternal(i.getTableName(), i
 							.getParentId(), i.getColumnName(), tableName, id,
-							ObjectTools.getSystemicName(i.getInsertionObject()
+							NameGenerator.getSystemicName(i.getInsertionObject()
 									.getClass()), cw);
 
 					// if the object was successfully inserted, remove it

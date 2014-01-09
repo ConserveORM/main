@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.ObjectTools;
+import org.conserve.tools.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
@@ -187,7 +187,7 @@ public class IdStatementGenerator
 			}
 			else
 			{
-				addRelationDescriptor(new RelationDescriptor(from, ObjectTools.getSystemicName(objRep
+				addRelationDescriptor(new RelationDescriptor(from, NameGenerator.getSystemicName(objRep
 						.getRepresentedClass())));
 			}
 			// indicate that the representations are linked

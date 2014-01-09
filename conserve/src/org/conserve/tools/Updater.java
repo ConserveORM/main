@@ -131,7 +131,7 @@ public class Updater
 										NameGenerator.getTableName(
 												value.getClass(), adapter),
 										propertyId,
-										ObjectTools.getSystemicName(value
+										NameGenerator.getSystemicName(value
 												.getClass()), cw);
 						// save the reference
 						values.add(propertyId);

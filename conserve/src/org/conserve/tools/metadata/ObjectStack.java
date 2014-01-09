@@ -28,6 +28,7 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
+import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 
 /**
@@ -312,7 +313,7 @@ public class ObjectStack
 			}
 			else
 			{
-				className = ObjectTools.getSystemicName(rep.getRepresentedClass());
+				className = NameGenerator.getSystemicName(rep.getRepresentedClass());
 			}
 			id = rep.getId();
 		}

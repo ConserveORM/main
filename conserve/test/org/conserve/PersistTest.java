@@ -18,7 +18,13 @@
  *******************************************************************************/
 package org.conserve;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -37,7 +43,6 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.conserve.PersistenceManager;
 import org.conserve.aggregate.AggregateFunction;
 import org.conserve.aggregate.Average;
 import org.conserve.aggregate.Maximum;
@@ -61,12 +66,12 @@ import org.conserve.objects.polymorphism.AbstractBar;
 import org.conserve.objects.polymorphism.ConcreteBar1;
 import org.conserve.objects.polymorphism.ConcreteBar2;
 import org.conserve.objects.polymorphism.ExtendedFooContainer;
-import org.conserve.objects.polymorphism.ImplementerA;
-import org.conserve.objects.polymorphism.ImplementerB;
-import org.conserve.objects.polymorphism.MyExtendedFooContainer;
 import org.conserve.objects.polymorphism.Foo;
 import org.conserve.objects.polymorphism.FooContainer;
 import org.conserve.objects.polymorphism.FooContainerOwner;
+import org.conserve.objects.polymorphism.ImplementerA;
+import org.conserve.objects.polymorphism.ImplementerB;
+import org.conserve.objects.polymorphism.MyExtendedFooContainer;
 import org.conserve.objects.polymorphism.MyFooContainer;
 import org.conserve.objects.polymorphism.MyNonFooContainer;
 import org.conserve.objects.recursive.Layer1;
@@ -94,8 +99,8 @@ import org.conserve.objects.schemaupdate.copydown.BeforeBottom;
 import org.conserve.objects.schemaupdate.copydown.BeforeTop;
 import org.conserve.objects.schemaupdate.copydown.ModifiedBottom;
 import org.conserve.objects.schemaupdate.copydown.ModifiedMiddle;
-import org.conserve.objects.schemaupdate.copydown.OriginalBottom;
 import org.conserve.objects.schemaupdate.copydown.ModifiedTop;
+import org.conserve.objects.schemaupdate.copydown.OriginalBottom;
 import org.conserve.objects.schemaupdate.copydown.OriginalMiddle;
 import org.conserve.objects.schemaupdate.copydown.OriginalTop;
 import org.conserve.select.All;
@@ -111,7 +116,6 @@ import org.conserve.sort.Descending;
 import org.conserve.sort.Order;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
-import org.conserve.tools.ObjectTools;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -1025,7 +1029,7 @@ public class PersistTest
 		List<Class<?>> classList = persist.getClasses();
 		for (Class<?> c : classList)
 		{
-			System.out.println(ObjectTools.getSystemicName(c));
+			System.out.println(NameGenerator.getSystemicName(c));
 		}
 		// there should be at least 3 classes: SimpleObject, Object and
 		// Serializable.
@@ -3475,7 +3479,7 @@ public class PersistTest
 		query.append(Defaults.HAS_A_TABLENAME);
 		query.append(" WHERE OWNER_TABLE = ? AND PROPERTY_TABLE = ?");
 		PreparedStatement ps = cw.prepareStatement(query.toString());
-		ps.setString(1,"ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_COPYDOWN_AFTERTOP");
+		ps.setString(1, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_COPYDOWN_AFTERTOP");
 		ps.setString(2, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_ORIGINALOBJECT");
 		
 		ResultSet rs = ps.executeQuery();

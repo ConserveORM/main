@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.NameGenerator;
-import org.conserve.tools.ObjectTools;
 
 /**
  * @author Erik Berglund
@@ -58,7 +57,7 @@ public class ProtectionEntry
 	public ProtectionEntry(Class<?> propertyClass, Long propertyId,
 			String relationName, AdapterBase adapter)
 	{
-		this(NameGenerator.getTableName(propertyClass, adapter), ObjectTools
+		this(NameGenerator.getTableName(propertyClass, adapter), NameGenerator
 				.getSystemicName(propertyClass), propertyId, relationName);
 	}
 

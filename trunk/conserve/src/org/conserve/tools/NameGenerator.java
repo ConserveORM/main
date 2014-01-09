@@ -182,4 +182,21 @@ public class NameGenerator
 		return false;
 	}
 
+	/**
+	 * Return a name that lets the classloader load the class. In the case of
+	 * top-level classes this is just the canonical name.
+	 * 
+	 * @param clazz
+	 * @return the unique name of the class.
+	 */
+	public static String getSystemicName(Class<?> clazz)
+	{
+		String res = clazz.getCanonicalName();
+		if (clazz.getEnclosingClass() != null)
+		{
+			res = getSystemicName(clazz.getEnclosingClass()) + "$" + clazz.getSimpleName();
+		}
+		return res;
+	}
+
 }

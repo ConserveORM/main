@@ -147,7 +147,7 @@ public class Persist
 		connectionPool = new DataConnectionPool(1, driver, connectionstring, username, password);
 		// set up the default adapter
 		adapter = selectAdapter(connectionstring);
-		LOGGER.fine("Selected adapter: " + ObjectTools.getSystemicName(adapter.getClass()) + " for connection "
+		LOGGER.fine("Selected adapter: " + NameGenerator.getSystemicName(adapter.getClass()) + " for connection "
 				+ connectionstring);
 		// set up a new protection manager
 		protectionManager = new ProtectionManager();
@@ -325,7 +325,7 @@ public class Persist
 			throws ClassNotFoundException, SQLException
 	{
 		int deletedCount = 0;
-		String className = ObjectTools.getSystemicName(clazz);
+		String className = NameGenerator.getSystemicName(clazz);
 		// find all matching objects
 		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(clazz, className, where, null, cw);
 		for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
@@ -401,7 +401,7 @@ public class Persist
 	{
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		deleteObject(tableName, id, cw);
-		return deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz), id, cw);
+		return deleteObject(clazz.getSuperclass(), NameGenerator.getSystemicName(clazz), id, cw);
 	}
 
 	/**
@@ -472,7 +472,7 @@ public class Persist
 			// recurse
 			if (currentId != null)
 			{
-				deleteObject(clazz.getSuperclass(), ObjectTools.getSystemicName(clazz), currentId, cw);
+				deleteObject(clazz.getSuperclass(), NameGenerator.getSystemicName(clazz), currentId, cw);
 				deletePropertiesOf(tableName, currentId, cw);
 			}
 		}
@@ -803,7 +803,7 @@ public class Persist
 			if (protect && !protectionManager.isProtectedExternal(tableName, databaseId, cw))
 			{
 				protectionManager.protectObjectExternal(tableName, databaseId,
-						ObjectTools.getSystemicName(object.getClass()), cw);
+						NameGenerator.getSystemicName(object.getClass()), cw);
 			}
 			updater.updateObject(cw, object, tableName, databaseId, delayBuffer);
 		}
@@ -816,7 +816,7 @@ public class Persist
 			// label the object as having been inserted by the outside
 			if (protect)
 			{
-				protectionManager.protectObjectExternal(tableName, res, ObjectTools.getSystemicName(object.getClass()),
+				protectionManager.protectObjectExternal(tableName, res, NameGenerator.getSystemicName(object.getClass()),
 						cw);
 			}
 		}
@@ -1036,7 +1036,7 @@ public class Persist
 		sb.append(Defaults.IS_A_TABLENAME);
 		sb.append(" WHERE SUPERCLASS = ?");
 		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		ps.setString(1, ObjectTools.getSystemicName(clazz));
+		ps.setString(1, NameGenerator.getSystemicName(clazz));
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 
@@ -1189,7 +1189,7 @@ public class Persist
 		{
 			clazz = (Class<T>) Object.class;
 		}
-		String className = ObjectTools.getSystemicName(clazz);
+		String className = NameGenerator.getSystemicName(clazz);
 		T res = null;
 		if (!tableManager.tableExists(NameGenerator.getTableName(clazz, adapter), cw))
 		{

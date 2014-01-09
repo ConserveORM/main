@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.ObjectTools;
+import org.conserve.tools.NameGenerator;
 import org.conserve.tools.Tools;
 
 /**
@@ -49,7 +49,7 @@ public class InheritanceModel
 	{
 		// load superclass and interfaces
 		PreparedStatement stmnt = cw.prepareStatement("SELECT SUPERCLASS FROM " + Defaults.IS_A_TABLENAME+" WHERE SUBCLASS=?");
-		stmnt.setString(1, ObjectTools.getSystemicName(klass));
+		stmnt.setString(1, NameGenerator.getSystemicName(klass));
 		Tools.logFine(stmnt);
 		ResultSet rs = stmnt.executeQuery();
 		while(rs.next())
@@ -69,7 +69,7 @@ public class InheritanceModel
 		
 		//load direct subclasses
 		stmnt = cw.prepareStatement("SELECT SUBCLASS FROM "+ Defaults.IS_A_TABLENAME+" WHERE SUPERCLASS =?");
-		stmnt.setString(1, ObjectTools.getSystemicName(klass));
+		stmnt.setString(1, NameGenerator.getSystemicName(klass));
 		Tools.logFine(stmnt);
 		rs = stmnt.executeQuery();
 		while(rs.next())

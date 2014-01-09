@@ -385,7 +385,7 @@ public class TableManager
 			if (tableExists(Defaults.HAS_A_TABLENAME, cw))
 			{
 				// add RELATION_NAME column
-				this.createColumn(Defaults.HAS_A_TABLENAME, Defaults.RELATION_NAME_COL, adapter.getVarCharKeyword(), cw);
+				this.createColumn(Defaults.HAS_A_TABLENAME, Defaults.RELATION_NAME_COL, String.class, cw);
 				// get a map of all classes
 				List<Class<?>> classList = this.populateClassList(cw);
 				HashMap<String, Class<?>> tableNameMap = new HashMap<String, Class<?>>();
@@ -592,18 +592,18 @@ public class TableManager
 	 */
 	private void createClassRelation(Class<?> subClass, ConnectionWrapper cw) throws SQLException
 	{
-		String subClassName = ObjectTools.getSystemicName(subClass);
+		String subClassName = NameGenerator.getSystemicName(subClass);
 		// insert relation for the superclass
 		Class<?> superClass = subClass.getSuperclass();
 		if (superClass != null)
 		{
-			addClassRelationConditionally(subClassName, ObjectTools.getSystemicName(superClass), cw);
+			addClassRelationConditionally(subClassName, NameGenerator.getSystemicName(superClass), cw);
 		}
 		// insert relations for all interfaces
 		Class<?>[] interfaces = subClass.getInterfaces();
 		for (Class<?> infc : interfaces)
 		{
-			addClassRelationConditionally(subClassName, ObjectTools.getSystemicName(infc), cw);
+			addClassRelationConditionally(subClassName, NameGenerator.getSystemicName(infc), cw);
 			// recurse into super-interfaces
 			createClassRelation(infc, cw);
 		}
@@ -656,8 +656,7 @@ public class TableManager
 		{
 			if (!columnExists(tableName, columnName, cw))
 			{
-				String tableType = adapter.getColumnType(paramType, null).trim();
-				createColumn(tableName, columnName, tableType, cw);
+				createColumn(tableName, columnName, paramType, cw);
 			}
 		}
 	}
@@ -787,7 +786,7 @@ public class TableManager
 			query.append(Defaults.IS_A_TABLENAME);
 			query.append(" WHERE SUPERCLASS = ?");
 			PreparedStatement ps = cw.prepareStatement(query.toString());
-			ps.setString(1, ObjectTools.getSystemicName(superclass));
+			ps.setString(1, NameGenerator.getSystemicName(superclass));
 			Tools.logFine(ps);
 			if (ps.execute())
 			{
@@ -828,7 +827,7 @@ public class TableManager
 			query.append(Defaults.IS_A_TABLENAME);
 			query.append(" WHERE SUBCLASS = ?");
 			PreparedStatement ps = cw.prepareStatement(query.toString());
-			ps.setString(1, ObjectTools.getSystemicName(subClass));
+			ps.setString(1, NameGenerator.getSystemicName(subClass));
 			Tools.logFine(ps);
 			if (ps.execute())
 			{
@@ -1016,7 +1015,7 @@ public class TableManager
 		query.append(Defaults.IS_A_TABLENAME);
 		query.append(" WHERE SUPERCLASS = ? OR SUBCLASS = ?");
 		PreparedStatement ps = cw.prepareStatement(query.toString());
-		String className = ObjectTools.getSystemicName(c);
+		String className = NameGenerator.getSystemicName(c);
 		ps.setString(1, className);
 		ps.setString(2, className);
 		Tools.logFine(ps);
@@ -1244,7 +1243,7 @@ public class TableManager
 
 				// get info on the superclass
 				Class<?> superClass = klass.getSuperclass();
-				String superClassName = ObjectTools.getSystemicName(superClass);
+				String superClassName = NameGenerator.getSystemicName(superClass);
 
 				List<Class<?>> superClasses = getSuperClasses(klass, cw);
 				ObjectStack nuObjectStack = new ObjectStack(adapter, klass);
@@ -1258,7 +1257,7 @@ public class TableManager
 					ObjectStack oldObjectStack = getObjectStackFromDatabase(klass, cw);
 					sm.move(oldObjectStack, nuObjectStack, nuObjectStack.getActualRepresentation(), cw);
 					// update the C_IS_A table to reflect new superclass
-					String klassName = ObjectTools.getSystemicName(klass);
+					String klassName = NameGenerator.getSystemicName(klass);
 					addClassRelation(klassName, superClassName, cw);
 					String oldSuperClass = oldObjectStack.getRepresentation(oldObjectStack.getLevel(klass) - 1)
 							.getSystemicName();
@@ -1288,8 +1287,8 @@ public class TableManager
 						{
 							// the superclass is no longer a superclass
 							// delete the entry
-							deleteClassRelation(ObjectTools.getSystemicName(dbSuperClass),
-									ObjectTools.getSystemicName(klass), cw);
+							deleteClassRelation(NameGenerator.getSystemicName(dbSuperClass),
+									NameGenerator.getSystemicName(klass), cw);
 						}
 					}
 				}
@@ -1301,7 +1300,7 @@ public class TableManager
 					if (!superClasses.contains(iface))
 					{
 						// update the C_IS_A table to reflect new interface
-						addClassRelation(ObjectTools.getSystemicName(klass), ObjectTools.getSystemicName(iface), cw);
+						addClassRelation(NameGenerator.getSystemicName(klass), NameGenerator.getSystemicName(iface), cw);
 					}
 				}
 
@@ -1339,8 +1338,7 @@ public class TableManager
 						}
 						else if (change.isCreation())
 						{
-							String columnType = adapter.getColumnType(change.getToClass(), null).trim();
-							createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
+							createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 						}
 						else if (change.isNameChange())
 						{
@@ -1362,8 +1360,7 @@ public class TableManager
 							{
 								// no conversion, drop and recreate.
 								dropColumn(toRep.getTableName(), change.getFromName(), cw);
-								String columnType = adapter.getColumnType(change.getToClass(), null).trim();
-								createColumn(toRep.getTableName(), change.getToName(), columnType, cw);
+								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 							}
 						}
 					}
@@ -1437,6 +1434,17 @@ public class TableManager
 			}
 		}
 		Tools.logFine(ps);
+		ps.executeUpdate();
+		ps.close();
+		
+		//create new protection entry
+		sb = new StringBuilder("UPDATE ");
+		sb.append(Defaults.HAS_A_TABLENAME);
+		sb.append(" SET OWNER_TABLE = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
+		ps = cw.prepareStatement(sb.toString());
+		ps.setString(1, toTable);
+		ps.setString(2, fromTable);
+		ps.setString(3, colName);
 		ps.executeUpdate();
 		ps.close();
 
@@ -1639,15 +1647,16 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void createColumn(String tableName, String columnName, String columnType, ConnectionWrapper cw)
+	private void createColumn(String tableName, String columnName, Class<?> returnType, ConnectionWrapper cw)
 			throws SQLException
 	{
+		String columnType = adapter.getColumnType(returnType, null).trim();
 		PreparedStatement ps = cw
 				.prepareStatement("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnType);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		addTypeInfo(tableName, columnName, columnType, cw);
+		addTypeInfo(tableName, columnName, NameGenerator.getSystemicName(returnType), cw);
 	}
 
 	/**
@@ -1766,8 +1775,8 @@ public class TableManager
 		{
 			String oldTableName = NameGenerator.getTableName(oldClass, adapter);
 			String newTableName = NameGenerator.getTableName(newClass, adapter);
-			String oldClassName = ObjectTools.getSystemicName(oldClass);
-			String newClassName = ObjectTools.getSystemicName(newClass);
+			String oldClassName = NameGenerator.getSystemicName(oldClass);
+			String newClassName = NameGenerator.getSystemicName(newClass);
 
 			String newArrayMemberTable = NameGenerator.getArrayMemberTableName(newClass, adapter);
 
@@ -1930,7 +1939,7 @@ public class TableManager
 	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw)
 			throws SQLException
 	{
-		addTypeInfo(tableName, propertyName, ObjectTools.getSystemicName(returnType), cw);
+		addTypeInfo(tableName, propertyName, NameGenerator.getSystemicName(returnType), cw);
 	}
 
 	/**

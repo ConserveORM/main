@@ -91,7 +91,7 @@ public class ArrayEntryWriter
 			{
 				// The array entry is a primitive type, add it directly
 				Tools.setParameter(ps, compType, 3, value);
-				ps.setString(4, ObjectTools.getSystemicName(compType));
+				ps.setString(4, NameGenerator.getSystemicName(compType));
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
@@ -101,14 +101,14 @@ public class ArrayEntryWriter
 				protectionManager.protectObjectInternal(
 						Defaults.ARRAY_TABLENAME, arrayId,null, NameGenerator
 								.getArrayMemberTableName(compType, adapter),
-						memberId, ObjectTools.getSystemicName(Array.get(array,
+						memberId, NameGenerator.getSystemicName(Array.get(array,
 								x).getClass()), cw);
 
 			}
 			else
 			{
 				// this is another type of object, insert a reference
-				ps.setString(4, ObjectTools.getSystemicName(value.getClass()));
+				ps.setString(4, NameGenerator.getSystemicName(value.getClass()));
 				Long valueId = adapter.getPersist().saveObjectUnprotected(cw,
 						value, delayBuffer);
 				long memberId = 0;
@@ -148,7 +148,7 @@ public class ArrayEntryWriter
 				// add a protection entry for the __ARRAY table
 				if (!compType.isArray())
 				{
-					valueClassName = ObjectTools.getSystemicName(value
+					valueClassName = NameGenerator.getSystemicName(value
 							.getClass());
 					propertyName = NameGenerator
 							.getTableName(compType, adapter);

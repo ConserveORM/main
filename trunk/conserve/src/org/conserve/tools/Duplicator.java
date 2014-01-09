@@ -127,7 +127,7 @@ public class Duplicator
 		{
 			target.getProtectionManager().protectObjectExternal(
 					targetTableName, target.getId(object),
-					ObjectTools.getSystemicName(object.getClass()), targetCw);
+					NameGenerator.getSystemicName(object.getClass()), targetCw);
 		}
 
 	}

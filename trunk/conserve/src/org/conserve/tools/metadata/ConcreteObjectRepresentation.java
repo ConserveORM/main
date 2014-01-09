@@ -99,7 +99,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 							LOGGER.warning("AsClob annotation is present on property "
 									+ name
 									+ " of class "
-									+ ObjectTools.getSystemicName(clazz)
+									+ NameGenerator.getSystemicName(clazz)
 									+ ", but it does not have char[] return type.");
 						}
 						if (adapter.isSupportsBlob()
@@ -108,7 +108,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 							LOGGER.warning("AsBlob annotation is present on property "
 									+ name
 									+ " of class "
-									+ ObjectTools.getSystemicName(clazz)
+									+ NameGenerator.getSystemicName(clazz)
 									+ ", but it does not have byte[] return type.");
 						}
 					}
@@ -379,7 +379,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				ps.setString(1, Defaults.ARRAY_TABLENAME);
 			}
 			// the table also contains the actual name of the class
-			ps.setString(2, ObjectTools.getSystemicName(clazz));
+			ps.setString(2, NameGenerator.getSystemicName(clazz));
 
 		}
 		else

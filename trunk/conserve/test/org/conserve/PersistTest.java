@@ -3684,6 +3684,9 @@ public class PersistTest
 		pm.close();
 
 		// Test 2: Create some entries that are part of another object
+		pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
 		fco = new FooContainerOwner();
 		fco.setFooContainer(new MyFooContainer());
 		pm.saveObject(fco);

@@ -1027,7 +1027,7 @@ public class Persist
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> List<Class<? extends T>> getImplementingClasses(Class<T> clazz, ConnectionWrapper cw)
+	public <T> List<Class<? extends T>> getImplementingClasses(Class<T> clazz, ConnectionWrapper cw)
 			throws SQLException, ClassNotFoundException
 	{
 		ArrayList<Class<? extends T>> res = new ArrayList<Class<? extends T>>();

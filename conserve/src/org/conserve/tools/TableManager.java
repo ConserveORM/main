@@ -1023,17 +1023,114 @@ public class TableManager
 		ps.close();
 	}
 
-	private void deleteClassRelation(String superClass, String subClass, ConnectionWrapper cw) throws SQLException
+	/**
+	 * Delete the superclass-subclass relation for a pair of classes. Also
+	 * update protection entries and references that are no longer satisfied.
+	 * 
+	 * @param superClass
+	 *            the old superclass
+	 * @param subClass
+	 *            the new class
+	 * @param cw
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	private void deleteClassRelation(Class<?> superClass, Class<?> subClass, ConnectionWrapper cw) throws SQLException,
+			ClassNotFoundException
 	{
-		StringBuilder query = new StringBuilder("DELETE FROM ");
-		query.append(Defaults.IS_A_TABLENAME);
-		query.append(" WHERE SUPERCLASS = ? AND SUBCLASS = ?");
-		PreparedStatement ps = cw.prepareStatement(query.toString());
-		ps.setString(1, superClass);
-		ps.setString(2, subClass);
-		Tools.logFine(ps);
-		ps.execute();
-		ps.close();
+		if (subClass.isInterface())
+		{
+			List<?> imlementingClasses = adapter.getPersist().getImplementingClasses(subClass, cw);
+			for (Object o : imlementingClasses)
+			{
+				deleteClassRelation(superClass, (Class<?>) o, cw);
+			}
+		}
+		else
+		{
+			String superClassName = NameGenerator.getSystemicName(superClass);
+			String subClassName = NameGenerator.getSystemicName(subClass);
+			// remove the relation from C__IS_A table
+			StringBuilder query = new StringBuilder("DELETE FROM ");
+			query.append(Defaults.IS_A_TABLENAME);
+			query.append(" WHERE SUPERCLASS = ? AND SUBCLASS = ?");
+			PreparedStatement ps = cw.prepareStatement(query.toString());
+			ps.setString(1, superClassName);
+			ps.setString(2, subClassName);
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+
+			// find all classes that reference superClass or one of its
+			// superclasses that are not common to the new superclass of
+			// subClass. If any instance points to an object that is really
+			// subClass, delete the protection entry. If the referenced object
+			// is unprotected, delete that too.
+
+			List<Class<?>> noLongerSupported = ObjectTools.getAllLegalReferenceTypes(superClass);
+			List<Class<?>> stillSupported = ObjectTools.getAllLegalReferenceTypes(subClass);
+			// remove all in noLongerSupported that are in stillSupported
+			for (int x = 0; x < noLongerSupported.size(); x++)
+			{
+				if (stillSupported.contains(noLongerSupported.get(x)))
+				{
+					noLongerSupported.remove(x);
+					x--;
+				}
+			}
+
+			// get the protection manager
+			ProtectionManager pm = adapter.getPersist().getProtectionManager();
+
+			// find all rows in C__TYPE_TABLE where COLUMN_CLASS is
+			// the old superclass.
+			query = new StringBuilder("SELECT OWNER_TABLE,COLUMN_NAME FROM ");
+			query.append(Defaults.TYPE_TABLENAME);
+			query.append(" WHERE COLUMN_CLASS = ?");
+			PreparedStatement stmt = cw.prepareStatement(query.toString());
+			stmt.setString(1, superClassName);
+			Tools.logFine(stmt);
+			ResultSet tmpRes = stmt.executeQuery();
+			while (tmpRes.next())
+			{
+				String ownerTable = tmpRes.getString(1);
+				String relationName = tmpRes.getString(2);
+				// find all entries in C__HAS_A (protection entries) where owner
+				// and relation name is from the search results, and property is
+				// the new subclass
+				query = new StringBuilder("SELECT OWNER_ID,PROPERTY_TABLE, PROPERTY_ID FROM ");
+				query.append(Defaults.HAS_A_TABLENAME);
+				query.append(" WHERE OWNER_TABLE=? AND RELATION_NAME=? AND PROPERTY_CLASS=?");
+				PreparedStatement innerStmt = cw.prepareStatement(query.toString());
+				innerStmt.setString(1, ownerTable);
+				innerStmt.setString(2, relationName);
+				innerStmt.setString(3, subClassName);
+				Tools.logFine(innerStmt);
+				ResultSet innerRes = innerStmt.executeQuery();
+				while (innerRes.next())
+				{
+					//remove the reference
+					setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
+					// remove protection entry
+					pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2), innerRes.getLong(3), cw);
+					// if item is unprotected, remove it
+					if(!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
+					{
+						adapter.getPersist().deleteObject(innerRes.getString(2), innerRes.getLong(3), cw);
+					}
+				}
+				innerStmt.close();
+
+			}
+			stmt.close();
+
+			// recursively do the same for all direct subclasses of subClass.
+			List<Class<?>> subs = getSubClasses(subClass, cw);
+			for (Class<?> sub : subs)
+			{
+				deleteClassRelation(superClass, sub, cw);
+			}
+		}
 	}
 
 	/**
@@ -1197,7 +1294,7 @@ public class TableManager
 				// rename new table
 				this.setTableName(temporaryName, tableName, cw);
 			}
-			
+
 			// Change name in C__TYPE_TABLE
 			StringBuilder stmt = new StringBuilder("UPDATE ");
 			stmt.append(Defaults.TYPE_TABLENAME);
@@ -1209,8 +1306,8 @@ public class TableManager
 			Tools.logFine(ps);
 			ps.execute();
 			ps.close();
-			
-			//Change name in C__HAS_A
+
+			// Change name in C__HAS_A
 			stmt = new StringBuilder("UPDATE ");
 			stmt.append(Defaults.HAS_A_TABLENAME);
 			stmt.append(" SET RELATION_NAME = ? WHERE OWNER_TABLE  = ? AND RELATION_NAME = ?");
@@ -1257,11 +1354,10 @@ public class TableManager
 					ObjectStack oldObjectStack = getObjectStackFromDatabase(klass, cw);
 					sm.move(oldObjectStack, nuObjectStack, nuObjectStack.getActualRepresentation(), cw);
 					// update the C_IS_A table to reflect new superclass
-					String klassName = NameGenerator.getSystemicName(klass);
-					addClassRelation(klassName, superClassName, cw);
-					String oldSuperClass = oldObjectStack.getRepresentation(oldObjectStack.getLevel(klass) - 1)
-							.getSystemicName();
-					deleteClassRelation(oldSuperClass, klassName, cw);
+					addClassRelation(NameGenerator.getSystemicName(klass), superClassName, cw);
+					Class<?> oldSuperClass = oldObjectStack.getRepresentation(oldObjectStack.getLevel(klass) - 1)
+							.getRepresentedClass();
+					deleteClassRelation(oldSuperClass, klass, cw);
 				}
 
 				// make sure each entry in superClasses is still in the current
@@ -1287,8 +1383,7 @@ public class TableManager
 						{
 							// the superclass is no longer a superclass
 							// delete the entry
-							deleteClassRelation(NameGenerator.getSystemicName(dbSuperClass),
-									NameGenerator.getSystemicName(klass), cw);
+							deleteClassRelation(dbSuperClass, klass, cw);
 						}
 					}
 				}
@@ -1352,8 +1447,9 @@ public class TableManager
 								// change the column type
 								changeColumnType(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 
-								// Update object references and remove incompatible entries
-								updateReferences(toRep.getTableName(), change.getToName(),change.getFromClass(),
+								// Update object references and remove
+								// incompatible entries
+								updateReferences(toRep.getTableName(), change.getToName(), change.getFromClass(),
 										change.getToClass(), cw);
 							}
 							else
@@ -1436,8 +1532,8 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.executeUpdate();
 		ps.close();
-		
-		//create new protection entry
+
+		// create new protection entry
 		sb = new StringBuilder("UPDATE ");
 		sb.append(Defaults.HAS_A_TABLENAME);
 		sb.append(" SET OWNER_TABLE = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
@@ -1512,8 +1608,8 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void updateReferences(String tableName, String colName, Class<?> currentType, Class<?> nuType, ConnectionWrapper cw)
-			throws SQLException, ClassNotFoundException
+	private void updateReferences(String tableName, String colName, Class<?> currentType, Class<?> nuType,
+			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
 
 		// Get affected entries from HAS_A table
@@ -1547,32 +1643,31 @@ public class TableManager
 			// check compatibility
 			if (ObjectTools.isA(sourceClass, nuType))
 			{
-				//update the reference id
-				if(nuType.isInterface())
+				// update the reference id
+				if (nuType.isInterface())
 				{
-					//if the new type is an interface, cast to java.lang.Object
+					// if the new type is an interface, cast to java.lang.Object
 					Long objectId = adapter.getPersist().getCastId(Object.class, sourceClass, propertyId, cw);
-					setReferenceTo(tableName,ownerId,colName,objectId,cw);
+					setReferenceTo(tableName, ownerId, colName, objectId, cw);
 				}
 				else
 				{
-					//if the new class is not an interface, update normally
-					setReferenceTo(tableName,ownerId,colName,propertyId,cw);
+					// if the new class is not an interface, update normally
+					setReferenceTo(tableName, ownerId, colName, propertyId, cw);
 				}
 			}
 			else
 			{
-				//can't convert this reference, drop it
+				// can't convert this reference, drop it
 				// null the reference in the owner table
-				setReferenceTo(tableName, ownerId, colName, null,cw);
+				setReferenceTo(tableName, ownerId, colName, null, cw);
 				// remove protection
 				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
 					// then delete the entity
-					adapter.getPersist().deleteObject(sourceClass, propertyId,
-							cw);
+					adapter.getPersist().deleteObject(sourceClass, propertyId, cw);
 				}
 			}
 		}
@@ -1580,22 +1675,29 @@ public class TableManager
 	}
 
 	/**
-	 * Set the reference stored in colname in the row in tableName with C__ID = id to nuReference.
-	 * @param tableName the table name to update
-	 * @param id the ID_COL value of the row to update
-	 * @param colName the column to update
-	 * @param nuReference the new reference to set
+	 * Set the reference stored in colname in the row in tableName with C__ID =
+	 * id to nuReference.
+	 * 
+	 * @param tableName
+	 *            the table name to update
+	 * @param id
+	 *            the ID_COL value of the row to update
+	 * @param colName
+	 *            the column to update
+	 * @param nuReference
+	 *            the new reference to set
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void setReferenceTo(String tableName, Long id, String colName, Long nuReference, ConnectionWrapper cw)throws SQLException
+	private void setReferenceTo(String tableName, Long id, String colName, Long nuReference, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder statement = new StringBuilder("UPDATE ");
 		statement.append(tableName);
 		statement.append(" SET ");
 		statement.append(colName);
 		statement.append(" = ");
-		if(nuReference == null)
+		if (nuReference == null)
 		{
 			statement.append("NULL");
 		}
@@ -1607,7 +1709,7 @@ public class TableManager
 		statement.append(Defaults.ID_COL);
 		statement.append(" = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		if(nuReference == null)
+		if (nuReference == null)
 		{
 			ps.setLong(1, id);
 		}
@@ -1684,6 +1786,16 @@ public class TableManager
 
 	}
 
+	/**
+	 * Remove protection from tableName.column for all objects. If any object is
+	 * no longer protected, delete it.
+	 * 
+	 * @param tableName
+	 * @param column
+	 * @param cw
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
 	private void dropUprotectedReferences(String tableName, String column, ConnectionWrapper cw) throws SQLException,
 			ClassNotFoundException
 	{

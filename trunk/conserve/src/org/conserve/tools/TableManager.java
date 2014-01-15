@@ -1109,12 +1109,13 @@ public class TableManager
 				ResultSet innerRes = innerStmt.executeQuery();
 				while (innerRes.next())
 				{
-					//remove the reference
+					// remove the reference
 					setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
 					// remove protection entry
-					pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2), innerRes.getLong(3), cw);
+					pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2),
+							innerRes.getLong(3), cw);
 					// if item is unprotected, remove it
-					if(!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
+					if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
 					{
 						adapter.getPersist().deleteObject(innerRes.getString(2), innerRes.getLong(3), cw);
 					}
@@ -2025,10 +2026,31 @@ public class TableManager
 	{
 		if (tableExists(oldName, cw))
 		{
-			PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + oldName + " RENAME TO " + newName);
-			Tools.logFine(ps);
-			ps.execute();
-			ps.close();
+			if (tableExists(newName, cw))
+			{
+				//new table exists, drop old table
+				conditionalDelete(oldName, cw);
+				if (!adapter.isSupportsIdentity())
+				{
+					// this adapter relies on sequences, so drop the corresponding
+					// sequence
+					String sequenceName = Tools.getSequenceName(oldName, adapter);
+					String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
+
+					PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
+					Tools.logFine(ps);
+					ps.execute();
+					ps.close();
+				}
+			}
+			else
+			{
+				//new table does not exist, rename old table
+				PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + oldName + " RENAME TO " + newName);
+				Tools.logFine(ps);
+				ps.execute();
+				ps.close();
+			}
 		}
 	}
 

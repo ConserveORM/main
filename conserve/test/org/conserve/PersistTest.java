@@ -683,10 +683,15 @@ public class PersistTest
 	@Test
 	public void testCollectionSave() throws Exception
 	{
+		//create connection
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//drop existing data
+		persist.dropTable(Object.class);
+		
+		//insert test data
 		ArrayList<Double> foo = new ArrayList<Double>();
 		foo.add(6.9);
 		foo.add(1.1);
-		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		persist.saveObject(foo);
 		List<Object> all = persist.getObjectsMatching(new Object());
 		assertEquals(1, all.size());
@@ -700,10 +705,15 @@ public class PersistTest
 	@Test
 	public void testCollectionLoad() throws Exception
 	{
+		//create connection
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//drop existing data
+		persist.dropTable(Object.class);
+		
+		//insert test data
 		ArrayList<Double> foo = new ArrayList<Double>();
 		foo.add(6.9);
 		foo.add(1.1);
-		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		persist.saveObject(foo);
 		persist.close();
 
@@ -3416,22 +3426,31 @@ public class PersistTest
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
+		
+		//make sure loading ContainerObject still contains the correct data
+		List<ContainerObject>coList = pm.getObjects(ContainerObject.class, new All());
+		assertEquals(2,coList.size());
+		assertEquals("foo",coList.get(0).getFoo().getName());
+		assertEquals("bar",coList.get(1).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass
 		// items
 		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(4, pm.getCount(SubClass.class, new All()));
-		// delete all OriginalObject/SubClass items
+		// delete all OriginalObject items
 		pm.deleteObjects(OriginalObject.class, new All());
+		//two should remain, since they are protected
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SubClass.class, new All()));
+		// delete all SubClass items
 		pm.deleteObjects(SubClass.class);
+		//two should remain, since they are protected
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SubClass.class, new All()));
 		// deleting all ContainerObject should delete all SubClass and
 		// OriginalObject, as they have no external reference
-		pm.deleteObjects(ContainerObject.class);
+		pm.deleteObjects(ContainerObject.class, new All());
 		assertEquals(0, pm.getCount(ContainerObject.class, new All()));
 		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(0, pm.getCount(SubClass.class, new All()));
@@ -3478,6 +3497,11 @@ public class PersistTest
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
+		//make sure loading ContainerObject still contains the correct data
+		List<ContainerObject>coList = pm.getObjects(ContainerObject.class, new All());
+		assertEquals(2,coList.size());
+		assertEquals("foo",coList.get(0).getFoo().getName());
+		assertEquals("bar",coList.get(1).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass

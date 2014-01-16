@@ -34,21 +34,18 @@ import org.conserve.tools.Tools;
 public class ProtectionManager
 {
 
-	public boolean isProtected(String tableName, Long databaseId,
-			ConnectionWrapper cw) throws SQLException
+	public boolean isProtected(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		DependentSet depSet = new DependentSet(tableName, databaseId, cw);
 		return depSet.isProtected();
 	}
 
-	public boolean isProtectedExternal(String tableName, Long databaseId,
-			ConnectionWrapper cw) throws SQLException
+	public boolean isProtectedExternal(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("SELECT * FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement
-				.append(" WHERE OWNER_TABLE IS NULL AND OWNER_ID IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE OWNER_TABLE IS NULL AND OWNER_ID IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		ps.setString(1, tableName);
 		ps.setLong(2, databaseId);
@@ -76,14 +73,12 @@ public class ProtectionManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public void protectObjectExternal(String tableName, Long databaseId,
-			String className, ConnectionWrapper cw) throws SQLException
+	public void protectObjectExternal(String tableName, Long databaseId, String className, ConnectionWrapper cw)
+			throws SQLException
 	{
 		// ensure that the object is labelled as coming from outside
-		PreparedStatement ps = cw
-				.prepareStatement("INSERT INTO "
-						+ Defaults.HAS_A_TABLENAME
-						+ " (PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS) values (?,?,?)");
+		PreparedStatement ps = cw.prepareStatement("INSERT INTO " + Defaults.HAS_A_TABLENAME
+				+ " (PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS) values (?,?,?)");
 		try
 		{
 			ps.setString(1, tableName);
@@ -118,15 +113,13 @@ public class ProtectionManager
 	 *            the connection to the database.
 	 * @throws SQLException
 	 */
-	public void protectObjectInternal(String ownerTableName, Long ownerId,
-			String relationName, String propertyTableName, Long propertyId,
-			String propertyClass, ConnectionWrapper cw) throws SQLException
+	public void protectObjectInternal(String ownerTableName, Long ownerId, String relationName,
+			String propertyTableName, Long propertyId, String propertyClass, ConnectionWrapper cw) throws SQLException
 	{
 		// ensure that the object is labelled as coming from inside
-		PreparedStatement ps = cw
-				.prepareStatement("INSERT INTO "
-						+ Defaults.HAS_A_TABLENAME
-						+ " (OWNER_TABLE,OWNER_ID,PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS,"+Defaults.RELATION_NAME_COL+") values (?,?,?,?,?,?)");
+		PreparedStatement ps = cw.prepareStatement("INSERT INTO " + Defaults.HAS_A_TABLENAME
+				+ " (OWNER_TABLE,OWNER_ID,PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS," + Defaults.RELATION_NAME_COL
+				+ ") values (?,?,?,?,?,?)");
 		try
 		{
 			ps.setString(1, ownerTableName);
@@ -161,14 +154,12 @@ public class ProtectionManager
 	 * 
 	 * @throws SQLException
 	 */
-	public void unprotectObjectExternal(String tableName, Long databaseId,
-			ConnectionWrapper cw) throws SQLException
+	public void unprotectObjectExternal(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("DELETE FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement
-				.append(" WHERE OWNER_TABLE IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE OWNER_TABLE IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
@@ -192,15 +183,13 @@ public class ProtectionManager
 	 * @param propertyId
 	 * @param cw
 	 */
-	public void unprotectObjectInternal(String ownerTable, Long ownerId,
-			String propertyTable, Long propertyId, ConnectionWrapper cw)
-			throws SQLException
+	public void unprotectObjectInternal(String ownerTable, Long ownerId, String propertyTable, Long propertyId,
+			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("DELETE FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement
-				.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ? AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ? AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
@@ -230,8 +219,7 @@ public class ProtectionManager
 	 *            dependencies.
 	 * @throws SQLException
 	 */
-	public void unprotectObjects(ConnectionWrapper cw, String propertyTable)
-			throws SQLException
+	public void unprotectObjects(ConnectionWrapper cw, String propertyTable) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(100);
 		statement.append("DELETE FROM ");
@@ -263,15 +251,13 @@ public class ProtectionManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public void protectObjectInternalConditional(String ownerTable,
-			Long ownerId, String relationName,String propertyTable, Long propertyId,
-			String canonicalName, ConnectionWrapper cw) throws SQLException
+	public void protectObjectInternalConditional(String ownerTable, Long ownerId, String relationName,
+			String propertyTable, Long propertyId, String canonicalName, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("SELECT PROPERTY_ID FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement
-				.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ? AND OWNER_TABLE=? AND OWNER_ID=?");
+		statement.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ? AND OWNER_TABLE=? AND OWNER_ID=?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
@@ -283,14 +269,51 @@ public class ProtectionManager
 			// check if the query returns no results
 			if (!ps.execute())
 			{
-				protectObjectInternal(ownerTable, ownerId,relationName, propertyTable,
-						propertyId, canonicalName, cw);
+				protectObjectInternal(ownerTable, ownerId, relationName, propertyTable, propertyId, canonicalName, cw);
 			}
 		}
 		finally
 		{
 			ps.close();
 		}
+	}
 
+	/**
+	 * Change the ID of an object in the given table from oldId to nuId. This
+	 * changes the id both in the role as owner and property.
+	 * 
+	 * @param table
+	 *            the table name to update protection entries for.
+	 * @param oldId
+	 *            the id of the object to change id for.
+	 * @param nuId
+	 *            the id to change to.
+	 * @param cw
+	 * @throws SQLException
+	 */
+	public void changeObjectId(String table, long oldId, long nuId, ConnectionWrapper cw) throws SQLException
+	{
+		// first, set the owner references
+		StringBuilder statement = new StringBuilder("UPDATE ");
+		statement.append(Defaults.HAS_A_TABLENAME);
+		statement.append(" SET OWNER_ID = ? WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
+		PreparedStatement ps = cw.prepareStatement(statement.toString());
+		ps.setLong(1, nuId);
+		ps.setString(2, table);
+		ps.setLong(3, oldId);
+		Tools.logFine(ps);
+		ps.executeUpdate();
+		ps.close();
+		// now set the property references
+		statement = new StringBuilder("UPDATE ");
+		statement.append(Defaults.HAS_A_TABLENAME);
+		statement.append(" SET PROPERTY_ID = ? WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		ps = cw.prepareStatement(statement.toString());
+		ps.setLong(1, nuId);
+		ps.setString(2, table);
+		ps.setLong(3, oldId);
+		Tools.logFine(ps);
+		ps.executeUpdate();
+		ps.close();
 	}
 }

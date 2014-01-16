@@ -33,6 +33,7 @@ import org.conserve.tools.TableManager;
 import org.conserve.tools.Tools;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
+import org.conserve.tools.protection.ProtectionManager;
 import org.conserve.tools.uniqueid.UniqueIdGenerator;
 import org.conserve.tools.uniqueid.UniqueIdTree;
 
@@ -56,8 +57,11 @@ public class SubclassMover
 	 * Move subClass from fromStack to toStack.
 	 * 
 	 * @param fromStack
+	 *            the inheritance stack the subclass is moved from
 	 * @param toStack
+	 *            the inheritance stack the subclass is moved to
 	 * @param subClass
+	 *            the class to move from fromStack to toStack
 	 * @param cw
 	 * 
 	 * @throws SQLException
@@ -96,6 +100,9 @@ public class SubclassMover
 		statement.append(subClass.getTableName());
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		Tools.logFine(ps);
+
+		ProtectionManager pm = new ProtectionManager();
+
 		ResultSet rs = ps.executeQuery();
 		while (rs.next())
 		{
@@ -107,12 +114,15 @@ public class SubclassMover
 			long nuId = nuStack.getRepresentation(lowestCommonSubClassLevel + 1).getId();
 			// cast the id to the correct level
 			Long fromId = rs.getLong(Defaults.ID_COL);
+			//save fromId for updating 
+			long lowestFromId = fromId;
 			long oldId = getCastIdDatabase(fromStack, lowestCommonSubClassLevel + 1, subClass, fromId, cw);
 			// rewrite the pointers C__ID and C__REALCLASS in the lowest common
 			// subclass
 			updateSubClassRef(nuStack, fromStack, oldId, nuStack, nuId, lowestCommonSubClassLevel, cw);
+
 			// get the id at the current level
-			// iterate over the fromtables
+			// iterate over the from tables
 			while (currentLevel > lowestCommonSubClassLevel)
 			{
 				// pick up properties, move to target
@@ -127,18 +137,22 @@ public class SubclassMover
 				// get the next id
 				fromId = getParentId(fromStack.getRepresentation(currentLevel).getTableName(), fromClassName, fromId,
 						cw);
-
 			}
-			// TODO: What to do with protection entries?
+			// get the id of the newly inserted object
+			long toId = nuStack.getActualRepresentation().getId();
+			if (lowestFromId != toId)
+			{
+				// rewrite protection entries from lowestFromId to toId
+				pm.changeObjectId(subClass.getTableName(), lowestFromId, toId, cw);
+			}
 		}
-		// remove columns from subclasstable where they are no longer in the
+		// remove columns from subclass table where they are no longer in the
 		// class
 		try
 		{
 			TableManager tm = adapter.getPersist().getTableManager();
 			ObjectRepresentation objRes = toStack.getActualRepresentation();
-			Map<String, String> valueTypeMap = tm.getDatabaseColumns(objRes.getTableName(),
-					cw);
+			Map<String, String> valueTypeMap = tm.getDatabaseColumns(objRes.getTableName(), cw);
 			for (Entry<String, String> e : valueTypeMap.entrySet())
 			{
 				String colName = e.getKey();
@@ -438,8 +452,7 @@ public class SubclassMover
 			long nuId, int lowestCommonSubclass, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("UPDATE ");
-		String tableName = nuStack.getRepresentation(lowestCommonSubclass).getTableName();
-		sb.append(tableName);
+		sb.append(nuStack.getRepresentation(lowestCommonSubclass).getTableName());
 		sb.append(" SET ");
 		sb.append(Defaults.REAL_ID_COL);
 		sb.append("=?, ");

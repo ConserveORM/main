@@ -900,30 +900,6 @@ public class PersistenceManager
 		}
 	}
 
-	/**
-	 * Change the name of oldClass to new newClass. All references will be
-	 * updated.
-	 * 
-	 * @param oldClass
-	 * @param newClass
-	 * @throws SQLException
-	 */
-	public void changeName(Class<?> oldClass, Class<?> newClass) throws SQLException
-	{
-		ConnectionWrapper cw = getConnectionWrapper();
-		try
-		{
-			persist.getTableManager().setTableName(oldClass, newClass, cw);
-			cw.commitAndDiscard();
-		}
-		catch (Exception e)
-		{
-			// cancel the operation
-			cw.rollbackAndDiscard();
-			// re-throw the original exception
-			throw new SQLException(e);
-		}
-	}
 
 	/**
 	 * Close the database connection and release all resources. After calling
@@ -933,6 +909,16 @@ public class PersistenceManager
 	{
 		persist.close();
 		persist = null;
+	}
+	
+	/**
+	 * Package-level accessor for the managed Persistence object.
+	 * 
+	 * @return
+	 */
+	Persist getPersist()
+	{
+		return this.persist;
 	}
 
 	/**

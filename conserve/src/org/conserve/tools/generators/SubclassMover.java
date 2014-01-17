@@ -114,13 +114,19 @@ public class SubclassMover
 			long nuId = nuStack.getRepresentation(lowestCommonSubClassLevel + 1).getId();
 			// cast the id to the correct level
 			Long fromId = rs.getLong(Defaults.ID_COL);
-			//save fromId for updating 
-			long lowestFromId = fromId;
 			long oldId = getCastIdDatabase(fromStack, lowestCommonSubClassLevel + 1, subClass, fromId, cw);
 			// rewrite the pointers C__ID and C__REALCLASS in the lowest common
 			// subclass
 			updateSubClassRef(nuStack, fromStack, oldId, nuStack, nuId, lowestCommonSubClassLevel, cw);
 
+			// get the id of the newly inserted object
+			long toId = nuStack.getActualRepresentation().getId();
+			if (fromId != toId)
+			{
+				// rewrite protection entries from lowestFromId to toId
+				pm.changeObjectId(subClass.getTableName(), fromId, toId, cw);
+			}
+			
 			// get the id at the current level
 			// iterate over the from tables
 			while (currentLevel > lowestCommonSubClassLevel)
@@ -137,13 +143,6 @@ public class SubclassMover
 				// get the next id
 				fromId = getParentId(fromStack.getRepresentation(currentLevel).getTableName(), fromClassName, fromId,
 						cw);
-			}
-			// get the id of the newly inserted object
-			long toId = nuStack.getActualRepresentation().getId();
-			if (lowestFromId != toId)
-			{
-				// rewrite protection entries from lowestFromId to toId
-				pm.changeObjectId(subClass.getTableName(), lowestFromId, toId, cw);
 			}
 		}
 		// remove columns from subclass table where they are no longer in the

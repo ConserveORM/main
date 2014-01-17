@@ -1871,148 +1871,7 @@ public class TableManager
 		return res;
 	}
 
-	/**
-	 * This method will fail if we do not have schema modification enabled.
-	 * 
-	 * @param oldClass
-	 * @param newClass
-	 * @throws SQLException
-	 * @throws SchemaPermissionException
-	 *             if we are not allowed to modify the schema.
-	 */
-	public void setTableName(Class<?> oldClass, Class<?> newClass, ConnectionWrapper cw) throws SQLException,
-			SchemaPermissionException
-	{
 
-		if (this.createSchema)
-		{
-			String oldTableName = NameGenerator.getTableName(oldClass, adapter);
-			String newTableName = NameGenerator.getTableName(newClass, adapter);
-			String oldClassName = NameGenerator.getSystemicName(oldClass);
-			String newClassName = NameGenerator.getSystemicName(newClass);
-
-			String newArrayMemberTable = NameGenerator.getArrayMemberTableName(newClass, adapter);
-
-			// check if the table names has changed
-			if (!oldTableName.equals(newTableName))
-			{
-				// update the cache
-				adapter.getPersist().getCache().purge(oldTableName);
-
-				// alter the table name
-				setTableName(oldTableName, newTableName, cw);
-
-				// change the array tables
-				updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName,
-						cw);
-				setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter), newArrayMemberTable, cw);
-
-				// Update ownership relations
-				updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
-				updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", oldTableName, newTableName, cw);
-
-				// update type info table
-				updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
-			}
-			// check if the class name has changed
-			if (!newClassName.equals(oldClassName))
-			{
-				// update inheritance relations
-				updateISArelation(oldClassName, newClassName, "SUPERCLASS", cw);
-				updateISArelation(oldClassName, newClassName, "SUBCLASS", cw);
-				// update superclasses
-				Class<?> superClass = newClass.getSuperclass();
-				if (superClass != null)
-				{
-					updateSuperClass(NameGenerator.getTableName(superClass, adapter), oldClassName, newClassName, cw);
-					// if the old superclass is different from the old
-					Class<?> oldSuperClass = oldClass.getSuperclass();
-					if (oldSuperClass != null && !oldSuperClass.equals(superClass))
-					{
-						updateSuperClass(NameGenerator.getTableName(oldSuperClass, adapter), oldClassName,
-								newClassName, cw);
-					}
-				}
-				// update array tables
-				updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName,
-						cw);
-				if (tableExists(newArrayMemberTable, cw))
-				{
-					updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName,
-							cw);
-					// update all C_ARRAY_MEMBER_<newName> entries
-					updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName,
-							cw);
-				}
-
-				// Update ownership relations
-				updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", oldClassName, newClassName, cw);
-			}
-		}
-		else
-		{
-			throw new SchemaPermissionException("We do not have permission to change the database schema.");
-		}
-	}
-
-	/**
-	 * Check superClassTableName for entries where C__REALCLASS is oldClassName,
-	 * change it to newClassName.
-	 * 
-	 * @param newTableName
-	 * @param oldClassName
-	 * @param newClassName
-	 * @throws SQLException
-	 */
-	private void updateSuperClass(String superClassTableName, String oldClassName, String newClassName,
-			ConnectionWrapper cw) throws SQLException
-	{
-		if (this.tableExists(superClassTableName, cw))
-		{
-			updateAllRelations(superClassTableName, Defaults.REAL_CLASS_COL, oldClassName, newClassName, cw);
-		}
-	}
-
-	/**
-	 * Change the SUPERCLASS/SUBCLASS entry for any of the affected rows.
-	 * 
-	 * @param oldClassName
-	 * @param newClassName
-	 * @throws SQLException
-	 */
-	private void updateISArelation(String oldClassName, String newClassName, String colName, ConnectionWrapper cw)
-			throws SQLException
-	{
-		updateAllRelations(Defaults.IS_A_TABLENAME, colName, oldClassName, newClassName, cw);
-	}
-
-	/**
-	 * Change all rows of table where column matches oldValue to newValue.
-	 * 
-	 * @param table
-	 * @param column
-	 * @param oldValue
-	 * @param newValue
-	 * @param cw
-	 * @throws SQLException
-	 */
-	private void updateAllRelations(String table, String column, String oldValue, String newValue, ConnectionWrapper cw)
-			throws SQLException
-	{
-		StringBuilder stmt = new StringBuilder("UPDATE ");
-		stmt.append(table);
-		stmt.append(" SET ");
-		stmt.append(column);
-		stmt.append(" = ? WHERE ");
-		stmt.append(column);
-		stmt.append(" = ?");
-		PreparedStatement ps = cw.prepareStatement(stmt.toString());
-		ps.setString(1, newValue);
-		ps.setString(2, oldValue);
-		Tools.logFine(ps);
-		ps.execute();
-		ps.close();
-	}
 
 	/**
 	 * Change the name of a table from oldName to newName. No other changes will
@@ -2022,17 +1881,18 @@ public class TableManager
 	 * @param newName
 	 * @throws SQLException
 	 */
-	private void setTableName(String oldName, String newName, ConnectionWrapper cw) throws SQLException
+	public void setTableName(String oldName, String newName, ConnectionWrapper cw) throws SQLException
 	{
 		if (tableExists(oldName, cw))
 		{
 			if (tableExists(newName, cw))
 			{
-				//new table exists, drop old table
+				// new table exists, drop old table
 				conditionalDelete(oldName, cw);
 				if (!adapter.isSupportsIdentity())
 				{
-					// this adapter relies on sequences, so drop the corresponding
+					// this adapter relies on sequences, so drop the
+					// corresponding
 					// sequence
 					String sequenceName = Tools.getSequenceName(oldName, adapter);
 					String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
@@ -2045,7 +1905,7 @@ public class TableManager
 			}
 			else
 			{
-				//new table does not exist, rename old table
+				// new table does not exist, rename old table
 				PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + oldName + " RENAME TO " + newName);
 				Tools.logFine(ps);
 				ps.execute();

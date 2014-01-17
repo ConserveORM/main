@@ -114,6 +114,7 @@ import org.conserve.select.discriminators.LessOrEqual;
 import org.conserve.sort.Ascending;
 import org.conserve.sort.Descending;
 import org.conserve.sort.Order;
+import org.conserve.test.TestTools;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 import org.junit.After;
@@ -1867,6 +1868,7 @@ public class PersistTest
 		Object otherObject = new SimpleObject();
 		Object redundantObject = new SimplestObject();
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		TestTools testTools = new TestTools(pm.getPersist());
 		// drop all tables
 		pm.dropTable(Object.class);
 
@@ -1878,7 +1880,7 @@ public class PersistTest
 		oo.setRedundantObject(redundantObject);
 		pm.saveObject(oo);
 		// rename the table
-		pm.changeName(OriginalObject.class, NewName.class);
+		testTools.changeName(OriginalObject.class, NewName.class);
 		// get all NewName objects
 		List<NewName> res = pm.getObjects(NewName.class, new All());
 		assertEquals(res.size(), 1);
@@ -1905,6 +1907,7 @@ public class PersistTest
 		SimplestObject redundantObject = new SimplestObject();
 		redundantObject.setFoo(88.0);
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		TestTools testTools = new TestTools(pm.getPersist());
 		// drop all tables
 		pm.dropTable(Object.class);
 
@@ -1916,13 +1919,14 @@ public class PersistTest
 		oo.setRedundantObject(redundantObject);
 		pm.saveObject(oo);
 		// rename the table
-		pm.changeName(OriginalObject.class, RenamedColumn.class);
+		testTools.changeName(OriginalObject.class, RenamedColumn.class);
 		// update schema
 		pm.updateSchema(RenamedColumn.class);
 		pm.close();
 
 		// re-establish connection
 		pm = new PersistenceManager(driver, database, login, password);
+		testTools = new TestTools(pm.getPersist());
 		// get all RenamedColumn objects
 		List<RenamedColumn> res1 = pm.getObjects(RenamedColumn.class, new All());
 		assertEquals(res1.size(), 1);
@@ -1935,7 +1939,7 @@ public class PersistTest
 				0.000001);
 
 		// change everything back
-		pm.changeName(RenamedColumn.class, OriginalObject.class);
+		testTools.changeName(RenamedColumn.class, OriginalObject.class);
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
 
@@ -1979,7 +1983,7 @@ public class PersistTest
 		oo.setRedundantObject(redundantObject);
 		pm.saveObject(oo);
 		// rename the table
-		pm.changeName(OriginalObject.class, RemovedColumn.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, RemovedColumn.class);
 		// update schema
 		pm.updateSchema(RemovedColumn.class);
 
@@ -1997,7 +2001,7 @@ public class PersistTest
 		assertEquals(0, simpleRes.size());
 
 		// change everything back
-		pm.changeName(RemovedColumn.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(RemovedColumn.class, OriginalObject.class);
 		pm.updateSchema(OriginalObject.class);
 
 		// get all OriginalObject objects
@@ -2039,7 +2043,7 @@ public class PersistTest
 
 		// change object to long
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(OriginalObject.class, ObjectToLong.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToLong.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToLong.class);
@@ -2059,7 +2063,7 @@ public class PersistTest
 		pm.close();
 		// change long to object
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(ObjectToLong.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(ObjectToLong.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
@@ -2102,7 +2106,7 @@ public class PersistTest
 
 		// change object to subclass
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(OriginalObject.class, ObjectToSubclass.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToSubclass.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToSubclass.class);
@@ -2132,7 +2136,7 @@ public class PersistTest
 
 		// change subclass to superclass
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(ObjectToSubclass.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(ObjectToSubclass.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
@@ -2167,7 +2171,7 @@ public class PersistTest
 
 		// change int to long
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(OriginalObject.class, IntToLong.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, IntToLong.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(IntToLong.class);
@@ -2183,7 +2187,7 @@ public class PersistTest
 
 		// change long to int
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(IntToLong.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(IntToLong.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
@@ -2223,7 +2227,7 @@ public class PersistTest
 
 		// change string to long
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(OriginalObject.class, StringToLong.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, StringToLong.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(StringToLong.class);
@@ -2241,7 +2245,7 @@ public class PersistTest
 
 		// change long to string
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(StringToLong.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(StringToLong.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
@@ -2281,7 +2285,8 @@ public class PersistTest
 
 		// change array to long
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(OriginalObject.class, ArrayToLong.class);
+		TestTools testTools = new TestTools(pm.getPersist());
+		testTools.changeName(OriginalObject.class, ArrayToLong.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ArrayToLong.class);
@@ -2299,7 +2304,8 @@ public class PersistTest
 
 		// change long to array
 		pm = new PersistenceManager(driver, database, login, password);
-		pm.changeName(ArrayToLong.class, OriginalObject.class);
+		testTools = new TestTools(pm.getPersist());
+		testTools.changeName(ArrayToLong.class, OriginalObject.class);
 		pm.close();
 		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
@@ -2337,7 +2343,7 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename NotSubClass to SubClass
-		pm.changeName(NotSubClass.class, SubClass.class);
+		new TestTools(pm.getPersist()).changeName(NotSubClass.class, SubClass.class);
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
@@ -2364,7 +2370,7 @@ public class PersistTest
 		}
 
 		// rename SubClass to to NotSubClass
-		pm.changeName(SubClass.class, NotSubClass.class);
+		new TestTools(pm.getPersist()).changeName(SubClass.class, NotSubClass.class);
 		pm.close();
 		// change the database schema
 		pm = new PersistenceManager(driver, database, login, password);
@@ -2414,8 +2420,8 @@ public class PersistTest
 		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
 		// change the name of the property class
-		pm.changeName(OriginalObject.class, NewName.class);
-		pm.changeName(ContainerObject.class, NewNameContainer.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, NewName.class);
+		new TestTools(pm.getPersist()).changeName(ContainerObject.class, NewNameContainer.class);
 		pm.close();
 
 		// re-connect to database
@@ -2525,7 +2531,7 @@ public class PersistTest
 		// re-connect to database
 		pm = new PersistenceManager(driver, database, login, password);
 		// change ContainerObject to ChangedInheritanceContainer
-		pm.changeName(ObjectContainerObject.class, ChangedInheritanceContainer.class);
+		new TestTools(pm.getPersist()).changeName(ObjectContainerObject.class, ChangedInheritanceContainer.class);
 		pm.close();
 
 		// re-connect to database
@@ -2586,7 +2592,7 @@ public class PersistTest
 		pm.saveObject(new OriginalObject());
 		pm.saveObject(new OriginalObject());
 		// rename OriginalObject to ChangedInheritance
-		pm.changeName(OriginalObject.class, ChangedInheritance.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ChangedInheritance.class);
 
 		// change the database schema, adding interface Serialized.
 		pm.updateSchema(ChangedInheritance.class);
@@ -2604,7 +2610,7 @@ public class PersistTest
 
 		// rename ChangedInheritance to OriginalObject, thus removing the
 		// interface
-		pm.changeName(ChangedInheritance.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(ChangedInheritance.class, OriginalObject.class);
 		// change the database schema
 		pm.updateSchema(OriginalObject.class);
 
@@ -2639,10 +2645,10 @@ public class PersistTest
 		b2.setFoo(2);
 		pm.saveObject(b1);
 		pm.saveObject(b2);
-
-		pm.changeName(OriginalTop.class, ModifiedTop.class);
-		pm.changeName(OriginalMiddle.class, ModifiedMiddle.class);
-		pm.changeName(OriginalBottom.class, ModifiedBottom.class);
+		TestTools tt = new TestTools(pm.getPersist());
+		tt.changeName(OriginalTop.class, ModifiedTop.class);
+		tt.changeName(OriginalMiddle.class, ModifiedMiddle.class);
+		tt.changeName(OriginalBottom.class, ModifiedBottom.class);
 
 		pm.updateSchema(ModifiedBottom.class);
 		pm.close();
@@ -2665,6 +2671,7 @@ public class PersistTest
 	public void testCopyUp() throws Exception
 	{
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		TestTools testTools = new TestTools(pm.getPersist());
 		// drop all tables
 		pm.dropTable(Object.class);
 		// add two Bottom objects.
@@ -2675,9 +2682,9 @@ public class PersistTest
 		pm.saveObject(b1);
 		pm.saveObject(b2);
 
-		pm.changeName(ModifiedTop.class, OriginalTop.class);
-		pm.changeName(ModifiedMiddle.class, OriginalMiddle.class);
-		pm.changeName(ModifiedBottom.class, OriginalBottom.class);
+		testTools.changeName(ModifiedTop.class, OriginalTop.class);
+		testTools.changeName(ModifiedMiddle.class, OriginalMiddle.class);
+		testTools.changeName(ModifiedBottom.class, OriginalBottom.class);
 
 		pm.updateSchema(OriginalBottom.class);
 		pm.close();
@@ -3368,7 +3375,7 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename SubClass to NotSubClass, move from OrignialObject to Object
-		pm.changeName(SubClass.class, NotSubClass.class);
+		new TestTools(pm.getPersist()).changeName(SubClass.class, NotSubClass.class);
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
@@ -3420,7 +3427,7 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename OriginalObject to SubClass, move from superclass to subclass
-		pm.changeName(OriginalObject.class, SubClass.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, SubClass.class);
 		// change the database schema
 		pm.updateSchema(SubClass.class);
 		pm.close();
@@ -3491,7 +3498,7 @@ public class PersistTest
 
 		pm = new PersistenceManager(driver, database, login, password);
 		//rename SubClass to OriginalObject, moving from subclass to superclass
-		pm.changeName(SubClass.class, OriginalObject.class);
+		new TestTools(pm.getPersist()).changeName(SubClass.class, OriginalObject.class);
 		// change the database schema
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
@@ -3500,8 +3507,7 @@ public class PersistTest
 		//make sure loading ContainerObject still contains the correct data
 		List<ContainerObject>coList = pm.getObjects(ContainerObject.class, new All());
 		assertEquals(2,coList.size());
-		assertEquals("foo",coList.get(0).getFoo().getName());
-		assertEquals("bar",coList.get(1).getFoo().getName());
+  		assertEquals("bar",coList.get(1).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass
@@ -3579,8 +3585,9 @@ public class PersistTest
 		pm.saveObject(bb);
 
 		// move a field up in the hierarchy
-		pm.changeName(BeforeBottom.class, AfterBottom.class);
-		pm.changeName(BeforeTop.class, AfterTop.class);
+		TestTools tt = new TestTools(pm.getPersist());
+		tt.changeName(BeforeBottom.class, AfterBottom.class);
+		tt.changeName(BeforeTop.class, AfterTop.class);
 		pm.updateSchema(AfterBottom.class);
 		pm.close();
 
@@ -3630,7 +3637,7 @@ public class PersistTest
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then drop that row from the containing object class
-		pm.changeName(OriginalObject.class, RemovedColumn.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, RemovedColumn.class);
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
@@ -3661,7 +3668,7 @@ public class PersistTest
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then drop that row from the containing object class
-		pm.changeName(OriginalObject.class, RemovedColumn.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, RemovedColumn.class);
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
@@ -3710,7 +3717,7 @@ public class PersistTest
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then change the field from reference to Long
-		pm.changeName(OriginalObject.class, ObjectToLong.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToLong.class);
 		pm.updateSchema(ObjectToLong.class);
 		pm.close();
 
@@ -3738,7 +3745,7 @@ public class PersistTest
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then change the field from reference to Long
-		pm.changeName(OriginalObject.class, ObjectToLong.class);
+		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToLong.class);
 		pm.updateSchema(ObjectToLong.class);
 		pm.close();
 
@@ -3787,7 +3794,7 @@ public class PersistTest
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
 		// remove the interface from the contained objects
-		pm.changeName(MyFooContainer.class, MyNonFooContainer.class);
+		new TestTools(pm.getPersist()).changeName(MyFooContainer.class, MyNonFooContainer.class);
 		pm.updateSchema(MyNonFooContainer.class);
 		pm.close();
 		// make sure the contained objects are gone
@@ -3813,7 +3820,7 @@ public class PersistTest
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
 		// remove the interface from the contained objects
-		pm.changeName(MyFooContainer.class, MyNonFooContainer.class);
+		new TestTools(pm.getPersist()).changeName(MyFooContainer.class, MyNonFooContainer.class);
 		pm.updateSchema(MyNonFooContainer.class);
 		pm.close();
 		// make sure the contained objects are still there.

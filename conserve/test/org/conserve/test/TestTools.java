@@ -53,6 +53,32 @@ public class TestTools
 	}
 
 	/**
+	 * Change the name of oldClass to new newClass. All references will be
+	 * updated.
+	 * 
+	 * @param oldClass
+	 * @param newClass
+	 * @throws SQLException
+	 */
+	public void changeName(Class<?> oldClass, String newClassName, String newTableName, String newArrayMemberTable)
+			throws SQLException
+	{
+		ConnectionWrapper cw = persist.getConnectionWrapper();
+		try
+		{
+			setTableName(oldClass, newClassName, newTableName, newArrayMemberTable, cw);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			// cancel the operation
+			cw.rollbackAndDiscard();
+			// re-throw the original exception
+			throw new SQLException(e);
+		}
+	}
+
+	/**
 	 * This method will fail if we do not have schema modification enabled.
 	 * 
 	 * @param oldClass
@@ -89,6 +115,8 @@ public class TestTools
 
 			// update type info table
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
+			// update class name table
+			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLE", oldTableName, newTableName, cw);
 		}
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))
@@ -119,6 +147,7 @@ public class TestTools
 
 			// Update ownership relations
 			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", oldClassName, newClassName, cw);
+			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "CLASS", oldClassName, newClassName, cw);
 		}
 	}
 
@@ -156,7 +185,8 @@ public class TestTools
 
 			// change the array tables
 			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
-			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter), newArrayMemberTable, cw);
+			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),
+					newArrayMemberTable, cw);
 
 			// Update ownership relations
 			updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
@@ -164,6 +194,9 @@ public class TestTools
 
 			// update type info table
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
+
+			// update tablename table
+			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLE", oldTableName, newTableName, cw);
 		}
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))
@@ -190,6 +223,9 @@ public class TestTools
 
 			// Update ownership relations
 			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", oldClassName, newClassName, cw);
+
+			// update tablename table
+			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "CLASS", oldClassName, newClassName, cw);
 		}
 	}
 

@@ -3497,8 +3497,8 @@ public class PersistTest
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
-		//rename SubClass to OriginalObject, moving from subclass to superclass
-		new TestTools(pm.getPersist()).changeName(SubClass.class, OriginalObject.class);
+		//rename SubClass to a non-existing class, thus removing the subclass
+		new TestTools(pm.getPersist()).changeName(SubClass.class, "org.conserve.NonExistingFakeClass","FAKE_TABLE","C__ARRAY_FAKE_TABLE");
 		// change the database schema
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
@@ -3516,7 +3516,7 @@ public class PersistTest
 		try
 		{
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not try SQLException");
+			fail("getCount(...) did not throw SQLException");
 		}
 		catch(SQLException e)
 		{
@@ -3525,10 +3525,14 @@ public class PersistTest
 		// delete all OriginalObject/SubClass items
 		pm.deleteObjects(OriginalObject.class, new All());
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		//check that the contents are preserved
+		coList = pm.getObjects(ContainerObject.class, new All());
+		assertEquals(2,coList.size());
+  		assertEquals("bar",coList.get(1).getFoo().getName());
 		try
 		{
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not try SQLException");
+			fail("getCount(...) did not throw SQLException");
 		}
 		catch(SQLException e)
 		{
@@ -3539,7 +3543,7 @@ public class PersistTest
 		try
 		{
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not try SQLException");
+			fail("getCount(...) did not throw SQLException");
 		}
 		catch(SQLException e)
 		{
@@ -3552,7 +3556,7 @@ public class PersistTest
 		try
 		{
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not try SQLException");
+			fail("getCount(...) did not throw SQLException");
 		}
 		catch(SQLException e)
 		{

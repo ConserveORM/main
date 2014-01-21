@@ -340,15 +340,37 @@ public class TableManager
 			if (!tableExists(Defaults.TYPE_TABLENAME, cw))
 			{
 				// create the type table
-
-				String createString = "CREATE TABLE " + Defaults.TYPE_TABLENAME + " (OWNER_TABLE "
-						+ adapter.getVarCharIndexed() + ",COLUMN_NAME " + adapter.getVarCharIndexed()
-						+ ",COLUMN_CLASS " + adapter.getVarCharIndexed() + ")";
-				PreparedStatement ps = cw.prepareStatement(createString);
+				StringBuilder sb = new StringBuilder("CREATE TABLE ");
+				sb.append(Defaults.TYPE_TABLENAME);
+				sb.append(" (OWNER_TABLE ");
+				sb.append(adapter.getVarCharIndexed());
+				sb.append(", COLUMN_NAME ");
+				sb.append(adapter.getVarCharIndexed());
+				sb.append(", COLUMN_CLASS ");
+				sb.append(adapter.getVarCharIndexed());
+				sb.append(")");
+				PreparedStatement ps = cw.prepareStatement(sb.toString());
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
 
+			}
+
+			if (!tableExists(Defaults.TABLE_NAME_TABLENAME, cw))
+			{
+				// create the table to store associations between class names
+				// and table names
+				StringBuilder sb = new StringBuilder("CREATE TABLE ");
+				sb.append(Defaults.TABLE_NAME_TABLENAME);
+				sb.append(" (CLASS ");
+				sb.append(adapter.getVarCharIndexed());
+				sb.append(", TABLE ");
+				sb.append(adapter.getVarCharIndexed());
+				sb.append(")");
+				PreparedStatement ps = cw.prepareStatement(sb.toString());
+				Tools.logFine(ps);
+				ps.execute();
+				ps.close();
 			}
 
 			// commit, return connection to pool
@@ -580,6 +602,12 @@ public class TableManager
 			createClassRelation(objRes.getRepresentedClass(), cw);
 		}
 		objRes.ensureContainedTablesExist(cw);
+
+		if (!objRes.isPrimitive())
+		{
+			// store an association between the class name and the table name
+			setTableNameForClass(objRes.getSystemicName(), objRes.getTableName(), cw);
+		}
 	}
 
 	/**
@@ -777,9 +805,9 @@ public class TableManager
 	 * @return
 	 * @throws SQLException
 	 */
-	private ArrayList<Class<?>> getSubClasses(Class<?> superclass, ConnectionWrapper cw) throws SQLException
+	private List<Class<?>> getSubClasses(Class<?> superclass, ConnectionWrapper cw) throws SQLException
 	{
-		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
+		List<Class<?>> res = new ArrayList<Class<?>>();
 		try
 		{
 			StringBuilder query = new StringBuilder("SELECT SUBCLASS FROM ");
@@ -805,6 +833,37 @@ public class TableManager
 		{
 			throw new SQLException(cnfe);
 		}
+
+		return res;
+	}
+
+	/**
+	 * Get the name of all direct subclasses of the given class.
+	 * 
+	 * @param superclass
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<String> getSubClassNames(Class<?> superclass, ConnectionWrapper cw) throws SQLException
+	{
+		List<String> res = new ArrayList<String>();
+		StringBuilder query = new StringBuilder("SELECT SUBCLASS FROM ");
+		query.append(Defaults.IS_A_TABLENAME);
+		query.append(" WHERE SUPERCLASS = ?");
+		PreparedStatement ps = cw.prepareStatement(query.toString());
+		ps.setString(1, NameGenerator.getSystemicName(superclass));
+		Tools.logFine(ps);
+		if (ps.execute())
+		{
+			ResultSet rs = ps.getResultSet();
+			while (rs.next())
+			{
+				String name = rs.getString(1);
+				res.add(name);
+			}
+			rs.close();
+		}
+		ps.close();
 
 		return res;
 	}
@@ -872,7 +931,7 @@ public class TableManager
 			// delete all instances of the class
 			adapter.getPersist().deleteObjects(cw, c, new All());
 			// drop table of subclasses
-			ArrayList<Class<?>> subClasses = this.getSubClasses(c, cw);
+			List<Class<?>> subClasses = this.getSubClasses(c, cw);
 			for (Class<?> subClass : subClasses)
 			{
 				dropTableHelper(subClass, cw, classList);
@@ -880,6 +939,7 @@ public class TableManager
 			// delete meta-info
 			deleteIsATableEntries(c, cw);
 			removeTypeInfo(tableName, cw);
+			removeTableNameForClass(NameGenerator.getSystemicName(c), tableName, cw);
 
 			// drop the table
 			conditionalDelete(tableName, cw);
@@ -1400,6 +1460,58 @@ public class TableManager
 					}
 				}
 
+				// get info on direct subclasses from database
+				List<String> subClasses = getSubClassNames(klass, cw);
+				for (String subClass : subClasses)
+				{
+					// check if any subclass in the database has been removed
+					try
+					{
+						ObjectTools.lookUpClass(subClass, adapter);
+					}
+					catch (ClassNotFoundException e)
+					{
+						// if so:
+						// drop the table
+						String tableName = getTableNameForClass(subClass, cw);
+
+						// drop the table
+						conditionalDelete(tableName, cw);
+						if (!adapter.isSupportsIdentity())
+						{
+							// this adapter relies on sequences, so drop the
+							// corresponding
+							// sequence
+							String sequenceName = Tools.getSequenceName(tableName, adapter);
+							String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
+
+							PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
+							Tools.logFine(ps);
+							ps.execute();
+							ps.close();
+						}
+						// updating references not necessary, no class should
+						// have reference to the removed class prior to removing
+						// it
+						
+						// update subclass entries
+						dropAllSubclassEntries(NameGenerator.getTableName(klass, adapter),subClass,cw);
+
+						// update protection entries
+						updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", tableName,
+								NameGenerator.getTableName(klass, adapter), cw);
+						updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", subClass,
+								NameGenerator.getSystemicName(klass), cw);
+
+						// update type table: only property class, as no
+						// properties should be left in the subclass before
+						// removing it
+						updateAllRelations(Defaults.TYPE_TABLENAME, "COLUMN_CLASS", subClass,
+								NameGenerator.getSystemicName(klass), cw);
+						
+					}
+				}
+
 				// Check if any property has been moved up or down
 				for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
 				{
@@ -1871,8 +1983,6 @@ public class TableManager
 		return res;
 	}
 
-
-
 	/**
 	 * Change the name of a table from oldName to newName. No other changes will
 	 * be effected.
@@ -1999,4 +2109,184 @@ public class TableManager
 		ps.close();
 	}
 
+	/**
+	 * Add a link between a class name and a table name.
+	 * 
+	 * @param className
+	 *            the {@link NameGenerator#getSystemicName(Class)}of the class.
+	 * @param tableName
+	 *            the name of the table for the class.
+	 * @throws SQLException
+	 */
+	private void setTableNameForClass(String className, String tableName, ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("INSERT INTO ");
+		stmt.append(Defaults.TABLE_NAME_TABLENAME);
+		stmt.append(" (TABLE ,CLASS) VALUES (?,?)");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		ps.setString(2, className);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+	}
+
+	/**
+	 * Remove the class-tablename association for a given class and/or
+	 * tablename. Either className or tableName may be null, but not both.
+	 * 
+	 * @param className
+	 *            the {@link NameGenerator#getSystemicName(Class)} of the class
+	 *            to remove the association for, may be null if tableName is
+	 *            non-null.
+	 * @param tableName
+	 *            the table name of the class to remove association for, may be
+	 *            null if className is non-null.
+	 * @param cw
+	 * @throws SQLException
+	 */
+	private void removeTableNameForClass(String className, String tableName, ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("DELETE FROM ");
+		stmt.append(Defaults.TABLE_NAME_TABLENAME);
+		stmt.append(" WHERE");
+		if (className != null)
+		{
+			stmt.append(" CLASS=? ");
+			if (tableName != null)
+			{
+				stmt.append("AND");
+			}
+		}
+		if (tableName != null)
+		{
+			stmt.append(" TABLE=?");
+		}
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		if (className != null)
+		{
+			ps.setString(1, className);
+			if (tableName != null)
+			{
+				ps.setString(2, tableName);
+			}
+		}
+		else
+		{
+			ps.setString(1, tableName);
+		}
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+	}
+
+	/**
+	 * Get the table name for a named class.
+	 * 
+	 * @see NameGenerator#getTableName(Class, AdapterBase)
+	 * @see NameGenerator#getSystemicName(Class)
+	 * @param className
+	 *            the {@link NameGenerator#getSystemicName(Class)} of the class
+	 *            to find the table name for.
+	 * @param cw
+	 * @return the table name.
+	 * @throws SQLException
+	 */
+	public String getTableNameForClass(String className, ConnectionWrapper cw) throws SQLException
+	{
+		String res = null;
+		StringBuilder stmt = new StringBuilder("SELECT TABLE FROM ");
+		stmt.append(Defaults.TABLE_NAME_TABLENAME);
+		stmt.append(" WHERE CLASS=?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, className);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		if (rs.next())
+		{
+			res = rs.getString(1);
+		}
+		ps.close();
+		return res;
+	}
+
+	/**
+	 * Get the name of the class that belongs to a given table.
+	 * 
+	 * @param tableName
+	 *            the table name to find the class name for.
+	 * @param cw
+	 * @return the {@link NameGenerator#getSystemicName(Class)} of the class
+	 *         that belongs to the given table.
+	 * @throws SQLException
+	 */
+	public String getClassForTableName(String tableName, ConnectionWrapper cw) throws SQLException
+	{
+		String res = null;
+		StringBuilder stmt = new StringBuilder("SELECT CLASS FROM ");
+		stmt.append(Defaults.TABLE_NAME_TABLENAME);
+		stmt.append(" WHERE TABBLE=?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		if (rs.next())
+		{
+			res = rs.getString(1);
+		}
+		ps.close();
+		return res;
+	}
+
+	/**
+	 * Change all rows of table where column matches oldValue to newValue.
+	 * 
+	 * @param table
+	 * @param column
+	 * @param oldValue
+	 * @param newValue
+	 * @param cw
+	 * @throws SQLException
+	 */
+	private void updateAllRelations(String table, String column, String oldValue, String newValue, ConnectionWrapper cw)
+			throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("UPDATE ");
+		stmt.append(table);
+		stmt.append(" SET ");
+		stmt.append(column);
+		stmt.append(" = ? WHERE ");
+		stmt.append(column);
+		stmt.append(" = ?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, newValue);
+		ps.setString(2, oldValue);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+	}
+	
+	private void dropAllSubclassEntries(String superClassTable,String subClassName,ConnectionWrapper cw) throws SQLException
+	{
+		//delete the subclass from C__IS_A table
+		StringBuilder stmt = new StringBuilder("DELETE FROM ");
+		stmt.append(Defaults.IS_A_TABLENAME);
+		stmt.append(" WHERE SUBCLASS=?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, subClassName);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		
+		//delete C__REALCLASS and C__REALID from superClassTable 
+		stmt = new StringBuilder("UPDATE ");
+		stmt.append(superClassTable);
+		stmt.append(" SET C__REALCLASS  = NULL, C__REALID = NULL WHERE C__REALCLASS=?");
+		ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, subClassName);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		
+	}
 }

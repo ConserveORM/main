@@ -33,6 +33,7 @@ public class Defaults
 	public static final String ARRAY_MEMBER_TABLENAME = "C__ARRAY_MEMBER_";
 	public static final String SCHEMA_VERSION_TABLENAME = "C__SCHEMA_VERSION";
 	public static final String TYPE_TABLENAME = "C__TYPE_TABLE";
+	public static final String TABLE_NAME_TABLENAME = "C__TABLE_NAME";
 
 	/**
 	 * Default columns.

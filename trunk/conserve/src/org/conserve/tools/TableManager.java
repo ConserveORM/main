@@ -1223,24 +1223,32 @@ public class TableManager
 	 *            the name of the column to change the type for.
 	 * @param column
 	 *            the column to change the type of.
+	 * @param oldClass
+	 *            the old type of the database column.
 	 * @param nuClass
 	 *            the type to change the column into.
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void changeColumnType(String tableName, String column, Class<?> nuClass, ConnectionWrapper cw)
-			throws SQLException
+	private void changeColumnType(String tableName, String column, Class<?> oldClass, Class<?> nuClass,
+			ConnectionWrapper cw) throws SQLException
 	{
-		StringBuilder sb = new StringBuilder("ALTER TABLE ");
-		sb.append(tableName);
-		sb.append(" ALTER COLUMN ");
-		sb.append(column);
-		sb.append(" ");
-		sb.append(adapter.getColumnType(nuClass, null).trim());
-		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		Tools.logFine(ps);
-		ps.execute();
-		ps.close();
+		String oldType = adapter.getColumnType(oldClass, null);
+		String nuType = adapter.getColumnType(nuClass, null);
+		//only do conversion if it is necessary
+		if (!oldType.equals(nuType))
+		{
+			StringBuilder sb = new StringBuilder("ALTER TABLE ");
+			sb.append(tableName);
+			sb.append(" ALTER COLUMN ");
+			sb.append(column);
+			sb.append(" ");
+			sb.append(nuType);
+			PreparedStatement ps = cw.prepareStatement(sb.toString());
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+		}
 
 		// store the new column metadata
 		changeTypeInfo(tableName, column, nuClass, cw);
@@ -1493,9 +1501,9 @@ public class TableManager
 						// updating references not necessary, no class should
 						// have reference to the removed class prior to removing
 						// it
-						
+
 						// update subclass entries
-						dropAllSubclassEntries(NameGenerator.getTableName(klass, adapter),subClass,cw);
+						dropAllSubclassEntries(NameGenerator.getTableName(klass, adapter), subClass, cw);
 
 						// update protection entries
 						updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", tableName,
@@ -1508,7 +1516,7 @@ public class TableManager
 						// removing it
 						updateAllRelations(Defaults.TYPE_TABLENAME, "COLUMN_CLASS", subClass,
 								NameGenerator.getSystemicName(klass), cw);
-						
+
 					}
 				}
 
@@ -1558,7 +1566,8 @@ public class TableManager
 							{
 								// there is a conversion available
 								// change the column type
-								changeColumnType(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+								changeColumnType(toRep.getTableName(), change.getToName(), change.getFromClass(),
+										change.getToClass(), cw);
 
 								// Update object references and remove
 								// incompatible entries
@@ -2265,10 +2274,11 @@ public class TableManager
 		ps.execute();
 		ps.close();
 	}
-	
-	private void dropAllSubclassEntries(String superClassTable,String subClassName,ConnectionWrapper cw) throws SQLException
+
+	private void dropAllSubclassEntries(String superClassTable, String subClassName, ConnectionWrapper cw)
+			throws SQLException
 	{
-		//delete the subclass from C__IS_A table
+		// delete the subclass from C__IS_A table
 		StringBuilder stmt = new StringBuilder("DELETE FROM ");
 		stmt.append(Defaults.IS_A_TABLENAME);
 		stmt.append(" WHERE SUBCLASS=?");
@@ -2277,8 +2287,8 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		
-		//delete C__REALCLASS and C__REALID from superClassTable 
+
+		// delete C__REALCLASS and C__REALID from superClassTable
 		stmt = new StringBuilder("UPDATE ");
 		stmt.append(superClassTable);
 		stmt.append(" SET C__REALCLASS  = NULL, C__REALID = NULL WHERE C__REALCLASS=?");
@@ -2287,6 +2297,6 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		
+
 	}
 }

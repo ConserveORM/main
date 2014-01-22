@@ -2107,8 +2107,6 @@ public class PersistTest
 		// change object to subclass
 		pm = new PersistenceManager(driver, database, login, password);
 		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToSubclass.class);
-		pm.close();
-		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToSubclass.class);
 		pm.close();
 		// check that Object (oo1.otherObject) do not exist, and SimplestObject

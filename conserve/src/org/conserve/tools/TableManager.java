@@ -364,7 +364,7 @@ public class TableManager
 				sb.append(Defaults.TABLE_NAME_TABLENAME);
 				sb.append(" (CLASS ");
 				sb.append(adapter.getVarCharIndexed());
-				sb.append(", TABLE ");
+				sb.append(", TABLENAME ");
 				sb.append(adapter.getVarCharIndexed());
 				sb.append(")");
 				PreparedStatement ps = cw.prepareStatement(sb.toString());
@@ -1960,7 +1960,7 @@ public class TableManager
 	}
 
 	/**
-	 * Get a map of tablename->type for the given table.
+	 * Get a map of column name -> type for the given table.
 	 * 
 	 * @param tableName
 	 * @param cw
@@ -2016,7 +2016,7 @@ public class TableManager
 			else
 			{
 				// new table does not exist, rename old table
-				PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + oldName + " RENAME TO " + newName);
+				PreparedStatement ps = cw.prepareStatement(adapter.getTableRenameStatement(oldName, newName));
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
@@ -2122,7 +2122,7 @@ public class TableManager
 	{
 		StringBuilder stmt = new StringBuilder("INSERT INTO ");
 		stmt.append(Defaults.TABLE_NAME_TABLENAME);
-		stmt.append(" (TABLE ,CLASS) VALUES (?,?)");
+		stmt.append(" (TABLENAME ,CLASS) VALUES (?,?)");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		ps.setString(1, tableName);
 		ps.setString(2, className);
@@ -2160,7 +2160,7 @@ public class TableManager
 		}
 		if (tableName != null)
 		{
-			stmt.append(" TABLE=?");
+			stmt.append(" TABLENAME=?");
 		}
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		if (className != null)
@@ -2195,7 +2195,7 @@ public class TableManager
 	public String getTableNameForClass(String className, ConnectionWrapper cw) throws SQLException
 	{
 		String res = null;
-		StringBuilder stmt = new StringBuilder("SELECT TABLE FROM ");
+		StringBuilder stmt = new StringBuilder("SELECT TABLENAME FROM ");
 		stmt.append(Defaults.TABLE_NAME_TABLENAME);
 		stmt.append(" WHERE CLASS=?");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
@@ -2225,7 +2225,7 @@ public class TableManager
 		String res = null;
 		StringBuilder stmt = new StringBuilder("SELECT CLASS FROM ");
 		stmt.append(Defaults.TABLE_NAME_TABLENAME);
-		stmt.append(" WHERE TABBLE=?");
+		stmt.append(" WHERE TABLENAME=?");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		ps.setString(1, tableName);
 		Tools.logFine(ps);

@@ -116,7 +116,7 @@ public class TestTools
 			// update type info table
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
 			// update class name table
-			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLE", oldTableName, newTableName, cw);
+			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLENAME", oldTableName, newTableName, cw);
 		}
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))
@@ -196,7 +196,7 @@ public class TestTools
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
 
 			// update tablename table
-			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLE", oldTableName, newTableName, cw);
+			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLENAME", oldTableName, newTableName, cw);
 		}
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))

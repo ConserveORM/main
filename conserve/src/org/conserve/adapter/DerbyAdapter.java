@@ -86,15 +86,6 @@ public class DerbyAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getShutdownCommand()
-	 */
-	@Override
-	public String getDriverManagerShutdownCommand()
-	{
-		return getPersist().getConnectionString() + ";shutdown=true";
-	}
-
-	/**
 	 * @see org.conserve.adapter.AdapterBase#getLimitString()
 	 */
 	@Override
@@ -173,6 +164,21 @@ public class DerbyAdapter extends AdapterBase
 		statement.append(" TO ");
 		statement.append(Defaults.NEW_COLUMN_NAME_PLACEHOLDER);
 		return statement.toString();
+	}
+	
+
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatement(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public String getTableRenameStatement(String oldTableName, String newTableName)
+	{
+		StringBuilder sb = new StringBuilder("RENAME TABLE ");
+		sb.append(oldTableName);
+		sb.append(" TO ");
+		sb.append(newTableName);
+		return sb.toString();
+		
 	}
 
 }

@@ -2730,6 +2730,7 @@ public class PersistTest
 			assertTrue(3 < r.getList().size());
 			assertNotNull(r.getList().get(0));
 		}
+		pm.close();
 	}
 
 	/**

@@ -87,6 +87,7 @@ public class DataConnectionPool
 			if (driver != null)
 			{
 				// this is only here for compatibility with JDBC versions less than 4.0.
+				//TODO: Is this still needed? JDK version > 5 should handle this automatically
 				Class.forName(driver).newInstance();
 			}
 		}

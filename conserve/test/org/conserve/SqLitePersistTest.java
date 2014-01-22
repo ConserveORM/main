@@ -39,13 +39,14 @@ public class SqLitePersistTest extends PersistTest
 	{
 		driver = "org.sqlite.JDBC";
 		database = "jdbc:sqlite:sqlitetest.db";
+		secondDatabase = "jdbc:sqlite:sqlitetest2.db";
 		login = "sa";
 		password = "";
 		deleteAll();
 	}
 
 	/**
-	 * Try writing one entry in a database table.
+	 * Try reading from a database table.
 	 * 
 	 * @throws Exception
 	 */

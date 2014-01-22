@@ -34,7 +34,7 @@ public class DerbyPersistTest extends PersistTest
 	@Override
 	public void setUp() throws Exception
 	{
-		driver = "org.apache.derby.jdbc.EmbeddedDriver";
+		driver = null;
 		database = "jdbc:derby:derbyDB;create=true";
 		secondDatabase = "jdbc:derby:derbyDB2;create=true";
 		login = "";

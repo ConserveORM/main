@@ -655,4 +655,20 @@ public class AdapterBase
 
 		return columnType.equalsIgnoreCase(value);
 	}
+	
+	/**
+	 * Get the statement to rename a table.
+	 * 
+	 * @param oldTableName the name of the table to rename.
+	 * @param newTableName the new name of the table.
+	 */
+	public String getTableRenameStatement(String oldTableName, String newTableName)
+	{
+		StringBuilder sb = new StringBuilder("ALTER TABLE ");
+		sb.append(oldTableName);
+		sb.append(" RENAME TO ");
+		sb.append(newTableName);
+		return sb.toString();
+		
+	}
 }

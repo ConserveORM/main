@@ -138,7 +138,7 @@ public class NameGenerator
 			String name = c.getCanonicalName().toUpperCase();
 			res = name.replaceAll("\\.", "_");
 		}
-		//ensure maximum lenght is respected, do not allow to start with underscore
+		//ensure maximum length is respected, do not allow to start with underscore
 		while (res.length() > adapter.getMaximumNameLength() || res.startsWith("_"))
 		{
 			res = res.substring(1);

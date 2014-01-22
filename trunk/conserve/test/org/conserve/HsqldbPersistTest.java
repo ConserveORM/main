@@ -36,6 +36,7 @@ public class HsqldbPersistTest extends PersistTest
 	{
 		driver = "org.hsqldb.jdbcDriver";
 		database = "jdbc:hsqldb:file:testdb";
+		secondDatabase = "jdbc:hsqldb:file:testdb2";
 		login = "sa";
 		password = "";
 		//HSQLDB resets ALL loggers

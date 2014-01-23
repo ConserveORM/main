@@ -118,15 +118,6 @@ public class HsqldbAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getShutdownCommand()
-	 */
-	@Override
-	public String getShutdownCommand()
-	{
-		return "SHUTDOWN";
-	}
-
-	/**
 	 * @see org.conserve.adapter.AdapterBase#isSupportsExistsKeyword()
 	 */
 	@Override

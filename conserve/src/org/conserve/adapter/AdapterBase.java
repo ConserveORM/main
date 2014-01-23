@@ -67,7 +67,7 @@ public class AdapterBase
 	 * @return a String representation of the SQL data type of the column
 	 *         representation of the given class.
 	 */
-	public String getColumnType(Class<?> c, Method m) 
+	public String getColumnType(Class<?> c, Method m)
 	{
 
 		if (c.equals(boolean.class) || c.equals(Boolean.class))
@@ -646,6 +646,7 @@ public class AdapterBase
 
 	/**
 	 * Check if the two column types are considered equal by this DB engine.
+	 * 
 	 * @param columnType
 	 * @param value
 	 * @return
@@ -655,12 +656,14 @@ public class AdapterBase
 
 		return columnType.equalsIgnoreCase(value);
 	}
-	
+
 	/**
 	 * Get the statement to rename a table.
 	 * 
-	 * @param oldTableName the name of the table to rename.
-	 * @param newTableName the new name of the table.
+	 * @param oldTableName
+	 *            the name of the table to rename.
+	 * @param newTableName
+	 *            the new name of the table.
 	 */
 	public String getTableRenameStatement(String oldTableName, String newTableName)
 	{
@@ -669,6 +672,20 @@ public class AdapterBase
 		sb.append(" RENAME TO ");
 		sb.append(newTableName);
 		return sb.toString();
-		
+
+	}
+
+	/**
+	 * If the underlying database can change the type of a column, return true.
+	 * Otherwise, return false. This method also returns true if the underlying
+	 * database can perform some, but not all, column type changes, as long as
+	 * the allowed changes include all changes used by Conserve.
+	 * 
+	 * 
+	 * @return
+	 */
+	public boolean canChangeColumnType()
+	{
+		return true;
 	}
 }

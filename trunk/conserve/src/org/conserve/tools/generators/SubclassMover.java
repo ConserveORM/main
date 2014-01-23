@@ -145,6 +145,7 @@ public class SubclassMover
 						cw);
 			}
 		}
+		ps.close();
 		// remove columns from subclass table where they are no longer in the
 		// class
 		try

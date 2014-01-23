@@ -181,4 +181,14 @@ public class DerbyAdapter extends AdapterBase
 		
 	}
 
+	/**
+	 * @see org.conserve.adapter.AdapterBase#canChangeColumnType()
+	 */
+	@Override
+	public boolean canChangeColumnType()
+	{
+		//Derby only allows string widening, which is not enough.
+		return false;
+	}
+
 }

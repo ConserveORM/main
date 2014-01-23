@@ -368,7 +368,7 @@ public class SubclassMover
 	private boolean isSystemColumn(String colName)
 	{
 		if (colName.equals(Defaults.ID_COL) || colName.equals(Defaults.REAL_ID_COL)
-				|| colName.equals(Defaults.REAL_CLASS_COL))
+				|| colName.equals(Defaults.REAL_CLASS_COL) || colName.equals(Defaults.DUMMY_COL_NAME) )
 		{
 			return true;
 		}

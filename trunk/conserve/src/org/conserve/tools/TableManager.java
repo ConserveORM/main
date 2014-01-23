@@ -1229,29 +1229,71 @@ public class TableManager
 	 *            the type to change the column into.
 	 * @param cw
 	 * @throws SQLException
+	 * @throws ClassNotFoundException
 	 */
 	private void changeColumnType(String tableName, String column, Class<?> oldClass, Class<?> nuClass,
-			ConnectionWrapper cw) throws SQLException
+			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
 		String oldType = adapter.getColumnType(oldClass, null);
 		String nuType = adapter.getColumnType(nuClass, null);
-		//only do conversion if it is necessary
+		// only do conversion if it is necessary
 		if (!oldType.equals(nuType))
 		{
-			StringBuilder sb = new StringBuilder("ALTER TABLE ");
-			sb.append(tableName);
-			sb.append(" ALTER COLUMN ");
-			sb.append(column);
-			sb.append(" ");
-			sb.append(nuType);
-			PreparedStatement ps = cw.prepareStatement(sb.toString());
-			Tools.logFine(ps);
-			ps.execute();
-			ps.close();
+			if (adapter.canChangeColumnType())
+			{
+				StringBuilder sb = new StringBuilder("ALTER TABLE ");
+				sb.append(tableName);
+				sb.append(" ALTER COLUMN ");
+				sb.append(column);
+				sb.append(" ");
+				sb.append(nuType);
+				PreparedStatement ps = cw.prepareStatement(sb.toString());
+				Tools.logFine(ps);
+				ps.execute();
+				ps.close();
+			}
+			else
+			{
+				// we can't change column type
+				// do a 4-step workaround
+				// 1. rename the old column to a temporary name
+				String nuName  = "C__TEMP_NAME_"+column;
+				renameColumn(tableName, column, nuName, cw);
+				// 2. create a new column with the desired properties
+				createColumn(tableName, column, nuClass, cw);
+				// 3. copy all values from the old to the new column
+				copyValues(tableName,nuName,column,cw);
+				// 4. drop the old column
+				dropColumn(tableName, nuName, cw);
+			}
 		}
 
 		// store the new column metadata
 		changeTypeInfo(tableName, column, nuClass, cw);
+	}
+
+	/**
+	 * Copy all values from one column to another in the same table.
+	 * Casting and/or conversion depends on the underlying database.
+	 * 
+	 * @param tableName the table to copy values in.
+	 * @param fromColumn the column to copy from.
+	 * @param toColumn the column to copy to.
+	 * @param cw
+	 * @throws SQLException 
+	 */
+	private void copyValues(String tableName, String fromColumn, String toColumn, ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder sb = new StringBuilder("UPDATE ");
+		sb.append(tableName);
+		sb.append(" SET ");
+		sb.append(toColumn);
+		sb.append("=");
+		sb.append(fromColumn);
+		PreparedStatement ps = cw.prepareStatement(sb.toString());
+		Tools.logFine(ps);
+		ps.executeUpdate();
+		ps.close();
 	}
 
 	/**

@@ -29,10 +29,11 @@ public class Minimum extends AggregateFunction
 	/**
 	 * @see org.conserve.aggregate.AggregateFunction#translateReturnType(java.lang.Class)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
-	protected Class<?> translateReturnType(Class<?> clazz)
+	protected Class<? extends Number> translateReturnType(Class<?> clazz)
 	{
 		//no widening used for Minimum
-		return clazz;
+		return (Class<? extends Number>) clazz;
 	}
 }

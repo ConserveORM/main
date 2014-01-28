@@ -1700,15 +1700,7 @@ public class PersistTest
 		persist = new PersistenceManager(driver, database, login, password);
 		// make sure superclass is still there
 		assertEquals(2, persist.getCount(OriginalObject.class, new All()));
-		try
-		{
-			assertEquals(0, persist.getCount(SubClass.class, new All()));
-			fail("getCount did not throw exception on search for non-existing class");
-		}
-		catch (SQLException e)
-		{
-			// do nothing, this is expected behaviour
-		}
+		assertEquals(0, persist.getCount(SubClass.class, new All()));
 		persist.close();
 	}
 
@@ -3514,15 +3506,7 @@ public class PersistTest
 		// assert that there are still four OriginalObject and two SubClass
 		// items
 		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
-		try
-		{
-			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not throw SQLException");
-		}
-		catch (SQLException e)
-		{
-			// do nothing, this is the expected outcome
-		}
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
 		// delete all OriginalObject/SubClass items
 		pm.deleteObjects(OriginalObject.class, new All());
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
@@ -3530,39 +3514,15 @@ public class PersistTest
 		coList = pm.getObjects(ContainerObject.class, new All());
 		assertEquals(2, coList.size());
 		assertEquals("bar", coList.get(1).getFoo().getName());
-		try
-		{
-			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not throw SQLException");
-		}
-		catch (SQLException e)
-		{
-			// do nothing, this is the expected outcome
-		}
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
 		pm.deleteObjects(SubClass.class);
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
-		try
-		{
-			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not throw SQLException");
-		}
-		catch (SQLException e)
-		{
-			// do nothing, this is the expected outcome
-		}
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
 		// deleting all ContainerObject should delete all SubClass and
 		// OriginalObject, as they have no external reference
 		pm.deleteObjects(ContainerObject.class, new All());
 		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
-		try
-		{
-			assertEquals(0, pm.getCount(SubClass.class, new All()));
-			fail("getCount(...) did not throw SQLException");
-		}
-		catch (SQLException e)
-		{
-			// do nothing, this is the expected outcome
-		}
+		assertEquals(0, pm.getCount(SubClass.class, new All()));
 
 		pm.close();
 	}
@@ -3862,7 +3822,7 @@ public class PersistTest
 		// test deleting object of non-existing class
 		assertEquals(0,pm.deleteObjects(NonExistingClass.class, new All()));
 		// test counting objects of non-existing class
-		assertEquals(0,pm.deleteObjects(NonExistingClass.class, new All()));
+		assertEquals(0,pm.getCount(NonExistingClass.class, new All()));
 		// test getting objects of non-existing class
 		List<NonExistingClass>res = pm.getObjects(NonExistingClass.class, new All());
 		assertEquals(0,res.size());

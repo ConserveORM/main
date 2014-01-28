@@ -74,7 +74,7 @@ public abstract class AggregateFunction
 	 * @throws NoSuchMethodException
 	 * @throws SecurityException
 	 */
-	public Class<?> getReturnType(ObjectStack stack) throws NoSuchMethodException, SecurityException
+	public Class<? extends Number> getReturnType(ObjectStack stack) throws NoSuchMethodException, SecurityException
 	{
 		Class<?> clazz = null;
 		if (methodName != null)
@@ -98,7 +98,7 @@ public abstract class AggregateFunction
 	 * @param clazz
 	 * @return
 	 */
-	protected abstract Class<?> translateReturnType(Class<?> clazz);
+	protected abstract Class<? extends Number> translateReturnType(Class<?> clazz);
 
 	/**
 	 * Get the name of the SQL aggregate function this class represents.

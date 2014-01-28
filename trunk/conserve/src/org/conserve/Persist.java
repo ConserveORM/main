@@ -816,8 +816,8 @@ public class Persist
 			// label the object as having been inserted by the outside
 			if (protect)
 			{
-				protectionManager.protectObjectExternal(tableName, res, NameGenerator.getSystemicName(object.getClass()),
-						cw);
+				protectionManager.protectObjectExternal(tableName, res,
+						NameGenerator.getSystemicName(object.getClass()), cw);
 			}
 		}
 		// insert the objects in the delay buffer
@@ -949,8 +949,8 @@ public class Persist
 	 */
 	<T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{
-		Number [] res = calculateAggregate(cw, clazz, new AggregateFunction[]{new Count()}, clause);
-		return (Long)res[0];
+		Number[] res = calculateAggregate(cw, clazz, new AggregateFunction[] { new Count() }, clause);
+		return (Long) res[0];
 	}
 
 	/**
@@ -1912,10 +1912,10 @@ public class Persist
 						if (functions[x] instanceof Average)
 						{
 							// get the count
-							Number [] count = calculateAggregate(cw, implementingClass, new AggregateFunction[] { new Count(
-									functions[x].getMethodName()) }, where);
-							tmp[x] = ((Double) tmp[x]) * (Long)count[0];
-							counts[x] += (Long)count[0];
+							Number[] count = calculateAggregate(cw, implementingClass,
+									new AggregateFunction[] { new Count(functions[x].getMethodName()) }, where);
+							tmp[x] = ((Double) tmp[x]) * (Long) count[0];
+							counts[x] += (Long) count[0];
 						}
 						res[x] = combineResults(res[x], tmp[x], functions[x]);
 					}
@@ -2058,42 +2058,85 @@ public class Persist
 		// create an array to hold the results
 		Number[] res = new Number[functions.length];
 
-		// generate the WHERE part of the statement
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-		whereGenerator.setClauses(where);
-		StatementPrototype sp = whereGenerator.generate(clazz, true);
-
-		// generate the SELECT part of the statement
-		StringBuilder selection = new StringBuilder("SELECT ");
-		for (int x = 0; x < functions.length; x++)
+		// make sure the class exists
+		if (tableManager.tableExists(clazz, cw))
 		{
-			AggregateFunction af = functions[x];
-			selection.append(af.getStringRepresentation(whereGenerator.getTypeStack()));
-			if (x < functions.length - 1)
-			{
-				selection.append(",");
-			}
-		}
-		selection.append(" FROM ");
 
-		// generate query
-		PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
+			// generate the WHERE part of the statement
+			StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+			whereGenerator.setClauses(where);
+			StatementPrototype sp = whereGenerator.generate(clazz, true);
 
-		// execute query
-		ResultSet rs = ps.executeQuery();
-
-		// parse results
-		if (rs.next())
-		{
+			// generate the SELECT part of the statement
+			StringBuilder selection = new StringBuilder("SELECT ");
 			for (int x = 0; x < functions.length; x++)
 			{
+				AggregateFunction af = functions[x];
+				selection.append(af.getStringRepresentation(whereGenerator.getTypeStack()));
+				if (x < functions.length - 1)
+				{
+					selection.append(",");
+				}
+			}
+			selection.append(" FROM ");
 
-				res[x] = getValueFromQuery(rs, functions[x], whereGenerator.getTypeStack(), x + 1);
+			// generate query
+			PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
+
+			// execute query
+			ResultSet rs = ps.executeQuery();
+
+			// parse results
+			if (rs.next())
+			{
+				for (int x = 0; x < functions.length; x++)
+				{
+
+					res[x] = getValueFromQuery(rs, functions[x], whereGenerator.getTypeStack(), x + 1);
+				}
+			}
+
+			ps.close();
+		}
+		else
+		{
+			ObjectStack stack = new ObjectStack(adapter, clazz);
+			// the class does not exist
+			// fill in res with values that make sense
+			for (int x = 0; x < functions.length; x++)
+			{
+				Class<? extends Number> n = functions[x].getReturnType(stack);
+				if (functions[x] instanceof Count || functions[x] instanceof Sum)
+				{
+					//count is always Long, sum is always either Long or Double.
+					if(n.equals(Long.class))
+					{
+						res[x] = new Long(0);
+					}
+					else
+					{
+						res[x] = new Double(0);
+					}
+				}
+				else
+				{
+					// average, max, and min of an empty set does not make sense
+					if (n.equals(Float.class))
+					{
+						res[x] = Float.NaN;
+					}
+					else if(n.equals(Double.class))
+					{
+						res[x] = Double.NaN;						
+					}
+					else
+					{
+						// no way to represent NaN in integer classes, leave as
+						// null and hope calling code knows how to handle this
+					}
+				}
 			}
 		}
-
-		ps.close();
-
 		return res;
 	}
 

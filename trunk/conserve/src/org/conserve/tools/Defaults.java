@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.conserve.tools;
 
+
 /**
  * @author Erik Berglund
  *
@@ -34,6 +35,7 @@ public class Defaults
 	public static final String SCHEMA_VERSION_TABLENAME = "C__SCHEMA_VERSION";
 	public static final String TYPE_TABLENAME = "C__TYPE_TABLE";
 	public static final String TABLE_NAME_TABLENAME = "C__TABLE_NAME";
+	public static final String INDEX_TABLENAME = "C__INDEX";
 
 	/**
 	 * Default columns.

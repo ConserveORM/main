@@ -83,4 +83,15 @@ public class SqLiteAdapter extends AdapterBase
 		return false;
 	}
 
+	/**
+	 * @see org.conserve.adapter.AdapterBase#canDropColumn()
+	 */
+	@Override
+	public boolean canDropColumn()
+	{
+		return false;
+	}
+	
+	
+
 }

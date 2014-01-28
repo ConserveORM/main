@@ -58,6 +58,7 @@ import org.conserve.objects.ComplexObject;
 import org.conserve.objects.DateObject;
 import org.conserve.objects.LessSimpleObject;
 import org.conserve.objects.ListContainingObject;
+import org.conserve.objects.NonExistingClass;
 import org.conserve.objects.SelfContainingObject;
 import org.conserve.objects.SimpleObject;
 import org.conserve.objects.SimplestObject;
@@ -684,12 +685,12 @@ public class PersistTest
 	@Test
 	public void testCollectionSave() throws Exception
 	{
-		//create connection
+		// create connection
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		//drop existing data
+		// drop existing data
 		persist.dropTable(Object.class);
-		
-		//insert test data
+
+		// insert test data
 		ArrayList<Double> foo = new ArrayList<Double>();
 		foo.add(6.9);
 		foo.add(1.1);
@@ -706,12 +707,12 @@ public class PersistTest
 	@Test
 	public void testCollectionLoad() throws Exception
 	{
-		//create connection
+		// create connection
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		//drop existing data
+		// drop existing data
 		persist.dropTable(Object.class);
-		
-		//insert test data
+
+		// insert test data
 		ArrayList<Double> foo = new ArrayList<Double>();
 		foo.add(6.9);
 		foo.add(1.1);
@@ -1654,7 +1655,7 @@ public class PersistTest
 	public void testDropTable() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		//clean out all existing data
+		// clean out all existing data
 		persist.dropTable(Object.class);
 		// add some data
 		SimpleObject so = new SimpleObject();
@@ -1676,37 +1677,37 @@ public class PersistTest
 		assertEquals(0, resSimpObjs.size());
 		persist.close();
 
-		//re-establish connection
+		// re-establish connection
 		persist = new PersistenceManager(driver, database, login, password);
-		//insert some superclass objects
+		// insert some superclass objects
 		OriginalObject oo = new OriginalObject();
 		persist.saveObject(oo);
 		oo = new OriginalObject();
 		persist.saveObject(oo);
-		//insert subclass objects
+		// insert subclass objects
 		SubClass sc = new SubClass();
 		persist.saveObject(sc);
 		sc = new SubClass();
 		persist.saveObject(sc);
-		//make sure the correct number of objects are stored
-		assertEquals(4,persist.getCount(OriginalObject.class, new All()));
-		assertEquals(2,persist.getCount(SubClass.class, new All()));
-		//drop the subclass
+		// make sure the correct number of objects are stored
+		assertEquals(4, persist.getCount(OriginalObject.class, new All()));
+		assertEquals(2, persist.getCount(SubClass.class, new All()));
+		// drop the subclass
 		persist.dropTable(SubClass.class);
 		persist.close();
-		
-		//re-establish connection
+
+		// re-establish connection
 		persist = new PersistenceManager(driver, database, login, password);
-		//make sure superclass is still there
-		assertEquals(2,persist.getCount(OriginalObject.class, new All()));
+		// make sure superclass is still there
+		assertEquals(2, persist.getCount(OriginalObject.class, new All()));
 		try
 		{
-			assertEquals(0,persist.getCount(SubClass.class, new All()));
+			assertEquals(0, persist.getCount(SubClass.class, new All()));
 			fail("getCount did not throw exception on search for non-existing class");
 		}
-		catch(SQLException e)
+		catch (SQLException e)
 		{
-			//do nothing, this is expected behaviour
+			// do nothing, this is expected behaviour
 		}
 		persist.close();
 	}
@@ -3394,8 +3395,8 @@ public class PersistTest
 	}
 
 	/**
-	 * Test if protection entries are correctly handled when a property is changed
-	 * from a superclass to one of its subclasses.
+	 * Test if protection entries are correctly handled when a property is
+	 * changed from a superclass to one of its subclasses.
 	 * 
 	 * @throws Exception
 	 */
@@ -3432,12 +3433,12 @@ public class PersistTest
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
-		
-		//make sure loading ContainerObject still contains the correct data
-		List<ContainerObject>coList = pm.getObjects(ContainerObject.class, new All());
-		assertEquals(2,coList.size());
-		assertEquals("foo",coList.get(0).getFoo().getName());
-		assertEquals("bar",coList.get(1).getFoo().getName());
+
+		// make sure loading ContainerObject still contains the correct data
+		List<ContainerObject> coList = pm.getObjects(ContainerObject.class, new All());
+		assertEquals(2, coList.size());
+		assertEquals("foo", coList.get(0).getFoo().getName());
+		assertEquals("bar", coList.get(1).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass
@@ -3446,12 +3447,12 @@ public class PersistTest
 		assertEquals(4, pm.getCount(SubClass.class, new All()));
 		// delete all OriginalObject items
 		pm.deleteObjects(OriginalObject.class, new All());
-		//two should remain, since they are protected
+		// two should remain, since they are protected
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SubClass.class, new All()));
 		// delete all SubClass items
 		pm.deleteObjects(SubClass.class);
-		//two should remain, since they are protected
+		// two should remain, since they are protected
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SubClass.class, new All()));
 		// deleting all ContainerObject should delete all SubClass and
@@ -3465,15 +3466,15 @@ public class PersistTest
 	}
 
 	/**
-	 * Test if protection entries are correctly handled when a property is changed
-	 * from a subclass to one of its superclasses.
+	 * Test if protection entries are correctly handled when a property is
+	 * changed from a subclass to one of its superclasses.
 	 * 
 	 * @throws Exception
 	 */
 	@Test
 	public void testProtectionEntryMaintenanceOnChangePropertyToSuperclass() throws Exception
 	{
-		//Change property from one subclass to superclass.
+		// Change property from one subclass to superclass.
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
 		pm.dropTable(Object.class);
@@ -3496,17 +3497,18 @@ public class PersistTest
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
-		//rename SubClass to a non-existing class, thus removing the subclass
-		new TestTools(pm.getPersist()).changeName(SubClass.class, "org.conserve.NonExistingFakeClass","FAKE_TABLE","C__ARRAY_FAKE_TABLE");
+		// rename SubClass to a non-existing class, thus removing the subclass
+		new TestTools(pm.getPersist()).changeName(SubClass.class, "org.conserve.NonExistingFakeClass", "FAKE_TABLE",
+				"C__ARRAY_FAKE_TABLE");
 		// change the database schema
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
-		//make sure loading ContainerObject still contains the correct data
-		List<ContainerObject>coList = pm.getObjects(ContainerObject.class, new All());
-		assertEquals(2,coList.size());
-  		assertEquals("bar",coList.get(1).getFoo().getName());
+		// make sure loading ContainerObject still contains the correct data
+		List<ContainerObject> coList = pm.getObjects(ContainerObject.class, new All());
+		assertEquals(2, coList.size());
+		assertEquals("bar", coList.get(1).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass
@@ -3517,25 +3519,25 @@ public class PersistTest
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
 			fail("getCount(...) did not throw SQLException");
 		}
-		catch(SQLException e)
+		catch (SQLException e)
 		{
-			//do nothing, this is the expected outcome
+			// do nothing, this is the expected outcome
 		}
 		// delete all OriginalObject/SubClass items
 		pm.deleteObjects(OriginalObject.class, new All());
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
-		//check that the contents are preserved
+		// check that the contents are preserved
 		coList = pm.getObjects(ContainerObject.class, new All());
-		assertEquals(2,coList.size());
-  		assertEquals("bar",coList.get(1).getFoo().getName());
+		assertEquals(2, coList.size());
+		assertEquals("bar", coList.get(1).getFoo().getName());
 		try
 		{
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
 			fail("getCount(...) did not throw SQLException");
 		}
-		catch(SQLException e)
+		catch (SQLException e)
 		{
-			//do nothing, this is the expected outcome
+			// do nothing, this is the expected outcome
 		}
 		pm.deleteObjects(SubClass.class);
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
@@ -3544,9 +3546,9 @@ public class PersistTest
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
 			fail("getCount(...) did not throw SQLException");
 		}
-		catch(SQLException e)
+		catch (SQLException e)
 		{
-			//do nothing, this is the expected outcome
+			// do nothing, this is the expected outcome
 		}
 		// deleting all ContainerObject should delete all SubClass and
 		// OriginalObject, as they have no external reference
@@ -3557,14 +3559,13 @@ public class PersistTest
 			assertEquals(0, pm.getCount(SubClass.class, new All()));
 			fail("getCount(...) did not throw SQLException");
 		}
-		catch(SQLException e)
+		catch (SQLException e)
 		{
-			//do nothing, this is the expected outcome
+			// do nothing, this is the expected outcome
 		}
 
 		pm.close();
 	}
-
 
 	/**
 	 * Test if protection entries are correctly maintained when moving a field
@@ -3844,4 +3845,27 @@ public class PersistTest
 		pm.close();
 	}
 
+	/**
+	 * Test that searching for classes that do not exist does not throw an exception.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testNonExistingClass() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		// test deleting object of non-existing class
+		assertEquals(0,pm.deleteObjects(NonExistingClass.class, new All()));
+		// test counting objects of non-existing class
+		assertEquals(0,pm.deleteObjects(NonExistingClass.class, new All()));
+		// test getting objects of non-existing class
+		List<NonExistingClass>res = pm.getObjects(NonExistingClass.class, new All());
+		assertEquals(0,res.size());
+		pm.close();
+	}
 }

@@ -29,7 +29,7 @@ public class Count extends AggregateFunction
 	 * @see org.conserve.aggregate.AggregateFunction#translateReturnType(java.lang.Class)
 	 */
 	@Override
-	protected Class<?> translateReturnType(Class<?> clazz)
+	protected Class<? extends Number> translateReturnType(Class<?> clazz)
 	{
 		//COUNT always returns Long
 		return Long.class;

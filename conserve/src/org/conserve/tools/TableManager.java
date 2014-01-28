@@ -168,8 +168,8 @@ public class TableManager
 				ps.close();
 				// create an index on the tablename/id combinations, since
 				// this is the one we will be searching for most frequently				
-				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"OWNER_TABLE" + adapter.getKeyLength() , "OWNER_ID)"}, Defaults.HAS_A_TABLENAME + "_OWNER_INDEX", cw);
-				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"PROPERTY_TABLE" + adapter.getKeyLength() , "PROPERTY_ID)"}, Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX", cw);
+				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"OWNER_TABLE" + adapter.getKeyLength() , "OWNER_ID"}, Defaults.HAS_A_TABLENAME + "_OWNER_INDEX", cw);
+				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"PROPERTY_TABLE" + adapter.getKeyLength() , "PROPERTY_ID"}, Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX", cw);
 				
 			}
 			if (!tableExists(Defaults.ARRAY_TABLENAME, cw))

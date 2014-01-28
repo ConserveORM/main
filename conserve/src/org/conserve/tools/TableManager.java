@@ -105,19 +105,13 @@ public class TableManager
 			}
 			else
 			{
-				String createString = "CREATE TABLE " + Defaults.SCHEMA_VERSION_TABLENAME + " (VERSION "
-						+ adapter.getIntegerTypeKeyword() + ")";
-				PreparedStatement ps = cw.prepareStatement(createString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
-				if (adapter.isRequiresCommitAfterTableCreation())
-				{
-					cw.commit();
-				}
+				// schema version table does not exist, create it
+				createTable(Defaults.SCHEMA_VERSION_TABLENAME, new String[] { "VERSION" },
+						new String[] { adapter.getIntegerTypeKeyword() }, cw);
+
 				// insert the current version
 				String commandString = "INSERT INTO  " + Defaults.SCHEMA_VERSION_TABLENAME + "  (VERSION ) values (?)";
-				ps = cw.prepareStatement(commandString);
+				PreparedStatement ps = cw.prepareStatement(commandString);
 				ps.setInt(1, schemaTypeVersion);
 				Tools.logFine(ps);
 				ps.execute();
@@ -132,6 +126,22 @@ public class TableManager
 				throw new SQLException("Database schema is version " + existingSchema + " but Conserve is version "
 						+ schemaTypeVersion);
 			}
+
+			// check that we have a table to store indices in before we try to
+			// create indices
+			if (!tableExists(Defaults.INDEX_TABLENAME, cw))
+			{
+				if (!this.createSchema)
+				{
+					throw new SchemaPermissionException(Defaults.INDEX_TABLENAME
+							+ " does not exist, but can't create it.");
+				}
+				createTable(
+						Defaults.INDEX_TABLENAME,
+						new String[] { "TABLE_NAME", "COLUMN_NAME", "INDEX_NAME" },
+						new String[] { adapter.getVarCharKeyword(), adapter.getVarCharKeyword(),
+								adapter.getVarCharKeyword() }, cw);
+			}
 			if (!tableExists(Defaults.IS_A_TABLENAME, cw))
 			{
 				if (!this.createSchema)
@@ -139,12 +149,8 @@ public class TableManager
 					throw new SchemaPermissionException(Defaults.IS_A_TABLENAME
 							+ " does not exist, but can't create it.");
 				}
-				String createString = "CREATE TABLE " + Defaults.IS_A_TABLENAME + " (SUPERCLASS "
-						+ adapter.getVarCharIndexed() + ",SUBCLASS " + adapter.getVarCharIndexed() + ")";
-				PreparedStatement ps = cw.prepareStatement(createString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				createTable(Defaults.IS_A_TABLENAME, new String[] { "SUPERCLASS", "SUBCLASS" },
+						new String[] { adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
 				// create an index on the superclass name, since this is the
 				// one we will be searching for most frequently
 				createIndex(Defaults.IS_A_TABLENAME, new String[] { "SUPERCLASS" + adapter.getKeyLength() },
@@ -157,20 +163,23 @@ public class TableManager
 					throw new SchemaPermissionException(Defaults.HAS_A_TABLENAME
 							+ " does not exist, but can't create it.");
 				}
-				String commandString = "CREATE TABLE " + Defaults.HAS_A_TABLENAME + " (OWNER_TABLE "
-						+ adapter.getVarCharIndexed() + ", OWNER_ID " + adapter.getLongTypeKeyword() + ", "
-						+ Defaults.RELATION_NAME_COL + " " + adapter.getVarCharKeyword() + ", PROPERTY_TABLE "
-						+ adapter.getVarCharIndexed() + ", PROPERTY_ID " + adapter.getLongTypeKeyword()
-						+ ", PROPERTY_CLASS " + adapter.getVarCharIndexed() + ")";
-				PreparedStatement ps = cw.prepareStatement(commandString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+
+				createTable(
+						Defaults.HAS_A_TABLENAME,
+						new String[] { "OWNER_TABLE", "OWNER_ID", Defaults.RELATION_NAME_COL, "PROPERTY_TABLE",
+								"PROPERTY_ID", "PROPERTY_CLASS" },
+						new String[] { adapter.getVarCharIndexed(), adapter.getLongTypeKeyword(),
+								adapter.getVarCharKeyword(), adapter.getVarCharIndexed(), adapter.getLongTypeKeyword(),
+								adapter.getVarCharIndexed() }, cw);
+
 				// create an index on the tablename/id combinations, since
-				// this is the one we will be searching for most frequently				
-				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"OWNER_TABLE" + adapter.getKeyLength() , "OWNER_ID"}, Defaults.HAS_A_TABLENAME + "_OWNER_INDEX", cw);
-				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"PROPERTY_TABLE" + adapter.getKeyLength() , "PROPERTY_ID"}, Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX", cw);
-				
+				// this is the one we will be searching for most frequently
+				createIndex(Defaults.HAS_A_TABLENAME,
+						new String[] { "OWNER_TABLE" + adapter.getKeyLength(), "OWNER_ID" }, Defaults.HAS_A_TABLENAME
+								+ "_OWNER_INDEX", cw);
+				createIndex(Defaults.HAS_A_TABLENAME, new String[] { "PROPERTY_TABLE" + adapter.getKeyLength(),
+						"PROPERTY_ID" }, Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX", cw);
+
 			}
 			if (!tableExists(Defaults.ARRAY_TABLENAME, cw))
 			{
@@ -181,16 +190,10 @@ public class TableManager
 				}
 				if (adapter.isSupportsIdentity())
 				{
-					PreparedStatement ps = cw
-
-					.prepareStatement("CREATE TABLE " + Defaults.ARRAY_TABLENAME + " (" + Defaults.ID_COL + " "
-							+ adapter.getIdentity() + " PRIMARY KEY, " + Defaults.COMPONENT_TABLE_COL + " "
-							+ adapter.getVarCharIndexed() + ", " + Defaults.COMPONENT_CLASS_COL + " "
-							+ adapter.getVarCharIndexed() + " )");
-
-					Tools.logFine(ps);
-					ps.execute();
-					ps.close();
+					// create the table with an identity column
+					createTable(Defaults.ARRAY_TABLENAME, new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL,
+							Defaults.COMPONENT_CLASS_COL }, new String[] { adapter.getIdentity() + " PRIMARY KEY",
+							adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
 				}
 				else
 				{
@@ -199,14 +202,13 @@ public class TableManager
 					if (adapter.isSupportsTriggers())
 					{
 						// create the table as usual
-						PreparedStatement ps = cw.prepareStatement("CREATE TABLE " + Defaults.ARRAY_TABLENAME + " ("
-								+ Defaults.ID_COL + " " + adapter.getLongTypeKeyword() + " PRIMARY KEY, "
-								+ Defaults.COMPONENT_TABLE_COL + " " + adapter.getVarCharIndexed() + ", "
-								+ Defaults.COMPONENT_CLASS_COL + " " + adapter.getVarCharIndexed() + " )");
-
-						Tools.logFine(ps);
-						ps.execute();
-						ps.close();
+						createTable(
+								Defaults.ARRAY_TABLENAME,
+								new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL,
+										Defaults.COMPONENT_CLASS_COL },
+								new String[] { adapter.getLongTypeKeyword() + " PRIMARY KEY",
+										adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+						// create the trigger sequence
 						createTriggeredSequence(cw, Defaults.ARRAY_TABLENAME);
 
 					}
@@ -318,38 +320,31 @@ public class TableManager
 
 			if (!tableExists(Defaults.TYPE_TABLENAME, cw))
 			{
+				if (!this.createSchema)
+				{
+					throw new SchemaPermissionException(Defaults.TYPE_TABLENAME
+							+ " does not exist, but can't create it.");
+				}
 				// create the type table
-				StringBuilder sb = new StringBuilder("CREATE TABLE ");
-				sb.append(Defaults.TYPE_TABLENAME);
-				sb.append(" (OWNER_TABLE ");
-				sb.append(adapter.getVarCharIndexed());
-				sb.append(", COLUMN_NAME ");
-				sb.append(adapter.getVarCharIndexed());
-				sb.append(", COLUMN_CLASS ");
-				sb.append(adapter.getVarCharIndexed());
-				sb.append(")");
-				PreparedStatement ps = cw.prepareStatement(sb.toString());
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				createTable(
+						Defaults.TYPE_TABLENAME,
+						new String[] { "OWNER_TABLE", "COLUMN_NAME", "COLUMN_CLASS" },
+						new String[] { adapter.getVarCharIndexed(), adapter.getVarCharIndexed(),
+								adapter.getVarCharIndexed() }, cw);
 
 			}
 
 			if (!tableExists(Defaults.TABLE_NAME_TABLENAME, cw))
 			{
+				if (!this.createSchema)
+				{
+					throw new SchemaPermissionException(Defaults.TABLE_NAME_TABLENAME
+							+ " does not exist, but can't create it.");
+				}
 				// create the table to store associations between class names
 				// and table names
-				StringBuilder sb = new StringBuilder("CREATE TABLE ");
-				sb.append(Defaults.TABLE_NAME_TABLENAME);
-				sb.append(" (CLASS ");
-				sb.append(adapter.getVarCharIndexed());
-				sb.append(", TABLENAME ");
-				sb.append(adapter.getVarCharIndexed());
-				sb.append(")");
-				PreparedStatement ps = cw.prepareStatement(sb.toString());
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				createTable(Defaults.TABLE_NAME_TABLENAME, new String[] { "CLASS", "TABLENAME" }, new String[] {
+						adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
 			}
 
 			// commit, return connection to pool
@@ -967,7 +962,7 @@ public class TableManager
 				if (e.getSQLState().toUpperCase().equals("42Y55"))
 				{
 				}
-				if (e.getSQLState().toUpperCase().equals("S0002"))
+				else if (e.getSQLState().toUpperCase().equals("S0002"))
 				{
 					// HSQLDB table not found
 				}
@@ -2435,6 +2430,62 @@ public class TableManager
 
 	}
 
+	/**
+	 * Create a named table with named columns of the given types.
+	 * 
+	 * @param tableName
+	 *            the name of the table to create.
+	 * @param columnNames
+	 *            the names of columns to add to the table.
+	 * @param columnTypes
+	 *            the SQL-types of the columns to create.
+	 * @param cw
+	 * @throws SQLException
+	 */
+	private void createTable(String tableName, String[] columnNames, String[] columnTypes, ConnectionWrapper cw)
+			throws SQLException
+	{
+		if (columnNames.length != columnTypes.length)
+		{
+			throw new IllegalArgumentException("List of column names and column types must have equal length.");
+		}
+		StringBuilder create = new StringBuilder("CREATE TABLE ");
+		create.append(tableName);
+		create.append("(");
+		for (int x = 0; x < columnNames.length; x++)
+		{
+			if (x > 0)
+			{
+				create.append(",");
+			}
+			create.append(columnNames[x]);
+			create.append(" ");
+			create.append(columnTypes[x]);
+		}
+		create.append(")");
+
+		PreparedStatement ps = cw.prepareStatement(create.toString());
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		if (adapter.isRequiresCommitAfterTableCreation())
+		{
+			cw.commit();
+		}
+	}
+
+	/**
+	 * Create a named index on the given columns of a named table.
+	 * 
+	 * @param table
+	 *            the table to create the index on
+	 * @param columns
+	 *            an array of column names to include in the index
+	 * @param indexName
+	 *            the name of the index
+	 * @param cw
+	 * @throws SQLException
+	 */
 	public void createIndex(String table, String[] columns, String indexName, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder commandString = new StringBuilder("CREATE INDEX ");
@@ -2457,6 +2508,16 @@ public class TableManager
 		ps.close();
 	}
 
+	/**
+	 * Remove a named index from a named table.
+	 * 
+	 * @param table
+	 *            the table to remove the index from.
+	 * @param indexName
+	 *            the name of the index to remove.
+	 * @param cw
+	 * @throws SQLException
+	 */
 	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
 	{
 		PreparedStatement ps = cw.prepareStatement(adapter.getDropIndexStatement(table, indexName));

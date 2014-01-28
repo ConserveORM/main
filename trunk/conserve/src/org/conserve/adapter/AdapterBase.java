@@ -688,4 +688,27 @@ public class AdapterBase
 	{
 		return true;
 	}
+
+	/**
+	 * Return true if the underlying database allows us to drop a column, false otherwise.
+	 * @return
+	 */
+	public boolean canDropColumn()
+	{
+		return true;
+	}
+
+	/**
+	 * Get the statement for dropping an index from a table.
+	 * 
+	 * @param table the table to drop the index from
+	 * @param indexName the index to drop.
+	 * @return
+	 */
+	public String getDropIndexStatement(String table, String indexName)
+	{
+		StringBuilder sb = new StringBuilder("DROP INDEX IF EXISTS ");
+		sb.append(indexName);
+		return sb.toString();
+	}
 }

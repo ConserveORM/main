@@ -114,7 +114,11 @@ public class SubclassMover
 			long nuId = nuStack.getRepresentation(lowestCommonSubClassLevel + 1).getId();
 			// cast the id to the correct level
 			Long fromId = rs.getLong(Defaults.ID_COL);
-			long oldId = getCastIdDatabase(fromStack, lowestCommonSubClassLevel + 1, subClass, fromId, cw);
+			Long oldId = getCastIdDatabase(fromStack, lowestCommonSubClassLevel + 1, subClass, fromId, cw);
+			if(oldId == null)
+			{
+				System.out.println("Found null id");
+			}
 			// rewrite the pointers C__ID and C__REALCLASS in the lowest common
 			// subclass
 			updateSubClassRef(nuStack, fromStack, oldId, nuStack, nuId, lowestCommonSubClassLevel, cw);
@@ -134,7 +138,7 @@ public class SubclassMover
 				// pick up properties, move to target
 				String fromTableName = fromStack.getRepresentation(currentLevel).getTableName();
 				String fromClassName = fromStack.getRepresentation(currentLevel).getSystemicName();
-				moveFilelds(fromTableName, fromId, nuStack, cw);
+				moveFields(fromTableName, fromId, nuStack, cw);
 
 				// drop row from fromtable
 				dropRow(fromTableName, fromId, cw);
@@ -248,7 +252,7 @@ public class SubclassMover
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void moveFilelds(String fromTableName, long fromId, ObjectStack nuStack, ConnectionWrapper cw)
+	private void moveFields(String fromTableName, long fromId, ObjectStack nuStack, ConnectionWrapper cw)
 			throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("SELECT * FROM ");

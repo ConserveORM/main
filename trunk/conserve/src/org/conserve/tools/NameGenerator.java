@@ -64,7 +64,7 @@ public class NameGenerator
 			{
 				// if instead it starts with setXXX, chop of the first letter
 				res = res.substring(1);
-				// find the matching accessor in the hirearchy tree
+				// find the matching accessor in the hierarchy tree
 				Method accessor = getAccessor(m.getDeclaringClass(), res);
 				if (accessor != null)
 				{

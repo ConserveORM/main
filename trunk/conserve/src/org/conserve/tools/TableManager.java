@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.annotations.AsBlob;
@@ -145,14 +146,9 @@ public class TableManager
 				ps.execute();
 				ps.close();
 				// create an index on the superclass name, since this is the
-				// one we
-				// will be searching for most frequently
-				String commandString = "CREATE INDEX " + Defaults.IS_A_TABLENAME + "_SUPERCLASS_INDEX on "
-						+ Defaults.IS_A_TABLENAME + "(SUPERCLASS" + adapter.getKeyLength() + ")";
-				ps = cw.prepareStatement(commandString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				// one we will be searching for most frequently
+				createIndex(Defaults.IS_A_TABLENAME, new String[] { "SUPERCLASS" + adapter.getKeyLength() },
+						Defaults.IS_A_TABLENAME + "_SUPERCLASS_INDEX", cw);
 			}
 			if (!tableExists(Defaults.HAS_A_TABLENAME, cw))
 			{
@@ -171,22 +167,10 @@ public class TableManager
 				ps.execute();
 				ps.close();
 				// create an index on the tablename/id combinations, since
-				// this is
-				// the one we
-				// will be searching for most frequently
-				commandString = "CREATE INDEX " + Defaults.HAS_A_TABLENAME + "_OWNER_INDEX on "
-						+ Defaults.HAS_A_TABLENAME + "(OWNER_TABLE" + adapter.getKeyLength() + ",OWNER_ID)";
-				ps = cw.prepareStatement(commandString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
-
-				commandString = "CREATE INDEX " + Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX on "
-						+ Defaults.HAS_A_TABLENAME + "(PROPERTY_TABLE" + adapter.getKeyLength() + ",PROPERTY_ID)";
-				ps = cw.prepareStatement(commandString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				// this is the one we will be searching for most frequently				
+				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"OWNER_TABLE" + adapter.getKeyLength() , "OWNER_ID)"}, Defaults.HAS_A_TABLENAME + "_OWNER_INDEX", cw);
+				createIndex(Defaults.HAS_A_TABLENAME, new String[]{"PROPERTY_TABLE" + adapter.getKeyLength() , "PROPERTY_ID)"}, Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX", cw);
+				
 			}
 			if (!tableExists(Defaults.ARRAY_TABLENAME, cw))
 			{
@@ -234,13 +218,8 @@ public class TableManager
 				}
 				// create an index on the id, as this is the one we
 				// will be searching for most frequently
-				String commandString = "CREATE INDEX " + Defaults.ARRAY_TABLENAME + "_INDEX on "
-						+ Defaults.ARRAY_TABLENAME + "(" + Defaults.ID_COL + ")";
-				PreparedStatement ps = cw.prepareStatement(commandString);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
-
+				createIndex(Defaults.ARRAY_TABLENAME, new String[] { Defaults.ID_COL }, Defaults.ARRAY_TABLENAME
+						+ "_INDEX", cw);
 			}
 
 			if (!tableExists(Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY, cw))
@@ -608,6 +587,7 @@ public class TableManager
 			// store an association between the class name and the table name
 			setTableNameForClass(objRes.getSystemicName(), objRes.getTableName(), cw);
 		}
+		// TODO: Create indexes
 	}
 
 	/**
@@ -1257,12 +1237,12 @@ public class TableManager
 				// we can't change column type
 				// do a 4-step workaround
 				// 1. rename the old column to a temporary name
-				String nuName  = "C__TEMP_NAME_"+column;
+				String nuName = "C__TEMP_NAME_" + column;
 				renameColumn(tableName, column, nuName, cw);
 				// 2. create a new column with the desired properties
 				createColumn(tableName, column, nuClass, cw);
 				// 3. copy all values from the old to the new column
-				copyValues(tableName,nuName,column,cw);
+				copyValues(tableName, nuName, column, cw);
 				// 4. drop the old column
 				dropColumn(tableName, nuName, cw);
 			}
@@ -1273,16 +1253,20 @@ public class TableManager
 	}
 
 	/**
-	 * Copy all values from one column to another in the same table.
-	 * Casting and/or conversion depends on the underlying database.
+	 * Copy all values from one column to another in the same table. Casting
+	 * and/or conversion depends on the underlying database.
 	 * 
-	 * @param tableName the table to copy values in.
-	 * @param fromColumn the column to copy from.
-	 * @param toColumn the column to copy to.
+	 * @param tableName
+	 *            the table to copy values in.
+	 * @param fromColumn
+	 *            the column to copy from.
+	 * @param toColumn
+	 *            the column to copy to.
 	 * @param cw
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	private void copyValues(String tableName, String fromColumn, String toColumn, ConnectionWrapper cw) throws SQLException
+	private void copyValues(String tableName, String fromColumn, String toColumn, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("UPDATE ");
 		sb.append(tableName);
@@ -1938,16 +1922,125 @@ public class TableManager
 			ClassNotFoundException
 	{
 		dropUprotectedReferences(tableName, column, cw);
-		StringBuilder sb = new StringBuilder("ALTER TABLE ");
-		sb.append(tableName);
-		sb.append(" DROP ");
-		sb.append(column);
-		PreparedStatement ps = cw.prepareStatement(sb.toString());
+		if (adapter.canDropColumn())
+		{
+			StringBuilder sb = new StringBuilder("ALTER TABLE ");
+			sb.append(tableName);
+			sb.append(" DROP ");
+			sb.append(column);
+			PreparedStatement ps = cw.prepareStatement(sb.toString());
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+		}
+		else
+		{
+			// The underlying database does not handle dropping columns
+			// use a 4-step workaround
+			// 1. rename old table
+			String tempTableName = "T__" + tableName;
+			if (adapter.tableNamesAreLowerCase())
+			{
+				tempTableName = tempTableName.toLowerCase();
+			}
+			while (tempTableName.length() > adapter.getMaximumNameLength())
+			{
+				tempTableName = tempTableName.substring(0, tempTableName.length() - 1);
+			}
+			setTableName(tableName, tempTableName, cw);
+			// 2. create a new table with same columns minus the one we want to
+			// remove and
+			// 3. copy data from old table to new table
+			cloneTableWithoutColumns(tempTableName, tableName, new String[] { column }, cw);
+			// 4. drop old table
+			conditionalDelete(tempTableName, cw);
+
+		}
+		removeTypeInfo(tableName, column, cw);
+
+	}
+
+	/**
+	 * Clone a table, optionally omitting some column(s).
+	 * 
+	 * @param oldTableName
+	 *            the table to copy data from.
+	 * @param nuTableName
+	 *            the new table to create and populate with data from
+	 *            oldTableName.
+	 * @param columnsToDrop
+	 *            list of columns to omit - may be empty or null.
+	 * @param cw
+	 * @throws SQLException
+	 */
+	private void cloneTableWithoutColumns(String oldTableName, String nuTableName, String[] columnsToDrop,
+			ConnectionWrapper cw) throws SQLException
+	{
+
+		// get the old colums
+		Map<String, String> cols = this.getDatabaseColumns(oldTableName, cw);
+		// remove the columns in in columnsToDrop from nuCols
+		if (columnsToDrop != null)
+		{
+			for (String remCol : columnsToDrop)
+			{
+				cols.remove(remCol);
+			}
+		}
+
+		// create a list of the columns to be copied
+		List<String> sameColums = new ArrayList<String>();
+
+		StringBuilder stmt = new StringBuilder("CREATE TABLE ");
+		stmt.append(nuTableName);
+		stmt.append(" (");
+		Set<Entry<String, String>> entrySet = cols.entrySet();
+		for (Entry<String, String> en : entrySet)
+		{
+			String key = en.getKey();
+			sameColums.add(key);
+			stmt.append(key);
+			stmt.append(" ");
+			stmt.append(en.getValue());
+			if (key.equalsIgnoreCase(Defaults.ID_COL))
+			{
+				stmt.append(" PRIMARY KEY");
+			}
+			stmt.append(",");
+		}
+		// delete trailing comma
+		stmt.deleteCharAt(stmt.length() - 1);
+		stmt.append(")");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		removeTypeInfo(tableName, column, cw);
 
+		// copy from old table
+		stmt = new StringBuilder("INSERT INTO ");
+		stmt.append(nuTableName);
+		stmt.append(" (");
+		for (String colName : sameColums)
+		{
+			stmt.append(colName);
+			stmt.append(",");
+		}
+		// delete trailing comma
+		stmt.deleteCharAt(stmt.length() - 1);
+		stmt.append(") SELECT ");
+		for (String colName : sameColums)
+		{
+			stmt.append(colName);
+			stmt.append(",");
+		}
+		// delete trailing comma
+		stmt.deleteCharAt(stmt.length() - 1);
+		stmt.append(" FROM ");
+		stmt.append(oldTableName);
+		ps = cw.prepareStatement(stmt.toString());
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
 	}
 
 	/**
@@ -2340,5 +2433,35 @@ public class TableManager
 		ps.execute();
 		ps.close();
 
+	}
+
+	public void createIndex(String table, String[] columns, String indexName, ConnectionWrapper cw) throws SQLException
+	{
+		StringBuilder commandString = new StringBuilder("CREATE INDEX ");
+		commandString.append(indexName);
+		commandString.append(" on ");
+		commandString.append(table);
+		commandString.append("(");
+		for (int x = 0; x < columns.length; x++)
+		{
+			if (x > 0)
+			{
+				commandString.append(",");
+			}
+			commandString.append(columns[x]);
+		}
+		commandString.append(")");
+		PreparedStatement ps = cw.prepareStatement(commandString.toString());
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+	}
+
+	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
+	{
+		PreparedStatement ps = cw.prepareStatement(adapter.getDropIndexStatement(table, indexName));
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
 	}
 }

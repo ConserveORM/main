@@ -145,7 +145,7 @@ public class PersistTest
 		LOGGER.addHandler(consoleHandler);
 		Level level = Level.FINE;
 		LOGGER.setLevel(level);
-		consoleHandler.setLevel(level);
+		//consoleHandler.setLevel(level);
 	}
 
 	/**
@@ -204,6 +204,8 @@ public class PersistTest
 	public void testAddObject() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		// create a test object
 		SimpleObject so = new SimpleObject();
 		so.setAge(1000L);
@@ -233,6 +235,8 @@ public class PersistTest
 	public void testGetObjectFromInterface() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		// create a test object
 		SimpleObject so = new SimpleObject();
 		so.setAge(1000L);
@@ -314,6 +318,9 @@ public class PersistTest
 	{
 
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//remove all existing data
+		persist.dropTable(Object.class);
+		
 		// create a test object
 		SimpleObject so = new SimpleObject();
 		so.setAge(1000L);
@@ -356,6 +363,8 @@ public class PersistTest
 	public void testAddComplexObject() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//drop all existing data
+		persist.dropTable(Object.class);
 
 		ComplexObject co = new ComplexObject(new double[] { 1.1, 2.2, 3.3 });
 		LessSimpleObject so = new LessSimpleObject();
@@ -394,6 +403,7 @@ public class PersistTest
 	{
 		// create the database connection
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
 
 		ComplexObject co1 = new ComplexObject(new double[] { 1.1, 2.2, 3.3, 4.4 });
 		persist.saveObject(co1);
@@ -431,6 +441,7 @@ public class PersistTest
 	{
 		// create the database connection
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
 
 		ComplexObject co1 = new ComplexObject(new double[] { 1.1, 2.2, 3.3, 4.4 });
 		// saving the object gives it an outside reference
@@ -479,6 +490,8 @@ public class PersistTest
 	public void testArrayOfArrays() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		ComplexObject co = new ComplexObject();
 		SimplestObject[][][] array = new SimplestObject[1][1][1];
 		for (int x = 0; x < array.length; x++)
@@ -524,6 +537,8 @@ public class PersistTest
 	public void testInnerMatching() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		SimplestObject so = new SimplestObject();
 		so.setFoo(1.0);
 		ComplexObject co = new ComplexObject();
@@ -561,6 +576,9 @@ public class PersistTest
 	public void testArrayMatching() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//clear the database
+		persist.dropTable(Object.class);
+		
 		// create a complex object with an Integer array as object
 		Integer[] intArray = new Integer[] { 4, 5, 6 };
 		ComplexObject co = new ComplexObject();
@@ -598,6 +616,8 @@ public class PersistTest
 	public void testComplexArrayMatching() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		// create a complex object with an Integer array as object
 		SimplestObject[] array = new SimplestObject[] { new SimplestObject(), new SimplestObject(),
 				new SimplestObject() };
@@ -642,6 +662,8 @@ public class PersistTest
 	public void testArrayOfArraysMatching() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		// create a complex object with an Integer array as object
 		SimplestObject[][] array = new SimplestObject[][] { {},
 				{ new SimplestObject(), new SimplestObject(), new SimplestObject() }, {} };
@@ -745,6 +767,8 @@ public class PersistTest
 		map.put("KEY", 3.0);
 		map.put("ANOTHERKEY", 4.0);
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		persist.saveObject(map);
 		List<Object> all = persist.getObjectsMatching(new Object());
 		assertEquals(1, all.size());
@@ -762,6 +786,8 @@ public class PersistTest
 		map.put("KEY", 3.0);
 		map.put("ANOTHERKEY", 4.0);
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		persist.saveObject(map);
 		persist.close();
 
@@ -893,6 +919,8 @@ public class PersistTest
 	public void testUpdateSimple() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		// create a simple object
 		SimpleObject object = new SimpleObject();
 		object.setAge(500L);
@@ -1008,6 +1036,8 @@ public class PersistTest
 	public void testCount() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		ConnectionWrapper cw = persist.getConnectionWrapper();
 		// add a large number of entries
 		for (int x = 0; x < 200; x++)
@@ -1059,6 +1089,8 @@ public class PersistTest
 	public void testJavaDate() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		Date date = new Date();
 		persist.saveObject(date);
 
@@ -1081,6 +1113,8 @@ public class PersistTest
 	public void testSqlDate() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		DateObject dateO = new DateObject();
 		dateO.setDate(new java.sql.Date(System.currentTimeMillis()));
 		dateO.setTime(new java.sql.Time(System.currentTimeMillis()));
@@ -1103,6 +1137,8 @@ public class PersistTest
 	public void testBlobClob() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		BlobClobObject bco = new BlobClobObject();
 		bco.setBytes(new byte[] { 3, 54, 1, 9 });
 		bco.setChars(new char[] { 'a', 'b', 'c' });
@@ -1140,6 +1176,8 @@ public class PersistTest
 	public void testSortingSimple() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+	
 		ConnectionWrapper cw = persist.getConnectionWrapper();
 		// add a large number of entries
 		for (int x = 0; x < 200; x++)
@@ -1174,6 +1212,8 @@ public class PersistTest
 	public void testSortingComplex() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		ConnectionWrapper cw = persist.getConnectionWrapper();
 		// add a large number of entries
 		for (int x = 0; x < 200; x++)
@@ -1214,6 +1254,8 @@ public class PersistTest
 	public void testLimitSimple() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		ConnectionWrapper cw = persist.getConnectionWrapper();
 		// add a large number of entries
 		for (int x = 0; x < 200; x++)
@@ -1247,6 +1289,7 @@ public class PersistTest
 	public void testComplexQuery() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
 		ConnectionWrapper cw = persist.getConnectionWrapper();
 		// add a large number of entries
 		for (int x = 1; x <= 100; x++)
@@ -1307,6 +1350,7 @@ public class PersistTest
 
 		// save everything
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
 		persist.saveObject(asimov);
 		persist.close();
 
@@ -1395,9 +1439,13 @@ public class PersistTest
 	@Test
 	public void testAuthorBookExample1() throws Exception
 	{
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		persist.close();
+		
 		this.createAuthors();
 		// open a new connection
-		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist = new PersistenceManager(driver, database, login, password);
 
 		// find all science fiction books
 		Book seekBook = new Book();
@@ -1480,6 +1528,7 @@ public class PersistTest
 	{
 
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
 
 		Layer1 l1 = new Layer1();
 		l1.setName("foo bar");
@@ -1509,6 +1558,8 @@ public class PersistTest
 	public void testAbstractMemberSearch() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		Foo foo = new Foo();
 		ConcreteBar1 bar = new ConcreteBar1();
 		bar.setAbstractName("abstract");
@@ -1576,6 +1627,7 @@ public class PersistTest
 	public void testInterfaceNonStrictQuery() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
 
 		// create two FooContainerOwner objects
 		FooContainerOwner one = new FooContainerOwner();
@@ -1714,6 +1766,10 @@ public class PersistTest
 	{
 		PersistenceManager persistOne = new PersistenceManager(driver, database, login, password);
 		PersistenceManager persistTwo = new PersistenceManager(driver, database, login, password);
+
+		persistOne.dropTable(Object.class);
+		persistTwo.dropTable(Object.class);
+		
 		// create a simple object
 		SimpleObject so = new SimpleObject();
 		so.setName("foo bar");
@@ -1792,6 +1848,7 @@ public class PersistTest
 		// drop all tables in both
 		persistOne.dropTable(Object.class);
 		persistTwo.dropTable(Object.class);
+		
 		// create some objects in the first database
 		ComplexObject co = new ComplexObject();
 		co.setData(new double[] { 1, 2, 3 });
@@ -1832,6 +1889,8 @@ public class PersistTest
 	{
 
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		
 		GregorianCalendar cal = new GregorianCalendar(1999, 9, 9);
 
 		// GregorianCalendar will throw exception if some fields are accessed
@@ -2627,6 +2686,8 @@ public class PersistTest
 	public void testCopyDown() throws Exception
 	{
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		pm.dropTable(Object.class);
+		
 		// drop all tables
 		pm.dropTable(Object.class);
 		// add two Bottom objects.
@@ -2662,9 +2723,10 @@ public class PersistTest
 	public void testCopyUp() throws Exception
 	{
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
-		TestTools testTools = new TestTools(pm.getPersist());
 		// drop all tables
 		pm.dropTable(Object.class);
+
+		TestTools testTools = new TestTools(pm.getPersist());
 		// add two Bottom objects.
 		ModifiedBottom b1 = new ModifiedBottom();
 		b1.setFoo(1);
@@ -2686,6 +2748,7 @@ public class PersistTest
 		ot.setFoo(1);
 		List<OriginalTop> res = pm.getObjectsMatching(ot);
 		assertEquals(1, res.size());
+
 		pm.close();
 	}
 
@@ -2940,11 +3003,7 @@ public class PersistTest
 	}
 
 	/**
-	 * 
 	 * Test deleting a single object.
-	 * 
-	 * 
-	 * 
 	 */
 	@Test
 	public void testDeleteObject() throws Exception
@@ -3357,12 +3416,20 @@ public class PersistTest
 		ContainerObject co = new ContainerObject();
 		co.setFoo(ns);
 		pm.saveObject(co);
+		pm.saveObject(ns);
 
 		ns = new SubClass();
 		ns.setName("bar");
 		co = new ContainerObject();
 		co.setFoo(ns);
 		pm.saveObject(co);
+		pm.saveObject(ns);
+		
+		//check that obejcts were saved correctly
+		assertEquals(2, pm.getCount(ContainerObject.class, new All()));
+		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
+		assertEquals(2, pm.getCount(SubClass.class, new All()));
+
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
@@ -3382,6 +3449,42 @@ public class PersistTest
 		assertNull(coList.get(0).getFoo());
 		assertNull(coList.get(1).getFoo());
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));
+		//make sure all OriginalObject have name == null
+		List<OriginalObject>ooList = pm.getObjects(OriginalObject.class, new All());
+		assertEquals(2,ooList.size());
+		for(OriginalObject oo:ooList)
+		{
+			assertNull(oo.getName());
+		}
+		//make sure all NotSubClass has name != null
+		List<NotSubClass>nsList = pm.getObjects(NotSubClass.class, new All());
+		assertEquals(2,nsList.size());
+		for(NotSubClass nsc:nsList)
+		{
+			assertNotNull(nsc.getName());
+		}
+		
+		//delete all OriginalObject
+		pm.deleteObjects(OriginalObject.class, new All());
+		//make sure there are no OriginalObject since they are not protected by ContainerObject
+		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
+		//make sure there are still two NotSubClass
+		assertEquals(2, pm.getCount(NotSubClass.class, new All()));
+		
+		//delete all ContainerObject
+		pm.deleteObjects(ContainerObject.class, new All());
+		//make sure there are no ContainerObject
+		assertEquals(0, pm.getCount(ContainerObject.class, new All()));
+		//make sure there are no OriginalObject
+		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
+		//make sure there are still two NotSubClass
+		assertEquals(2, pm.getCount(NotSubClass.class, new All()));
+		
+		//delete all NotSubClass
+		pm.deleteObjects(NotSubClass.class, new All());
+		//make sure there are no NotSubClass
+		assertEquals(0, pm.getCount(NotSubClass.class, new All()));
+		
 
 		pm.close();
 	}
@@ -3420,6 +3523,9 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		// rename OriginalObject to SubClass, move from superclass to subclass
 		new TestTools(pm.getPersist()).changeName(OriginalObject.class, SubClass.class);
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(SubClass.class);
 		pm.close();

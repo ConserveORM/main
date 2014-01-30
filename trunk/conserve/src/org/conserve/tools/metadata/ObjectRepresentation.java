@@ -618,23 +618,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	}
 
 	/**
-	 * Objects only have the C__DUMMY column if they have no other columns.
-	 * 
-	 * @return true if there are columns other than 'C__DUMMY'.
-	 */
-	public boolean hasNonDummyProperty()
-	{
-		if (this.props.size() == 1)
-		{
-			if (this.props.get(0).equals(Defaults.DUMMY_COL_NAME))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
 	 * @return
 	 */
 	public String getSystemicName()

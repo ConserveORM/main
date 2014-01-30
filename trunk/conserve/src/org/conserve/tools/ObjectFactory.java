@@ -98,90 +98,93 @@ public class ObjectFactory
 			for (int x = 0; x < rep.getPropertyCount(); x++)
 			{
 				String name = rep.getPropertyName(x);
-				if (!name.equalsIgnoreCase(Defaults.DUMMY_COL_NAME))
+				Method m = rep.getMutator(x);
+				Object o = map.get(name);
+				if (o != null)
 				{
-					Method m = rep.getMutator(x);
-					Object o = map.get(name);
-					if (o != null)
+					if (m == null)
 					{
-						if (m == null)
+						if (name.equals(Defaults.MAP_PROPERTY_COL))
 						{
-							if (name.equals(Defaults.MAP_PROPERTY_COL))
+							// this is a map, so load the property into a
+							// separate variable and process it
+							Object object = adapter.getPersist().getObject(cw, rep.getReturnType(x),
+									((Number) o).longValue(), cache);
+							// cast the object to an object array
+							Object[] array = (Object[]) object;
+							Map<Object, Object> resultMap = (Map<Object, Object>) res;
+							for (int y = 0; y < array.length; y++)
 							{
-								// this is a map, so load the property into a separate variable and process it
-								Object object = adapter.getPersist().getObject(cw,rep.getReturnType(x), ((Number) o).longValue(),cache);
-								// cast the object to an object array
-								Object[] array = (Object[]) object;
-								Map<Object,Object> resultMap = (Map<Object,Object>) res;
-								for (int y = 0; y < array.length; y++)
-								{
-									MapEntry entry = (MapEntry) array[y];
-									resultMap.put(entry.getKey(), entry.getValue());
-								}
+								MapEntry entry = (MapEntry) array[y];
+								resultMap.put(entry.getKey(), entry.getValue());
 							}
-							else if (name.equals(Defaults.COLLECTION_PROPERTY_COL))
+						}
+						else if (name.equals(Defaults.COLLECTION_PROPERTY_COL))
+						{
+							// this is a collection, so load the property into a
+							// separate variable
+							Object object = adapter.getPersist().getObject(cw, rep.getReturnType(x),
+									((Number) o).longValue(), cache);
+							// process the contents
+							// cast the object to an object array
+							Object[] array = (Object[]) object;
+							Collection<Object> collection = (Collection<Object>) res;
+							for (int y = 0; y < array.length; y++)
 							{
-								// this is a collection, so load the property into a separate variable
-								Object object = adapter.getPersist().getObject(cw,rep.getReturnType(x), ((Number)o).longValue(),cache);
-								// process the contents
-								// cast the object to an object array
-								Object[] array = (Object[]) object;
-								Collection<Object> collection = (Collection<Object>) res;
-								for (int y = 0; y < array.length; y++)
-								{
-									collection.add(array[y]);
-								}
-							}
-							else
-							{
-								//there is no mutator for this property, and that's ok - it's a derived property.
+								collection.add(array[y]);
 							}
 						}
 						else
 						{
-							// this is neither a map or collection content variable, so process it as usual.
-							// first, get the target class
-							if (rep.isPrimitive(x))
+							// there is no mutator for this property, and that's
+							// ok - it's a derived property.
+						}
+					}
+					else
+					{
+						// this is neither a map or collection content variable,
+						// so process it as usual.
+						// first, get the target class
+						if (rep.isPrimitive(x))
+						{
+							if (o instanceof Number)
 							{
-								if (o instanceof Number)
-								{
-									m.invoke(res, ObjectTools.cast((Class<? extends Number>) m.getParameterTypes()[0],
-											(Number) o));
-								}
-								else if(o instanceof Clob)
-								{
-									Clob clob = (Clob)o;
-									Reader r = clob.getCharacterStream();
-									CharBuffer cb = CharBuffer.allocate((int) clob.length());
-									r.read(cb);
-									r.close();
-									m.invoke(res,cb.array());
-								}
-								else if(o instanceof Blob)
-								{				
-									Blob b = (Blob)o;
-									m.invoke(res, b.getBytes(1, (int) b.length()));
-								}
-								else
-								{
-									m.invoke(res, o);
-								}
+								m.invoke(res, ObjectTools.cast((Class<? extends Number>) m.getParameterTypes()[0],
+										(Number) o));
+							}
+							else if (o instanceof Clob)
+							{
+								Clob clob = (Clob) o;
+								Reader r = clob.getCharacterStream();
+								CharBuffer cb = CharBuffer.allocate((int) clob.length());
+								r.read(cb);
+								r.close();
+								m.invoke(res, cb.array());
+							}
+							else if (o instanceof Blob)
+							{
+								Blob b = (Blob) o;
+								m.invoke(res, b.getBytes(1, (int) b.length()));
 							}
 							else
 							{
-								// get the referenced object
-								// get the id
-								Long dbId = ((Number)o).longValue();
-								Object object = adapter.getPersist().getObject(cw,rep.getReturnType(x), dbId,cache);
-								if (object != null)
+								m.invoke(res, o);
+							}
+						}
+						else
+						{
+							// get the referenced object
+							// get the id
+							Long dbId = ((Number) o).longValue();
+							Object object = adapter.getPersist().getObject(cw, rep.getReturnType(x), dbId, cache);
+							if (object != null)
+							{
+								// save the retrieved
+								if (!m.isAccessible())
 								{
-									// save the retrieved
-									if(!m.isAccessible())
-									{
-										m.setAccessible(true);
-									}
-									m.invoke(res, object);
+									m.setAccessible(true);
 								}
+								m.invoke(res, object);
 							}
 						}
 					}

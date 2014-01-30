@@ -94,4 +94,24 @@ public class SqLiteAdapter extends AdapterBase
 	
 	
 
+	/**
+	 * @see org.conserve.adapter.AdapterBase#canChangeColumnType()
+	 */
+	@Override
+	public boolean canChangeColumnType()
+	{
+		return false;
+	}
+
+	/**
+	 * @see org.conserve.adapter.AdapterBase#isSupportsJoinInUpdate()
+	 */
+	@Override
+	public boolean isSupportsJoinInUpdate()
+	{
+		return false;
+	}
+	
+	
+
 }

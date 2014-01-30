@@ -544,6 +544,7 @@ public class TableManager
 				throw new SQLException("Multiple results found for table " + tableName);
 			}
 		}
+		rs.close();
 		return res;
 	}
 
@@ -951,6 +952,7 @@ public class TableManager
 		try
 		{
 			ps = cw.prepareStatement(query.toString());
+			System.out.println(query.toString());
 			Tools.logFine(ps);
 			ps.execute();
 		}
@@ -1644,24 +1646,55 @@ public class TableManager
 
 		IdStatementGenerator idGen = new IdStatementGenerator(adapter, nuObjectStack, true);
 		int minLevel = Math.min(fromLevel, toLevel);
-		String idStatement = idGen.generate(minLevel);
-		StringBuilder sb = new StringBuilder("UPDATE ");
-		sb.append(toTable);
-		sb.append(" AS ");
-		sb.append(toTableAs);
-		sb.append(" SET ");
-		sb.append(toTableAs);
-		sb.append(".");
-		sb.append(colName);
-		sb.append("= ( SELECT ");
-		sb.append(fromTableAs);
-		sb.append(".");
-		sb.append(colName);
-		sb.append(" FROM ");
-		sb.append(idGen.generateAsStatement(new String[] { toTable }));
-		sb.append(" WHERE ");
-		sb.append(idStatement);
-		sb.append(")");
+
+		// copy the values
+		StringBuilder sb = new StringBuilder();
+		if (adapter.isSupportsJoinInUpdate())
+		{
+			String idStatement = idGen.generate(minLevel);
+			sb.append("UPDATE ");
+			sb.append(toTable);
+			sb.append(" AS ");
+			sb.append(toTableAs);
+			sb.append(" SET ");
+			sb.append(toTableAs);
+			sb.append(".");
+			sb.append(colName);
+			sb.append("= ( SELECT ");
+			sb.append(fromTableAs);
+			sb.append(".");
+			sb.append(colName);
+			sb.append(" FROM ");
+			sb.append(idGen.generateAsStatement(new String[] { toTable }));
+			sb.append(" WHERE ");
+			sb.append(idStatement);
+			sb.append(")");
+		}
+		else
+		{
+			String idStatement = idGen.generateInnerJoins(new String[]{fromTable,toTable});
+			// underlying database does not support joins in UPDATE statements,
+			// use alternate form
+			sb.append("REPLACE INTO ");
+			sb.append(toTable);
+			sb.append("(");
+			sb.append(colName);
+			sb.append(") SELECT ");
+			sb.append(fromTableAs);
+			sb.append(".");
+			sb.append(colName);
+			sb.append(" FROM ");
+			sb.append(fromTable);
+			sb.append(" ");
+			sb.append(fromTableAs);
+			sb.append(" INNER JOIN ");
+			sb.append(toTable);
+			sb.append(" ");
+			sb.append(toTableAs);
+			sb.append(" ON ");
+			sb.append(idStatement);
+		}
+		System.out.println(sb.toString());
 		PreparedStatement ps = cw.prepareStatement(sb.toString());
 		int index = 0;
 		for (RelationDescriptor o : idGen.getRelationDescriptors())
@@ -1932,7 +1965,8 @@ public class TableManager
 		{
 			// The underlying database does not handle dropping columns
 			// use a 4-step workaround
-			// 1. rename old table
+
+			// 1. rename old table to a temporary name
 			String tempTableName = "T__" + tableName;
 			if (adapter.tableNamesAreLowerCase())
 			{
@@ -1943,10 +1977,12 @@ public class TableManager
 				tempTableName = tempTableName.substring(0, tempTableName.length() - 1);
 			}
 			setTableName(tableName, tempTableName, cw);
+
 			// 2. create a new table with same columns minus the one we want to
 			// remove and
 			// 3. copy data from old table to new table
 			cloneTableWithoutColumns(tempTableName, tableName, new String[] { column }, cw);
+
 			// 4. drop old table
 			conditionalDelete(tempTableName, cw);
 
@@ -2010,6 +2046,12 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
+
+		// check if we must commit
+		if (adapter.isRequiresCommitAfterTableCreation())
+		{
+			cw.commit();
+		}
 
 		// copy from old table
 		stmt = new StringBuilder("INSERT INTO ");
@@ -2155,7 +2197,9 @@ public class TableManager
 			else
 			{
 				// new table does not exist, rename old table
-				PreparedStatement ps = cw.prepareStatement(adapter.getTableRenameStatement(oldName, newName));
+				String tableRenameStmt = adapter.getTableRenameStatement(oldName, newName);
+				System.out.println(tableRenameStmt);
+				PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();

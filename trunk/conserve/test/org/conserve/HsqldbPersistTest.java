@@ -35,8 +35,8 @@ public class HsqldbPersistTest extends PersistTest
 	public void setUp() throws Exception
 	{
 		driver = "org.hsqldb.jdbcDriver";
-		database = "jdbc:hsqldb:file:testdb;shutdown=true";
-		secondDatabase = "jdbc:hsqldb:file:testdb2;shutdown=true";
+		database = "jdbc:hsqldb:file:hsqldbtest;shutdown=true";
+		secondDatabase = "jdbc:hsqldb:file:hsqldbtest2;shutdown=true";
 		login = "sa";
 		password = "";
 		//HSQLDB resets ALL loggers

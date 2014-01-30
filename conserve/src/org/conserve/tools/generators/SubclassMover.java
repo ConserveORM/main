@@ -23,6 +23,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -93,18 +95,28 @@ public class SubclassMover
 				break;
 			}
 		}
-		// get all objects of the from class table
+		
+		
+		// get the ID of all objects of the from class table
+		List<Long>idsToChange = new ArrayList<Long>();
 		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(Defaults.ID_COL);
 		statement.append(" FROM ");
 		statement.append(subClass.getTableName());
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		Tools.logFine(ps);
-
-		ProtectionManager pm = new ProtectionManager();
-
 		ResultSet rs = ps.executeQuery();
 		while (rs.next())
+		{
+			Long fromId = rs.getLong(Defaults.ID_COL);
+			idsToChange.add(fromId);
+		}
+		ps.close();
+		
+		//get a protection manager instance
+		ProtectionManager pm = new ProtectionManager();
+		//iterate over the C__ID values of all entries to change
+		for(Long fromId: idsToChange)
 		{
 			int currentLevel = fromStack.getSize() - 1;
 			// create a new entry in the to-tables
@@ -113,12 +125,8 @@ public class SubclassMover
 			// get the to-id of the highest non-common subclass
 			long nuId = nuStack.getRepresentation(lowestCommonSubClassLevel + 1).getId();
 			// cast the id to the correct level
-			Long fromId = rs.getLong(Defaults.ID_COL);
 			Long oldId = getCastIdDatabase(fromStack, lowestCommonSubClassLevel + 1, subClass, fromId, cw);
-			if(oldId == null)
-			{
-				System.out.println("Found null id");
-			}
+
 			// rewrite the pointers C__ID and C__REALCLASS in the lowest common
 			// subclass
 			updateSubClassRef(nuStack, fromStack, oldId, nuStack, nuId, lowestCommonSubClassLevel, cw);
@@ -149,7 +157,6 @@ public class SubclassMover
 						cw);
 			}
 		}
-		ps.close();
 		// remove columns from subclass table where they are no longer in the
 		// class
 		try
@@ -373,7 +380,7 @@ public class SubclassMover
 	private boolean isSystemColumn(String colName)
 	{
 		if (colName.equals(Defaults.ID_COL) || colName.equals(Defaults.REAL_ID_COL)
-				|| colName.equals(Defaults.REAL_CLASS_COL) || colName.equals(Defaults.DUMMY_COL_NAME) )
+				|| colName.equals(Defaults.REAL_CLASS_COL) )
 		{
 			return true;
 		}

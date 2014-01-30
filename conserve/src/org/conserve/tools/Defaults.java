@@ -47,7 +47,6 @@ public class Defaults
 	public static final String MAP_PROPERTY_COL = "C__MAP_CONTENTS";
 	public static final String ARRAY_MEMBER_ID = "C__ARRAY_MEMBER_ID";
 	public static final String ARRAY_POSITION = "C__POSITION";
-	public static final String DUMMY_COL_NAME = "C__DUMMY";
 	public static final String VALUE_COL = "C__VALUE";
 	public static final String COMPONENT_TABLE_COL = "COMPONENT_TABLE";
 	public static final String COMPONENT_CLASS_COL = "COMPONENT_TYPE";

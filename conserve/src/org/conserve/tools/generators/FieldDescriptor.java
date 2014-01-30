@@ -44,7 +44,7 @@ public class FieldDescriptor
 	}
 	public String toFullString()
 	{
-		return fieldName+"."+fieldName;
+		return tableName+"."+fieldName;
 	}
 
 	/**

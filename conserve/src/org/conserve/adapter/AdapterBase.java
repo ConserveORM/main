@@ -711,4 +711,13 @@ public class AdapterBase
 		sb.append(indexName);
 		return sb.toString();
 	}
+
+	/**
+	 * Return true if the underlying database can handle joins in UPDATE statements.
+	 * @return
+	 */
+	public boolean isSupportsJoinInUpdate()
+	{
+		return true;
+	}
 }

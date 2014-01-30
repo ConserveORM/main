@@ -341,21 +341,18 @@ public class StatementPrototype
 		for (int x = 0; x < idGen.getJoinTables().size(); x++)
 		{
 			ObjectRepresentation rep = idGen.getJoinRepresentations().get(x);
-			if (rep.hasNonDummyProperty())
+			if (rep.getPropertyCount() > 0)
 			{
-				if (rep.getPropertyCount() > 0)
+				statement.append(",");
+			}
+			for (int prop = 0; prop < rep.getPropertyCount(); prop++)
+			{
+				statement.append(idGen.getJoinTableIds().get(x));
+				statement.append(".");
+				statement.append(rep.getPropertyName(prop));
+				if (prop < rep.getPropertyCount() - 1)
 				{
 					statement.append(",");
-				}
-				for (int prop = 0; prop < rep.getPropertyCount(); prop++)
-				{
-					statement.append(idGen.getJoinTableIds().get(x));
-					statement.append(".");
-					statement.append(rep.getPropertyName(prop));
-					if (prop < rep.getPropertyCount() - 1)
-					{
-						statement.append(",");
-					}
 				}
 			}
 		}

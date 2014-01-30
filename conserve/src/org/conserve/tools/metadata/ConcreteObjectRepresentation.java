@@ -148,12 +148,9 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	public void save(ConnectionWrapper cw, String subClassName, Long subClassId)
 			throws SQLException
 	{
-		if (subClassName != null && subClassId != null)
-		{
-			// store a reference to the subclass table entry
-			addValuePair(Defaults.REAL_CLASS_COL, subClassName);
-			addValuePair(Defaults.REAL_ID_COL, subClassId);
-		}
+		// store a reference to the subclass table entry
+		addValueTrio(Defaults.REAL_CLASS_COL, subClassName,String.class);
+		addValueTrio(Defaults.REAL_ID_COL, subClassId,Long.class);
 		String stmt = getRowInsertionStatement();
 		PreparedStatement ps = cw.prepareStatement(stmt);
 		fillRowInsertionStatement(ps, cw);

@@ -137,7 +137,7 @@ public class ObjectStack
 				{
 					// the adapter requires at least one column be specified for insert statements,
 					// so create a dummy column
-					rep.addValueTrio(Defaults.DUMMY_COL_NAME, null, short.class);
+					//rep.addValueTrio(Defaults.DUMMY_COL_NAME, null, short.class);
 				}
 			}
 		}

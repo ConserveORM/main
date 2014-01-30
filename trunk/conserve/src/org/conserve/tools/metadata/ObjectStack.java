@@ -125,22 +125,6 @@ public class ObjectStack
 			// switch on the virtual properties in this level
 			lastKnownImplementor.implementMap();
 		}
-		
-		// add dummy values if needed
-		if (!adapter.allowsEmptyStatements())
-		{
-			for (int x = getSize() - 1; x >= 0; x--)
-			{
-				// get the representation at this level
-				ObjectRepresentation rep = getRepresentation(x);
-				if (rep.getPropertyCount() == 0)
-				{
-					// the adapter requires at least one column be specified for insert statements,
-					// so create a dummy column
-					//rep.addValueTrio(Defaults.DUMMY_COL_NAME, null, short.class);
-				}
-			}
-		}
 	}
 
 	/**

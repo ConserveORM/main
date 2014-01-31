@@ -6,10 +6,14 @@ import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.annotations.AsBlob;
 import org.conserve.annotations.AsClob;
+import org.conserve.annotations.Indexed;
+import org.conserve.annotations.MultiIndexed;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.tools.Defaults;
@@ -78,6 +82,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 						values.add(null);
 					}
 
+					//handle BLOB/CLOB annotations
 					if (m.isAnnotationPresent(AsClob.class)
 							&& m.getReturnType().equals(char[].class)
 							&& adapter.isSupportsClob())
@@ -112,6 +117,25 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 									+ ", but it does not have byte[] return type.");
 						}
 					}
+
+					// handle Indexed annotations
+					List<String> indexNames = new ArrayList<String>();
+					if (m.isAnnotationPresent(Indexed.class))
+					{
+						indexNames.add(m.getAnnotation(Indexed.class).value());
+					}
+					if (m.isAnnotationPresent(MultiIndexed.class))
+					{
+						String [] indices = m.getAnnotation(MultiIndexed.class).values();
+						for(String i:indices)
+						{
+							indexNames.add(i);
+						}
+					}
+					if(indexNames.size()>0)
+					{
+						indices.put(name,indexNames);
+					}
 				}
 				catch (Exception e)
 				{
@@ -127,6 +151,28 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			// no need to add setter, primitives are cast from the raw types and
 			// are final
 			values.add(o);
+		}
+		
+		//sort out the indices
+		//iterate over the names of fields with indices
+		Set<String> keys = indices.keySet();
+		for(String field:keys)
+		{
+			List<String>indiceList = indices.get(field);
+			if(indiceList!=null)
+			{
+				for(String ind:indiceList)
+				{
+					//add field to the list of fields indexed by index ind
+					List<String>fieldNames = indexMap.get(ind);
+					if(fieldNames==null)
+					{
+						fieldNames = new ArrayList<String>();
+					}
+					fieldNames.add(field);
+					indexMap.put(ind, fieldNames);
+				}
+			}
 		}
 	}
 	

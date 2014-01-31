@@ -117,6 +117,9 @@ public class TestTools
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
 			// update class name table
 			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLENAME", oldTableName, newTableName, cw);
+			
+			//update index list
+			updateAllRelations(Defaults.INDEX_TABLENAME,"TABLE_NAME",oldTableName,newTableName,cw);
 		}
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))

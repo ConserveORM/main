@@ -13,6 +13,7 @@ public class ChangeDescription
 	private String toName;
 	private Class<?> fromClass;
 	private Class<?> toClass;
+	private boolean isIndexChange = false;
 	
 	/**
 	 * @return the fromName
@@ -73,21 +74,33 @@ public class ChangeDescription
 	
 	public boolean isDeletion()
 	{
-		return toName == null;
+		return !isIndexChange & toName == null;
 	}
 	
 	public boolean isCreation()
 	{
-		return fromName == null;
+		return !isIndexChange & fromName == null;
 	}
 	
 	public boolean isNameChange()
 	{
-		return !isDeletion() && !isCreation() && toName != fromName;
+		return !isDeletion() && !isCreation() && toName != null && !toName.equals(fromName);
 	}
 	
 	public boolean isTypeChange()
 	{
-		return !isDeletion() && !isCreation() && !isNameChange() && !toClass.equals(fromClass);
+		return !isDeletion() && !isCreation() && !isNameChange() && toClass!=null && !toClass.equals(fromClass);
+	}
+	/**
+	 * 
+	 */
+	public void setIsIndexChange()
+	{
+		isIndexChange = true;
+	}
+	
+	public boolean isIndexChange()
+	{
+		return this.isIndexChange;
 	}
 }

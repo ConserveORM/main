@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,10 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	protected Long id;
 	protected static final Logger LOGGER = Logger.getLogger("org.conserve");
 	protected String asName;
+	//list from field names to index names
+	protected Map<String,List<String>>indices = new HashMap<String,List<String>>();
+	//list from index name to field names
+	protected Map<String,List<String>>indexMap = new HashMap<String, List<String>>();
 
 	protected DelayedInsertionBuffer delayBuffer;
 
@@ -157,6 +162,33 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	public Object getPropertyValue(int index)
 	{
 		return values.get(index);
+	}
+	
+	public List<String>getIndices(String propertyName)
+	{
+		return indices.get(propertyName);
+	}
+	
+	
+	/**
+	 * Get a set of all the index names in the represented class.
+	 * The set may be empty, but not null.
+	 */
+	public Set<String> getIndexNames()
+	{
+		return indexMap.keySet();
+	}
+	
+	/**
+	 * Get a list of fields included in a named index.
+	 * 
+	 * @param indexName the name of the index to get fields for.
+	 * 
+	 * @return a list of fields or null if the index is not in the represented class.
+	 */
+	public List<String> getFieldNamesInIndex(String indexName)
+	{
+		return indexMap.get(indexName);
 	}
 
 	/**

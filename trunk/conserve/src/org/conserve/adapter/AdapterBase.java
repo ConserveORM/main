@@ -707,7 +707,11 @@ public class AdapterBase
 	 */
 	public String getDropIndexStatement(String table, String indexName)
 	{
-		StringBuilder sb = new StringBuilder("DROP INDEX IF EXISTS ");
+		StringBuilder sb = new StringBuilder("DROP INDEX ");
+		if(isSupportsExistsKeyword())
+		{
+			sb.append("IF EXISTS ");
+		}
 		sb.append(indexName);
 		return sb.toString();
 	}

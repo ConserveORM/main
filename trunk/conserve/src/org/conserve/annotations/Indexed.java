@@ -27,6 +27,10 @@ import java.lang.annotation.Target;
  * Annotation used to indicate that this field should, when persisted in a database,
  * form part of the index indicated by name.
  * 
+ * If a field is to be part of more than one index, please use the {@link MultiIndexed} annotation instead.
+ * 
+ * This annotation should be applied to the ACCESSOR method.
+ * 
  * @author Erik Berglund
  *
  */
@@ -37,5 +41,5 @@ public @interface Indexed
     /**
      * @return the name of the index this field will be part of
      */
-    String value();
+    String  value();
 }

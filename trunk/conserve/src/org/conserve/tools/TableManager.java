@@ -583,7 +583,17 @@ public class TableManager
 			// store an association between the class name and the table name
 			setTableNameForClass(objRes.getSystemicName(), objRes.getTableName(), cw);
 		}
-		// TODO: Create indexes
+		
+		//get the set of index names
+		Set<String>indexNames = objRes.getIndexNames();
+		for(String indexName:indexNames)
+		{
+			//get the list of all fields indexed by the named index
+			List<String>indexedFields = objRes.getFieldNamesInIndex(indexName);
+			String[]fieldArray = indexedFields.toArray(new String[0]);
+			//create the index
+			createIndex(objRes.getTableName(), fieldArray, indexName, cw);
+		}
 	}
 
 	/**
@@ -937,6 +947,7 @@ public class TableManager
 			{
 				dropTableHelper(ref, cw, classList);
 			}
+			dropAllIndicesForTable(tableName,cw);
 		}
 	}
 
@@ -952,7 +963,6 @@ public class TableManager
 		try
 		{
 			ps = cw.prepareStatement(query.toString());
-			System.out.println(query.toString());
 			Tools.logFine(ps);
 			ps.execute();
 		}
@@ -991,6 +1001,36 @@ public class TableManager
 			{
 				ps.close();
 			}
+		}
+	}
+	
+	/**
+	 * Drop all indices that reference the named table.
+	 * @param tableName
+	 * @param cw
+	 * @throws SQLException 
+	 */
+	private void dropAllIndicesForTable(String tableName,ConnectionWrapper cw) throws SQLException
+	{
+		//first, get a list of indices
+		StringBuilder queryString = new StringBuilder("SELECT INDEX_NAME FROM ");
+		queryString.append(Defaults.INDEX_TABLENAME);
+		queryString.append(" WHERE TABLE_NAME = ?");
+		PreparedStatement ps = cw.prepareStatement(queryString.toString());
+		ps.setString(1, tableName);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		List<String>indices = new ArrayList<String>();
+		while(rs.next())
+		{
+			indices.add(rs.getString(1));
+		}
+		ps.close();
+		
+		//delete all the indices
+		for(String index:indices)
+		{
+			dropIndex(tableName, index, cw);
 		}
 	}
 
@@ -1508,6 +1548,7 @@ public class TableManager
 
 						// drop the table
 						conditionalDelete(tableName, cw);
+						dropAllIndicesForTable(tableName,cw);
 						if (!adapter.isSupportsIdentity())
 						{
 							// this adapter relies on sequences, so drop the
@@ -1694,7 +1735,6 @@ public class TableManager
 			sb.append(" ON ");
 			sb.append(idStatement);
 		}
-		System.out.println(sb.toString());
 		PreparedStatement ps = cw.prepareStatement(sb.toString());
 		int index = 0;
 		for (RelationDescriptor o : idGen.getRelationDescriptors())
@@ -2180,6 +2220,7 @@ public class TableManager
 			{
 				// new table exists, drop old table
 				conditionalDelete(oldName, cw);
+				dropAllIndicesForTable(oldName,cw);
 				if (!adapter.isSupportsIdentity())
 				{
 					// this adapter relies on sequences, so drop the
@@ -2198,7 +2239,6 @@ public class TableManager
 			{
 				// new table does not exist, rename old table
 				String tableRenameStmt = adapter.getTableRenameStatement(oldName, newName);
-				System.out.println(tableRenameStmt);
 				PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
 				Tools.logFine(ps);
 				ps.execute();
@@ -2550,6 +2590,21 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
+		
+		//add a row in the C__INDEX table for each link
+		commandString = new StringBuilder("INSERT INTO ");
+		commandString.append(Defaults.INDEX_TABLENAME);
+		commandString.append("(TABLE_NAME,INDEX_NAME,COLUMN_NAME)VALUES(?,?,?)");
+		for(String col:columns)
+		{
+			ps = cw.prepareStatement(commandString.toString());
+			ps.setString(1, table);
+			ps.setString(2, indexName);
+			ps.setString(3, col);
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+		}
 	}
 
 	/**
@@ -2565,6 +2620,17 @@ public class TableManager
 	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
 	{
 		PreparedStatement ps = cw.prepareStatement(adapter.getDropIndexStatement(table, indexName));
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+		
+		//remove the corresponding row(s) from the C__INDEX table
+		StringBuilder commandString = new StringBuilder("DELETE FROM ");
+		commandString.append(Defaults.INDEX_TABLENAME);
+		commandString.append(" WHERE TABLE_NAME = ? AND INDEX_NAME = ?");
+		ps = cw.prepareStatement(commandString.toString());
+		ps.setString(1, table);
+		ps.setString(2, indexName);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();

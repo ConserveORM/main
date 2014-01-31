@@ -382,26 +382,11 @@ public class PersistenceManager
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<T> getObjectsMatching(T pattern) throws SQLException
+	public <T> List<T> getObjects(T pattern) throws SQLException
 	{
 		return persist.getObjects((Class<T>) pattern.getClass(), new Equal(pattern, (Class<T>) pattern.getClass()));
 	}
 
-	/**
-	 * Get the objects that match the non-null properties of pattern. The fields
-	 * with non-null values in the pattern are matched to database fields.
-	 * Convenience method that does not require the user to supply a
-	 * ConnectionWrapper.
-	 * 
-	 * @param clazz
-	 *            the class of the objects to look for.
-	 * @param pattern
-	 *            return only objects that match the pattern object.
-	 */
-	public <T> List<T> getObjectsMatching(Class<T> clazz, Object pattern) throws SQLException
-	{
-		return persist.getObjects(clazz, new Equal(pattern, clazz));
-	}
 
 	/**
 	 * Return a list of objects of a given class (including subclasses and/or
@@ -435,7 +420,7 @@ public class PersistenceManager
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<T> getObjectsMatching(ConnectionWrapper cw, T pattern) throws SQLException
+	public <T> List<T> getObjects(ConnectionWrapper cw, T pattern) throws SQLException
 	{
 		return persist.getObjects(cw, (Class<T>) pattern.getClass(), new Equal(pattern, (Class<T>) pattern.getClass()));
 	}
@@ -449,7 +434,7 @@ public class PersistenceManager
 	 * @param pattern
 	 *            return only objects that match the pattern object.
 	 */
-	public <T> List<T> getObjectsMatching(ConnectionWrapper cw, Class<T> clazz, Object pattern) throws SQLException
+	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Object pattern) throws SQLException
 	{
 		return persist.getObjects(cw, clazz, new Equal(pattern, clazz));
 	}

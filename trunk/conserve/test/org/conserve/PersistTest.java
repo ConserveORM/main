@@ -95,6 +95,7 @@ import org.conserve.objects.schemaupdate.changedcolumns.ObjectToLong;
 import org.conserve.objects.schemaupdate.changedcolumns.ObjectToSubclass;
 import org.conserve.objects.schemaupdate.changedcolumns.StringToLong;
 import org.conserve.objects.schemaupdate.changedcolumns.WithIndex;
+import org.conserve.objects.schemaupdate.changedcolumns.WithoutIndex;
 import org.conserve.objects.schemaupdate.copydown.AfterBottom;
 import org.conserve.objects.schemaupdate.copydown.AfterTop;
 import org.conserve.objects.schemaupdate.copydown.BeforeBottom;
@@ -3952,5 +3953,29 @@ public class PersistTest
 		pm.saveObject(wi);
 		pm.close();
 		
+		//change to object without indices
+		pm = new PersistenceManager(driver, database, login, password);
+		new TestTools(pm.getPersist()).changeName(WithIndex.class, WithoutIndex.class);
+		pm.updateSchema(WithoutIndex.class);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		List<WithoutIndex>res1 = pm.getObjects(WithoutIndex.class, new All());
+		assertEquals(1,res1.size());
+		assertEquals("foobar",res1.get(0).getValue());
+		pm.close();
+
+		//change back to object with indices
+		pm = new PersistenceManager(driver, database, login, password);
+		new TestTools(pm.getPersist()).changeName(WithoutIndex.class, WithIndex.class);
+		pm.updateSchema(WithIndex.class);
+		pm.close();
+		
+
+		pm = new PersistenceManager(driver, database, login, password);
+		List<WithIndex>res2 = pm.getObjects(WithIndex.class, new All());
+		assertEquals(1,res2.size());
+		assertEquals("foobar",res2.get(0).getValue());
+		pm.close();
 	}
 }

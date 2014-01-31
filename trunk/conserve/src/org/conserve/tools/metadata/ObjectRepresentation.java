@@ -126,6 +126,33 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 			values.add(contents);
 		}
 	}
+	
+	/**
+	 * Use the map of fieldName->indices to build a map from index->fieldNames
+	 */
+	protected void buildIndexMap()
+	{
+		//iterate over the names of fields with indices
+		Set<String> keys = indices.keySet();
+		for(String field:keys)
+		{
+			List<String>indiceList = indices.get(field);
+			if(indiceList!=null)
+			{
+				for(String ind:indiceList)
+				{
+					//add field to the list of fields indexed by index ind
+					List<String>fieldNames = indexMap.get(ind);
+					if(fieldNames==null)
+					{
+						fieldNames = new ArrayList<String>();
+					}
+					fieldNames.add(field);
+					indexMap.put(ind, fieldNames);
+				}
+			}
+		}
+	}
 
 	/**
 	 * Check if this class implements interface interf or any of its
@@ -362,8 +389,66 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 				throw new MetadataException("Changes detected but not identified.");
 			}
 		}
+		else if(!hasSameIndices(toRepresentation))
+		{
+			res = new ChangeDescription();
+			res.setIsIndexChange();
+		}
 
 		return res;
+	}
+	
+	/**
+	 * Compare the indices of the two objects and return true if some has been added or deleted.
+	 * @return
+	 */
+	private boolean hasSameIndices(ObjectRepresentation toRepresentation)
+	{
+		Set<String>fromIndices = getIndexNames();
+		Set<String>toIndices = toRepresentation.getIndexNames();
+		//check that no index has been removed
+		for(String from:fromIndices)
+		{
+			if(!toIndices.contains(from))
+			{
+				return false;
+			}
+		}
+		//check that no index has been added
+		for(String to:toIndices)
+		{
+			if(!fromIndices.contains(to))
+			{
+				return false;
+			}
+		}
+		//check that no index has had a field removed or added
+		for(String from:fromIndices)
+		{
+			//get the from-fields
+			List<String> fromFields = getFieldNamesInIndex(from);
+			//get the to-fields
+			List<String> toFields = toRepresentation.getFieldNamesInIndex(from);
+			//check that no index has had a field removed
+			for(String field:fromFields)
+			{
+				if(!toFields.contains(field))
+				{
+					return true;
+				}
+			}
+			//check that no index has had a field added
+			for(String field:toFields)
+			{
+				if(!fromFields.contains(field))
+				{
+					return true;
+				}
+			}
+		}
+		
+		
+		return true;
 	}
 
 	private boolean hasSameProperties(ObjectRepresentation other)

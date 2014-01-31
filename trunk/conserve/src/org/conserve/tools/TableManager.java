@@ -583,7 +583,11 @@ public class TableManager
 			// store an association between the class name and the table name
 			setTableNameForClass(objRes.getSystemicName(), objRes.getTableName(), cw);
 		}
-		
+		createIndicesForTable(objRes,cw);
+	}
+	
+	private void createIndicesForTable(ObjectRepresentation objRes,ConnectionWrapper cw) throws SQLException
+	{
 		//get the set of index names
 		Set<String>indexNames = objRes.getIndexNames();
 		for(String indexName:indexNames)
@@ -1645,6 +1649,11 @@ public class TableManager
 								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 							}
 						}
+						else if(change.isIndexChange())
+						{
+							//indexes have changed
+							recreateIndices(toRep,cw);
+						}
 					}
 				}
 				catch (MetadataException e)
@@ -1657,6 +1666,18 @@ public class TableManager
 		{
 			throw new SchemaPermissionException("We do not have permission to change the database schema.");
 		}
+	}
+
+	/**
+	 * Recreate the indices by dropping all indices and re-creating them.
+	 * 
+	 * @param objRep the description of the class to change
+	 * @throws SQLException 
+	 */
+	private void recreateIndices(ObjectRepresentation objRep, ConnectionWrapper cw) throws SQLException
+	{
+		dropAllIndicesForTable(objRep.getTableName(), cw);
+		createIndicesForTable(objRep,cw);
 	}
 
 	/**
@@ -2619,7 +2640,8 @@ public class TableManager
 	 */
 	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
 	{
-		PreparedStatement ps = cw.prepareStatement(adapter.getDropIndexStatement(table, indexName));
+		String statement = adapter.getDropIndexStatement(table, indexName);
+		PreparedStatement ps = cw.prepareStatement(statement);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();

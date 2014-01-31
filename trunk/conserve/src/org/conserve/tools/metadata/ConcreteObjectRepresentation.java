@@ -154,26 +154,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 		}
 		
 		//sort out the indices
-		//iterate over the names of fields with indices
-		Set<String> keys = indices.keySet();
-		for(String field:keys)
-		{
-			List<String>indiceList = indices.get(field);
-			if(indiceList!=null)
-			{
-				for(String ind:indiceList)
-				{
-					//add field to the list of fields indexed by index ind
-					List<String>fieldNames = indexMap.get(ind);
-					if(fieldNames==null)
-					{
-						fieldNames = new ArrayList<String>();
-					}
-					fieldNames.add(field);
-					indexMap.put(ind, fieldNames);
-				}
-			}
-		}
+		buildIndexMap();
 	}
 	
 

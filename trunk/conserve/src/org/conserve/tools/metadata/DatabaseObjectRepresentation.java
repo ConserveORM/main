@@ -3,6 +3,8 @@ package org.conserve.tools.metadata;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
@@ -59,6 +61,33 @@ public class DatabaseObjectRepresentation extends ObjectRepresentation
 			this.returnTypes.add(c);
 			this.props.add(name);
 		}
+		ps.close();
+		
+		//get the indices
+		stmt = new StringBuilder("SELECT INDEX_NAME,COLUMN_NAME FROM ");
+		stmt.append(Defaults.INDEX_TABLENAME);
+		stmt.append(" WHERE TABLE_NAME = ?");
+		ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		Tools.logFine(ps);
+		rs = ps.executeQuery();
+		while(rs.next())
+		{
+			String indexName = rs.getString(1);
+			String columName = rs.getString(2);
+			List<String>idxList = indices.get(columName);
+			if(idxList == null)
+			{
+				idxList = new ArrayList<String>();
+			}
+			if(!idxList.contains(indexName))
+			{
+				idxList.add(indexName);
+			}
+			indices.put(columName, idxList);
+		}
+		ps.close();
+		buildIndexMap();
 	}
 	
 }

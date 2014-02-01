@@ -44,8 +44,8 @@ public class StatementPrototype
 	private AdapterBase adapter;
 	private String prePend = "";
 	private String append = "";
-	private Integer offset;
-	private Integer limit;
+	private Long offset;
+	private Long limit;
 
 	private List<String> sortStatements = new ArrayList<String>();
 	private List<Object> conditionalValues = new ArrayList<Object>();
@@ -264,22 +264,22 @@ public class StatementPrototype
 		this.append = append;
 	}
 
-	public void setOffset(Integer offset)
+	public void setOffset(Long offset)
 	{
 		this.offset = offset;
 	}
 
-	public void setLimit(Integer limit)
+	public void setLimit(Long limit)
 	{
 		this.limit = limit;
 	}
 
-	public Integer getLimit()
+	public Long getLimit()
 	{
 		return limit;
 	}
 
-	public Integer getOffset()
+	public Long getOffset()
 	{
 		return offset;
 	}

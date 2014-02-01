@@ -33,19 +33,19 @@ import org.conserve.select.Clause;
  */
 public class Order extends Clause
 {
-	protected Integer limit = null;
-	protected Integer offset = null;
+	protected Long limit = null;
+	protected Long offset = null;
 
 	public Order(Sorter ... sorters)
 	{
 		super(sorters);
 	}
-	public Order(Integer limit,Sorter ... sorters)
+	public Order(long limit,Sorter ... sorters)
 	{
 		this(sorters);
 		this.limit = limit;
 	}
-	public Order(Integer limit, Integer offset, Sorter ... sorters)
+	public Order(long limit, long offset, Sorter ... sorters)
 	{
 		this(sorters);
 		this.limit = limit;
@@ -55,7 +55,7 @@ public class Order extends Clause
 	/**
 	 * @return the limit
 	 */
-	public Integer getLimit()
+	public Long getLimit()
 	{
 		return limit;
 	}
@@ -63,10 +63,8 @@ public class Order extends Clause
 	/**
 	 * @return the offset
 	 */
-	public Integer getOffset()
+	public Long getOffset()
 	{
 		return offset;
-	}
-	
-	
+	}	
 }

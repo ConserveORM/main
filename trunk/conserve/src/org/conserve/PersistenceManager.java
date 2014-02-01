@@ -399,7 +399,7 @@ public class PersistenceManager
 	 *            the class of objects to return, subclasses will also be
 	 *            returned.
 	 * @param clause
-	 *            the clause that all the returned objects must satisfy.
+	 *            the clause(s) that all the returned objects must satisfy.
 	 * @return an ArrayList of the desired type.
 	 * @throws SQLException
 	 */
@@ -437,6 +437,34 @@ public class PersistenceManager
 	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Object pattern) throws SQLException
 	{
 		return persist.getObjects(cw, clazz, new Equal(pattern, clazz));
+	}
+
+	/**
+	 * Get the objects matching the search class and search clauses. The objects
+	 * are passed one by one to the {@link SearchListener#objectFound(Object)}
+	 * method of the listener parameter.
+	 * 
+	 * This method conserves memory compared to the other getObjects(...)
+	 * methods by only loading one object at a time. This means this method is
+	 * slower than the other getObjects(...) methods, as a new database query is
+	 * issued for each separate object.
+	 * 
+	 * The next object in the search won't be loaded until the objectFound(...)
+	 * method returns, so if heavy processing needs to be done on each object
+	 * it's best to offload it to a separate thread.
+	 * 
+	 * 
+	 * @param listener
+	 *            an object that implements the SearchListener interface.
+	 * @param clazz
+	 *            the class of objects to search for.
+	 * @param clauses
+	 *            the clause(s) that all returned objects must satisfy.
+	 * @throws SQLException
+	 */
+	public <T> void getObjects(Class<T> clazz, SearchListener<T> listener, Clause... clauses) throws SQLException
+	{
+		persist.getObjects(listener, clazz, clauses);
 	}
 
 	/**

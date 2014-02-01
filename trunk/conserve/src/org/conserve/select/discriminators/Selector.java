@@ -95,12 +95,6 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 		return null;
 	}
 
-	@Override
-	public Clause[] getSubclauses()
-	{
-		return new Clause[] { this };
-	}
-
 	/**
 	 * @return the object used to discriminate in this selector
 	 */

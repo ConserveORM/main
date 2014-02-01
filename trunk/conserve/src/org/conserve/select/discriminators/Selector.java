@@ -20,7 +20,6 @@ package org.conserve.select.discriminators;
 
 import java.lang.reflect.Constructor;
 
-import org.conserve.select.Clause;
 import org.conserve.select.ConditionalClause;
 import org.conserve.tools.ObjectTools;
 

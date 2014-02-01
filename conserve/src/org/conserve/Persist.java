@@ -55,7 +55,6 @@ import org.conserve.connection.DataConnectionPool;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.select.Clause;
 import org.conserve.select.StatementPrototypeGenerator;
-import org.conserve.sort.Ascending;
 import org.conserve.sort.DatabaseIDSorter;
 import org.conserve.sort.Order;
 import org.conserve.tools.ArrayEntryWriter;

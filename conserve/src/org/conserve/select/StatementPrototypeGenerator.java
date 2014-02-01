@@ -100,20 +100,25 @@ public class StatementPrototypeGenerator
 		return res;
 	}
 
-	private void generateRecursively(StatementPrototype sp, Boolean sorted, Clause... generateClauses)
+	private void generateRecursively(StatementPrototype sp, Boolean sorted, Clause... clauses)
 			throws SQLException
 	{
-		if (generateClauses != null)
+		if (clauses != null)
 		{
-			for (Clause where : generateClauses)
+			for (Clause clause : clauses)
 			{
-				if (where != null)
+				if (clause != null)
 				{
-					Clause[] subClauses = where.getSubclauses();
-					// handle LIMIT and OFFSET clauses
-					if (where instanceof Order)
+					Clause[] subClauses = clause.getSubclauses();
+					// handle sorting statements
+					if(clause instanceof Sorter)
 					{
-						Order order = (Order) where;
+						generateOrder((Sorter)clause, sp);						
+					}
+					// handle LIMIT and OFFSET clauses
+					else if (clause instanceof Order)
+					{
+						Order order = (Order) clause;
 						if (order.getLimit() != null)
 						{
 							if (sp.getLimit() == null)
@@ -136,19 +141,31 @@ public class StatementPrototypeGenerator
 								throw new IllegalArgumentException("Multiple limits defined.");
 							}
 						}
-						for (int x = 0; x < subClauses.length; x++)
+						if(subClauses != null)
 						{
-							Sorter sorter = (Sorter) subClauses[x];
-							generateOrder(sorter, sp);
+							for (int x = 0; x < subClauses.length; x++)
+							{
+								Sorter sorter = (Sorter) subClauses[x];
+								generateOrder(sorter, sp);
+							}
 						}
 					}
-					else if (where instanceof ConditionalClause)
+					else if (clause instanceof Selector)
+					{
+						Selector sel = (Selector) clause;
+
+						ObjectStack oStack = new ObjectStack(adapter, sel.getSelectionClass(),
+								sel.getSelectionObject(), new DelayedInsertionBuffer(adapter.getPersist()));
+						typeIds.nameStack(oStack);
+						generateClause(oStack, sel, sp, sorted);
+					}
+					else if (clause instanceof ConditionalClause)
 					{
 						boolean pushed = false;
-						if (where.getKeyWord() != null)
+						if (clause.getKeyWord() != null)
 						{
 							pushed = true;
-							sp.push(where.getKeyWord());
+							sp.push(clause.getKeyWord());
 						}
 						for (int x = 0; x < subClauses.length; x++)
 						{
@@ -185,7 +202,7 @@ public class StatementPrototypeGenerator
 	private void generateOrder(Sorter sorter, StatementPrototype mainStatement)
 	{
 		// add order statements for all non-null values
-		ObjectStack oStack = new ObjectStack(adapter, sorter.getSortObject().getClass(), sorter.getSortObject());
+		ObjectStack oStack = new ObjectStack(adapter, sorter.getSortClass(), sorter.getSortObject());
 		this.typeIds.nameStack(oStack);
 		mainStatement.getIdStatementGenerator().addPropertyTablesToJoin(oStack, null);
 		for (int t = 0; t < oStack.getSize(); t++)
@@ -201,6 +218,17 @@ public class StatementPrototypeGenerator
 				statement.append(sorter.getKeyWord());
 				mainStatement.addSortStatement(statement.toString());
 			}
+		}
+		if(sorter.getSortObject()==null)
+		{
+			//sort on the main class' C__ID column
+			StringBuilder statement = new StringBuilder();
+			statement.append(oStack.getActualRepresentation().getAsName());
+			statement.append(".");
+			statement.append(Defaults.ID_COL);
+			statement.append(" ");
+			statement.append(sorter.getKeyWord());
+			mainStatement.addSortStatement(statement.toString());
 		}
 	}
 

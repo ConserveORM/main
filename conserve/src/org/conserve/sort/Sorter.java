@@ -18,7 +18,6 @@
  *******************************************************************************/
 package org.conserve.sort;
 
-import org.conserve.select.Clause;
 
 /**
  * Base class for ascending or descending sorters.
@@ -35,21 +34,14 @@ public abstract class Sorter extends Order
 		this.sortObject = sortBy;
 	}
 
-	
-	
-
-	/**
-	 * @see org.conserve.select.Clause#getSubclauses()
-	 */
-	@Override
-	public Clause[] getSubclauses()
-	{
-		return new Clause[]{this};
-	}
-
 	public Object getSortObject()
 	{
 		return sortObject;
+	}
+	
+	public Class<?> getSortClass()
+	{
+		return getSortObject().getClass();
 	}
 	
 	public abstract String getKeyWord();

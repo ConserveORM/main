@@ -24,11 +24,13 @@ package org.conserve.sort;
  */
 public class Ascending extends Sorter
 {
+	/**
+	 * @param sortBy
+	 */
 	public Ascending(Object sortBy)
 	{
 		super(sortBy);
 	}
-
 
 	@Override
 	public String getKeyWord()

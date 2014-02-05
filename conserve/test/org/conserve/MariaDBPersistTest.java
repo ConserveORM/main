@@ -15,8 +15,8 @@ public class MariaDBPersistTest extends PersistTest
 		driver = "org.mariadb.jdbc.Driver";
 		database = "jdbc:mariadb://localhost/test";
 		secondDatabase = "jdbc:mariadb://localhost/test2";
-		login = "root";
-		password = "root";
+		login = "testuser";
+		password = "";
 		deleteAll();
 	}
 }

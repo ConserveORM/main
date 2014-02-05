@@ -31,6 +31,14 @@ public class Descending extends Sorter
 	{
 		super(sortBy);
 	}
+	/**
+	 * @param sortBy
+	 * @param sortClass
+	 */
+	public Descending(Object sortBy, Class<?> sortClass)
+	{
+		super(sortBy,sortClass);
+	}
 
 	@Override
 	public String getKeyWord()

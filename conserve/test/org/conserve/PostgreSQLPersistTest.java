@@ -35,8 +35,9 @@ public class PostgreSQLPersistTest extends PersistTest
 	{
 		driver = "org.postgresql.Driver";
 		database = "jdbc:postgresql://localhost/test";
-		login = "root";
-		password = "root";
+		secondDatabase = "jdbc:postgresql://localhost/test2";
+		login = "test";
+		password = "test";
 		deleteAll();
 	}
 }

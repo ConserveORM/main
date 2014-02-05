@@ -20,8 +20,10 @@ package org.conserve.tools.protection;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.conserve.connection.ConnectionWrapper;
+
 
 /**
  * 
@@ -32,7 +34,7 @@ import org.conserve.connection.ConnectionWrapper;
  */
 public class ProtectionStack
 {
-	private ArrayList<ProtectionEntry> protectionEntries = new ArrayList<ProtectionEntry>();
+	private List<ProtectionEntry> protectionEntries = new ArrayList<ProtectionEntry>();
 	private ProtectionManager protectionManager;
 
 	public ProtectionStack(ProtectionManager protectionManager)

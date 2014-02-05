@@ -28,10 +28,16 @@ package org.conserve.sort;
 public abstract class Sorter extends Order
 {
 	private Object sortObject;
+	private Class<?>sortClass;
 
 	public Sorter(Object sortBy)
 	{
 		this.sortObject = sortBy;
+	}
+	public Sorter(Object sortBy, Class<?>sortClass)
+	{
+		this(sortBy);
+		setSortClass(sortClass);
 	}
 
 	public Object getSortObject()
@@ -41,7 +47,19 @@ public abstract class Sorter extends Order
 	
 	public Class<?> getSortClass()
 	{
-		return getSortObject().getClass();
+		if(sortClass!=null)
+		{
+			return sortClass;
+		}
+		else
+		{
+			return getSortObject().getClass();
+		}
+	}
+	
+	public void setSortClass(Class<?>clazz)
+	{
+		this.sortClass = clazz;
 	}
 	
 	public abstract String getKeyWord();

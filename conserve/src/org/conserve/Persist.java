@@ -39,6 +39,7 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.adapter.DerbyAdapter;
 import org.conserve.adapter.FirebirdAdapter;
 import org.conserve.adapter.HsqldbAdapter;
+import org.conserve.adapter.MariaAdapter;
 import org.conserve.adapter.MonetDbAdapter;
 import org.conserve.adapter.MySqlAdapter;
 import org.conserve.adapter.PostgreSqlAdapter;
@@ -171,39 +172,43 @@ public class Persist
 	}
 
 	/**
-	 * Select the appropriate AdapterBase implementation for a given driver.
+	 * Select the appropriate AdapterBase implementation for a given database url.
 	 * 
-	 * @param driver
+	 * @param url
 	 * @return
 	 */
-	private AdapterBase selectAdapter(String driver)
+	private AdapterBase selectAdapter(String url)
 	{
 		AdapterBase res = null;
-		if (driver.startsWith("jdbc:mysql:"))
+		if (url.startsWith("jdbc:mysql:"))
 		{
 			res = new MySqlAdapter(this);
 		}
-		else if (driver.startsWith("jdbc:postgresql:"))
+		else if(url.startsWith("jdbc:mariadb:"))
+		{
+			res = new MariaAdapter(this);
+		}
+		else if (url.startsWith("jdbc:postgresql:"))
 		{
 			res = new PostgreSqlAdapter(this);
 		}
-		else if (driver.startsWith("jdbc:derby:"))
+		else if (url.startsWith("jdbc:derby:"))
 		{
 			res = new DerbyAdapter(this);
 		}
-		else if (driver.startsWith("jdbc:hsqldb:"))
+		else if (url.startsWith("jdbc:hsqldb:"))
 		{
 			res = new HsqldbAdapter(this);
 		}
-		else if (driver.startsWith("jdbc:firebirdsql:"))
+		else if (url.startsWith("jdbc:firebirdsql:"))
 		{
 			res = new FirebirdAdapter(this);
 		}
-		else if (driver.startsWith("jdbc:sqlite:"))
+		else if (url.startsWith("jdbc:sqlite:"))
 		{
 			res = new SqLiteAdapter(this);
 		}
-		else if (driver.startsWith("jdbc:monetdb"))
+		else if (url.startsWith("jdbc:monetdb"))
 		{
 			res = new MonetDbAdapter(this);
 		}
@@ -645,6 +650,7 @@ public class Persist
 			sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
 		}
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
@@ -2305,6 +2311,7 @@ public class Persist
 
 			// generate query
 			PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
+			Tools.logFine(ps);
 
 			// execute query
 			ResultSet rs = ps.executeQuery();

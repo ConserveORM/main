@@ -35,8 +35,8 @@ public class MySQLPersistTest extends PersistTest
 		driver = "com.mysql.jdbc.Driver";
 		database = "jdbc:mysql://localhost/test";
 		secondDatabase = "jdbc:mysql://localhost/test2";
-		login = "root";
-		password = "root";
+		login = "testuser";
+		password = "";
 		deleteAll();
 	}
 }

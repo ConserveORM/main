@@ -34,8 +34,8 @@ public class MonetDbPersistTest extends PersistTest
 	public void setUp() throws Exception
 	{
 		driver = "nl.cwi.monetdb.jdbc.MonetDriver";
-		database = "jdbc:monetdb://localhost:55055/test";
-		secondDatabase = "jdbc:monetdb://localhost:55055/test2";
+		database = "jdbc:monetdb://localhost/test";
+		secondDatabase = "jdbc:monetdb://localhost/test2";
 		login = "monetdb";
 		password = "monetdb";
 		deleteAll();

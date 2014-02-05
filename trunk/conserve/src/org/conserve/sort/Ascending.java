@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.conserve.sort;
 
+
 /**
  * @author Erik Berglund
  * 
@@ -30,6 +31,15 @@ public class Ascending extends Sorter
 	public Ascending(Object sortBy)
 	{
 		super(sortBy);
+	}
+
+	/**
+	 * @param sortBy
+	 * @param sortClass
+	 */
+	public Ascending(Object sortBy, Class<?> sortClass)
+	{
+		super(sortBy,sortClass);
 	}
 
 	@Override

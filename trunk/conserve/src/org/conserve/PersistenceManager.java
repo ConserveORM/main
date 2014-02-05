@@ -907,7 +907,7 @@ public class PersistenceManager
 		catch (Exception e)
 		{
 			// cancel the operation
-			//cw.rollbackAndDiscard();
+			cw.rollbackAndDiscard();
 			// re-throw the original exception
 			throw new SQLException(e);
 		}

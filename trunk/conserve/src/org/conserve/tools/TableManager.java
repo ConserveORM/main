@@ -1823,7 +1823,7 @@ public class TableManager
 		for (Class<?> c : list)
 		{
 			DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, c, cw);
-			repList.add(dor);
+			repList.add(0,dor);
 		}
 
 		ObjectStack res = new ObjectStack(adapter, repList);

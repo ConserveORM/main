@@ -106,6 +106,9 @@ import org.conserve.objects.schemaupdate.copydown.ModifiedTop;
 import org.conserve.objects.schemaupdate.copydown.OriginalBottom;
 import org.conserve.objects.schemaupdate.copydown.OriginalMiddle;
 import org.conserve.objects.schemaupdate.copydown.OriginalTop;
+import org.conserve.objects.sorting.BarSortable;
+import org.conserve.objects.sorting.FooSortable;
+import org.conserve.objects.sorting.Sortable;
 import org.conserve.select.All;
 import org.conserve.select.And;
 import org.conserve.select.Or;
@@ -147,7 +150,7 @@ public class PersistTest
 		LOGGER.addHandler(consoleHandler);
 		Level level = Level.FINE;
 		LOGGER.setLevel(level);
-		// consoleHandler.setLevel(level);
+		consoleHandler.setLevel(level);
 	}
 
 	/**
@@ -2401,7 +2404,9 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(SubClass.class);
+		pm.close();
 
+		pm = new PersistenceManager(driver, database, login, password);
 		// search all SubClass, make sure both objects are returned
 		List<SubClass> res2 = pm.getObjects(SubClass.class, new All());
 		assertEquals(2, res2.size());
@@ -3994,7 +3999,7 @@ public class PersistTest
 		pm.dropTable(Object.class);
 
 		// create 42 simpleobjects
-		int testCount = 42;
+		final int testCount = 42;
 		for (int x = 0; x < testCount; x++)
 		{
 			SimpleObject so = new SimpleObject();
@@ -4026,8 +4031,8 @@ public class PersistTest
 		assertEquals(testCount, numberFound[0]);
 
 		// get a subset of finds, ordered by COUNT column
-		int startAt = 5;
-		int totalCount = 26;
+		final int startAt = 5;
+		final int totalCount = 26;
 		SimpleObject orderObject = new SimpleObject();
 		orderObject.setCount(1);
 		numberFound[0] = 0;
@@ -4046,5 +4051,51 @@ public class PersistTest
 		assertEquals(totalCount, numberFound[0]);
 		pm.close();
 
+	}
+	
+	/**
+	 * Try adding two objects that implement a sortable interface and sorting on the interface.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testSortingInterface() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		
+		//create test data
+		for(int x = 0;x<10;x++)
+		{
+			//alternate FooSortable and BarSortable 
+			Sortable s = null;
+			if(x%2==0)
+			{
+				s = new FooSortable();
+			}
+			else
+			{
+				s = new BarSortable();
+			}
+			s.setFoo(x);
+			pm.saveObject(s);
+		}
+		
+		//retrieve the test data, sorted
+		FooSortable sortObject = new FooSortable();
+		sortObject.setFoo(1);
+		List<Sortable>sortable = pm.getObjects(Sortable.class, new All(), new Ascending(sortObject,Sortable.class));
+		assertEquals(10,sortable.size());
+		
+		//make sure everything is in the right order
+		int lastValue = 0;
+		for(Sortable s:sortable)
+		{
+			assertEquals(lastValue,s.getFoo().intValue());
+			lastValue++;
+		}
+		
+		pm.close();
 	}
 }

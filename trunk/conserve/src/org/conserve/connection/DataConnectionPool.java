@@ -82,18 +82,15 @@ public class DataConnectionPool
 		this.userName = uname;
 		this.password = pw;
 		this.pool = new ArrayList<ConnectionWrapper>();
+		
 		try
 		{
-			if (driver != null)
-			{
-				// this is only here for compatibility with JDBC versions less than 4.0.
-				//TODO: Is this still needed? JDK version > 5 should handle this automatically
-				Class.forName(driver).newInstance();
-			}
+			//this is here for compatibility with drivers that are not JDBC 4.0 compliant or better.
+			Class.forName(driver).newInstance();
 		}
-		catch (Exception e)
+		catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1)
 		{
-			throw new SQLException(e);
+			e1.printStackTrace();
 		}
 
 		// set up the connections

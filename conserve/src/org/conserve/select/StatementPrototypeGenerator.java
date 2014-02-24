@@ -44,8 +44,10 @@ import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
+import org.conserve.tools.metadata.ObjectStack.Node;
 import org.conserve.tools.uniqueid.UniqueIdGenerator;
 import org.conserve.tools.uniqueid.UniqueIdTree;
+
 
 /**
  * Generates SQL "WHERE..." sub-clauses based on a given Where object and the
@@ -69,6 +71,57 @@ public class StatementPrototypeGenerator
 		this.uidGenerator = new UniqueIdGenerator();
 		parameterTypeIds = new HashMap<String, UniqueIdTree>();
 	}
+	
+	public StatementPrototype generateCast(Class<?>from, Class<?>to)
+	{
+		Class<?>klass = from;
+		Class<?>target = to;
+		//check order of things
+		if(ObjectTools.isA(to, from))
+		{
+			klass = to;
+			target = from;
+		}
+		typeStack = new ObjectStack(adapter, klass);
+		typeIds = new UniqueIdTree(uidGenerator);
+		typeIds.nameStack(typeStack);
+		
+
+		StatementPrototype res = new StatementPrototype(adapter, typeStack, typeStack.getActualRepresentation()
+				.getRepresentedClass(), false);
+		
+		//get all the direct supers
+		Node current = typeStack.getNode(klass);
+		List<Node>supers = typeStack.getSupers(current);
+		while(supers.size()>0)
+		{
+			Node next = null;
+			//find the super that is an instance of target
+			for(Node candidate:supers)
+			{
+				if(ObjectTools.isA(candidate.getRepresentation().getRepresentedClass(), target))
+				{
+					next = candidate;
+					break;
+				}
+			}
+			if(next == null)
+			{
+				//we're done
+				break;
+			}
+			else
+			{
+				//connect current and next with a link
+				res.getIdStatementGenerator().addLinkStatement(next.getRepresentation(), current.getRepresentation());
+				//move up one level
+				current = next;
+				supers = typeStack.getSupers(current);	
+			}
+		}
+		return res;
+		
+	}
 
 	/**
 	 * Generate a statement prototype that looks in Class klass for objects. If
@@ -83,12 +136,7 @@ public class StatementPrototypeGenerator
 	 */
 	public StatementPrototype generate(Class<?> klass, boolean addJoins) throws SQLException
 	{
-		return this.generate(new ObjectStack(adapter, klass), addJoins);
-	}
-
-	private StatementPrototype generate(ObjectStack stack, boolean addJoins) throws SQLException
-	{
-		typeStack = stack;
+		typeStack = new ObjectStack(adapter, klass);
 		typeIds = new UniqueIdTree(uidGenerator);
 		typeIds.nameStack(typeStack);
 
@@ -204,10 +252,9 @@ public class StatementPrototypeGenerator
 		// add order statements for all non-null values
 		ObjectStack oStack = new ObjectStack(adapter, sorter.getSortClass(), sorter.getSortObject());
 		this.typeIds.nameStack(oStack);
-		mainStatement.getIdStatementGenerator().addPropertyTablesToJoin(oStack, null);
-		for (int t = 0; t < oStack.getSize(); t++)
+		mainStatement.getIdStatementGenerator().addPropertyTablesToJoin(oStack);
+		for (ObjectRepresentation rep:oStack.getAllRepresentations())
 		{
-			ObjectRepresentation rep = oStack.getRepresentation(t);
 			for (Integer index : rep)
 			{
 				StringBuilder statement = new StringBuilder();
@@ -253,7 +300,7 @@ public class StatementPrototypeGenerator
 			int classIndex = oStack.getLevel(sel.getSelectionClass());
 			int minIndex = classIndex;
 			int maxIndex = classIndex;
-			int cutoffIndex = oStack.getSize();
+			int cutoffIndex = oStack.getMaxLevel();
 			if (!sel.isStrictInheritance())
 			{
 				// if we're using relaxed inheritance matching, do not include
@@ -320,10 +367,6 @@ public class StatementPrototypeGenerator
 						nameStack(rep.getAsName() + "." + propertyName, propertyStack);
 						Class<?> propertyClass = rep.getReturnType(x);
 
-						if (propertyClass.isInterface())
-						{
-							propertyClass = Object.class;
-						}
 						ObjectRepresentation propertyRep = propertyStack.getRepresentation(propertyClass);
 
 						conditional.append(" = ");
@@ -360,21 +403,41 @@ public class StatementPrototypeGenerator
 	 */
 	private void addLinkStatement(StatementPrototype sp, ObjectStack propertyStack, Class<?> propertyClass)
 	{
-		int maxLevel = propertyStack.getLevel(propertyClass);
-		for (int x = propertyStack.getSize() - 1; x > maxLevel; x--)
+		Node objRep = propertyStack.getNode(propertyClass);
+		Node current = propertyStack.getActual();
+		List<Node>supers = propertyStack.getSupers(current);
+		while(supers.size()>0)
 		{
-			ObjectRepresentation objRep = propertyStack.getRepresentation(x);
-			ObjectRepresentation superRep = propertyStack.getRepresentation(x - 1);
-			sp.getIdStatementGenerator().addLinkStatement(superRep, objRep);
+			//find the representation that is part of propertyClass' inheritance
+			Node next = null;
+			for(Node s:supers)
+			{
+				if(ObjectTools.isA(current.getRepresentation().getRepresentedClass(), s.getRepresentation().getRepresentedClass()))
+				{
+					next = s;
+					break;
+				}
+			}
+			if(next == null)
+			{
+				//we're done
+				break;
+			}
+			else
+			{
+				//link the two representations, go up a level
+				sp.getIdStatementGenerator().addLinkStatement(next.getRepresentation(), current.getRepresentation());
+				current = next;
+				supers = propertyStack.getSupers(current);
+			}
 		}
-		ObjectRepresentation objRep = propertyStack.getRepresentation(maxLevel);
-		if (objRep.isArray())
+		if (objRep.getRepresentation().isArray())
 		{
-			sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, objRep.getAsName());
+			sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, objRep.getRepresentation().getAsName());
 		}
 		else
 		{
-			sp.getIdStatementGenerator().addPropertyTableToJoin(objRep.getTableName(), objRep.getAsName());
+			sp.getIdStatementGenerator().addPropertyTableToJoin(objRep.getRepresentation().getTableName(), objRep.getRepresentation().getAsName());
 		}
 	}
 

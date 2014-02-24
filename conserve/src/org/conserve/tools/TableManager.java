@@ -583,19 +583,19 @@ public class TableManager
 			// store an association between the class name and the table name
 			setTableNameForClass(objRes.getSystemicName(), objRes.getTableName(), cw);
 		}
-		createIndicesForTable(objRes,cw);
+		createIndicesForTable(objRes, cw);
 	}
-	
-	private void createIndicesForTable(ObjectRepresentation objRes,ConnectionWrapper cw) throws SQLException
+
+	private void createIndicesForTable(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
 	{
-		//get the set of index names
-		Set<String>indexNames = objRes.getIndexNames();
-		for(String indexName:indexNames)
+		// get the set of index names
+		Set<String> indexNames = objRes.getIndexNames();
+		for (String indexName : indexNames)
 		{
-			//get the list of all fields indexed by the named index
-			List<String>indexedFields = objRes.getFieldNamesInIndex(indexName);
-			String[]fieldArray = indexedFields.toArray(new String[0]);
-			//create the index
+			// get the list of all fields indexed by the named index
+			List<String> indexedFields = objRes.getFieldNamesInIndex(indexName);
+			String[] fieldArray = indexedFields.toArray(new String[0]);
+			// create the index
 			createIndex(objRes.getTableName(), fieldArray, indexName, cw);
 		}
 	}
@@ -721,9 +721,9 @@ public class TableManager
 			if (c != null)
 			{
 				ObjectStack oStack = new ObjectStack(this.adapter, c, null);
-				for (int x = 0; x < oStack.getSize(); x++)
-				{
-					ensureTableExists((ConcreteObjectRepresentation) oStack.getRepresentation(x), cw);
+				for(ObjectRepresentation rep:oStack.getAllRepresentations())
+				{					
+					ensureTableExists((ConcreteObjectRepresentation) rep, cw);
 				}
 			}
 		}
@@ -859,48 +859,6 @@ public class TableManager
 	}
 
 	/**
-	 * Get a list of all superclasses and interfaces implemented directly by
-	 * this class, according to the database.
-	 * 
-	 * @param subClass
-	 * @param cw
-	 * @return
-	 * @throws SQLException
-	 */
-	private List<Class<?>> getSuperClasses(Class<?> subClass, ConnectionWrapper cw) throws SQLException
-	{
-		List<Class<?>> res = new ArrayList<Class<?>>();
-		try
-		{
-			StringBuilder query = new StringBuilder("SELECT SUPERCLASS FROM ");
-			query.append(Defaults.IS_A_TABLENAME);
-			query.append(" WHERE SUBCLASS = ?");
-			PreparedStatement ps = cw.prepareStatement(query.toString());
-			ps.setString(1, NameGenerator.getSystemicName(subClass));
-			Tools.logFine(ps);
-			if (ps.execute())
-			{
-				ResultSet rs = ps.getResultSet();
-				while (rs.next())
-				{
-					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name, adapter);
-					res.add(c);
-				}
-				rs.close();
-			}
-			ps.close();
-		}
-		catch (ClassNotFoundException cnfe)
-		{
-			throw new SQLException(cnfe);
-		}
-
-		return res;
-
-	}
-
-	/**
 	 * Helper method for {@link #dropTableForClass(Class, ConnectionWrapper)}.
 	 * 
 	 * @param c
@@ -951,7 +909,7 @@ public class TableManager
 			{
 				dropTableHelper(ref, cw, classList);
 			}
-			dropAllIndicesForTable(tableName,cw);
+			dropAllIndicesForTable(tableName, cw);
 		}
 	}
 
@@ -1007,16 +965,17 @@ public class TableManager
 			}
 		}
 	}
-	
+
 	/**
 	 * Drop all indices that reference the named table.
+	 * 
 	 * @param tableName
 	 * @param cw
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
-	private void dropAllIndicesForTable(String tableName,ConnectionWrapper cw) throws SQLException
+	private void dropAllIndicesForTable(String tableName, ConnectionWrapper cw) throws SQLException
 	{
-		//first, get a list of indices
+		// first, get a list of indices
 		StringBuilder queryString = new StringBuilder("SELECT INDEX_NAME FROM ");
 		queryString.append(Defaults.INDEX_TABLENAME);
 		queryString.append(" WHERE TABLE_NAME = ?");
@@ -1024,15 +983,15 @@ public class TableManager
 		ps.setString(1, tableName);
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
-		List<String>indices = new ArrayList<String>();
-		while(rs.next())
+		List<String> indices = new ArrayList<String>();
+		while (rs.next())
 		{
 			indices.add(rs.getString(1));
 		}
 		ps.close();
-		
-		//delete all the indices
-		for(String index:indices)
+
+		// delete all the indices
+		for (String index : indices)
 		{
 			dropIndex(tableName, index, cw);
 		}
@@ -1119,99 +1078,88 @@ public class TableManager
 	private void deleteClassRelation(Class<?> superClass, Class<?> subClass, ConnectionWrapper cw) throws SQLException,
 			ClassNotFoundException
 	{
-		if (subClass.isInterface())
+		String superClassName = NameGenerator.getSystemicName(superClass);
+		String subClassName = NameGenerator.getSystemicName(subClass);
+		// remove the relation from C__IS_A table
+		StringBuilder query = new StringBuilder("DELETE FROM ");
+		query.append(Defaults.IS_A_TABLENAME);
+		query.append(" WHERE SUPERCLASS = ? AND SUBCLASS = ?");
+		PreparedStatement ps = cw.prepareStatement(query.toString());
+		ps.setString(1, superClassName);
+		ps.setString(2, subClassName);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+
+		// find all classes that reference superClass or one of its
+		// superclasses that are not common to the new superclass of
+		// subClass. If any instance points to an object that is really
+		// subClass, delete the protection entry. If the referenced object
+		// is unprotected, delete that too.
+
+		List<Class<?>> noLongerSupported = ObjectTools.getAllLegalReferenceTypes(superClass);
+		List<Class<?>> stillSupported = ObjectTools.getAllLegalReferenceTypes(subClass);
+		// remove all in noLongerSupported that are in stillSupported
+		for (int x = 0; x < noLongerSupported.size(); x++)
 		{
-			List<?> imlementingClasses = adapter.getPersist().getImplementingClasses(subClass, cw);
-			for (Object o : imlementingClasses)
+			if (stillSupported.contains(noLongerSupported.get(x)))
 			{
-				deleteClassRelation(superClass, (Class<?>) o, cw);
+				noLongerSupported.remove(x);
+				x--;
 			}
 		}
-		else
+
+		// get the protection manager
+		ProtectionManager pm = adapter.getPersist().getProtectionManager();
+
+		// find all rows in C__TYPE_TABLE where COLUMN_CLASS is
+		// the old superclass.
+		query = new StringBuilder("SELECT OWNER_TABLE,COLUMN_NAME FROM ");
+		query.append(Defaults.TYPE_TABLENAME);
+		query.append(" WHERE COLUMN_CLASS = ?");
+		PreparedStatement stmt = cw.prepareStatement(query.toString());
+		stmt.setString(1, superClassName);
+		Tools.logFine(stmt);
+		ResultSet tmpRes = stmt.executeQuery();
+		while (tmpRes.next())
 		{
-			String superClassName = NameGenerator.getSystemicName(superClass);
-			String subClassName = NameGenerator.getSystemicName(subClass);
-			// remove the relation from C__IS_A table
-			StringBuilder query = new StringBuilder("DELETE FROM ");
-			query.append(Defaults.IS_A_TABLENAME);
-			query.append(" WHERE SUPERCLASS = ? AND SUBCLASS = ?");
-			PreparedStatement ps = cw.prepareStatement(query.toString());
-			ps.setString(1, superClassName);
-			ps.setString(2, subClassName);
-			Tools.logFine(ps);
-			ps.execute();
-			ps.close();
-
-			// find all classes that reference superClass or one of its
-			// superclasses that are not common to the new superclass of
-			// subClass. If any instance points to an object that is really
-			// subClass, delete the protection entry. If the referenced object
-			// is unprotected, delete that too.
-
-			List<Class<?>> noLongerSupported = ObjectTools.getAllLegalReferenceTypes(superClass);
-			List<Class<?>> stillSupported = ObjectTools.getAllLegalReferenceTypes(subClass);
-			// remove all in noLongerSupported that are in stillSupported
-			for (int x = 0; x < noLongerSupported.size(); x++)
+			String ownerTable = tmpRes.getString(1);
+			String relationName = tmpRes.getString(2);
+			// find all entries in C__HAS_A (protection entries) where owner
+			// and relation name is from the search results, and property is
+			// the new subclass
+			query = new StringBuilder("SELECT OWNER_ID,PROPERTY_TABLE, PROPERTY_ID FROM ");
+			query.append(Defaults.HAS_A_TABLENAME);
+			query.append(" WHERE OWNER_TABLE=? AND RELATION_NAME=? AND PROPERTY_CLASS=?");
+			PreparedStatement innerStmt = cw.prepareStatement(query.toString());
+			innerStmt.setString(1, ownerTable);
+			innerStmt.setString(2, relationName);
+			innerStmt.setString(3, subClassName);
+			Tools.logFine(innerStmt);
+			ResultSet innerRes = innerStmt.executeQuery();
+			while (innerRes.next())
 			{
-				if (stillSupported.contains(noLongerSupported.get(x)))
+				// remove the reference
+				setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
+				// remove protection entry
+				pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2), innerRes.getLong(3),
+						cw);
+				// if item is unprotected, remove it
+				if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
 				{
-					noLongerSupported.remove(x);
-					x--;
+					adapter.getPersist().deleteObject(innerRes.getString(2), innerRes.getLong(3), cw);
 				}
 			}
+			innerStmt.close();
 
-			// get the protection manager
-			ProtectionManager pm = adapter.getPersist().getProtectionManager();
+		}
+		stmt.close();
 
-			// find all rows in C__TYPE_TABLE where COLUMN_CLASS is
-			// the old superclass.
-			query = new StringBuilder("SELECT OWNER_TABLE,COLUMN_NAME FROM ");
-			query.append(Defaults.TYPE_TABLENAME);
-			query.append(" WHERE COLUMN_CLASS = ?");
-			PreparedStatement stmt = cw.prepareStatement(query.toString());
-			stmt.setString(1, superClassName);
-			Tools.logFine(stmt);
-			ResultSet tmpRes = stmt.executeQuery();
-			while (tmpRes.next())
-			{
-				String ownerTable = tmpRes.getString(1);
-				String relationName = tmpRes.getString(2);
-				// find all entries in C__HAS_A (protection entries) where owner
-				// and relation name is from the search results, and property is
-				// the new subclass
-				query = new StringBuilder("SELECT OWNER_ID,PROPERTY_TABLE, PROPERTY_ID FROM ");
-				query.append(Defaults.HAS_A_TABLENAME);
-				query.append(" WHERE OWNER_TABLE=? AND RELATION_NAME=? AND PROPERTY_CLASS=?");
-				PreparedStatement innerStmt = cw.prepareStatement(query.toString());
-				innerStmt.setString(1, ownerTable);
-				innerStmt.setString(2, relationName);
-				innerStmt.setString(3, subClassName);
-				Tools.logFine(innerStmt);
-				ResultSet innerRes = innerStmt.executeQuery();
-				while (innerRes.next())
-				{
-					// remove the reference
-					setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
-					// remove protection entry
-					pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2),
-							innerRes.getLong(3), cw);
-					// if item is unprotected, remove it
-					if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
-					{
-						adapter.getPersist().deleteObject(innerRes.getString(2), innerRes.getLong(3), cw);
-					}
-				}
-				innerStmt.close();
-
-			}
-			stmt.close();
-
-			// recursively do the same for all direct subclasses of subClass.
-			List<Class<?>> subs = getSubClasses(subClass, cw);
-			for (Class<?> sub : subs)
-			{
-				deleteClassRelation(superClass, sub, cw);
-			}
+		// recursively do the same for all direct subclasses of subClass.
+		List<Class<?>> subs = getSubClasses(subClass, cw);
+		for (Class<?> sub : subs)
+		{
+			deleteClassRelation(superClass, sub, cw);
 		}
 	}
 
@@ -1478,8 +1426,12 @@ public class TableManager
 				Class<?> superClass = klass.getSuperclass();
 				String superClassName = NameGenerator.getSystemicName(superClass);
 
-				List<Class<?>> superClasses = getSuperClasses(klass, cw);
+				// read the objectstack from the database
+				ObjectStack oldObjectStack = new ObjectStack(cw, adapter, klass);
 				ObjectStack nuObjectStack = new ObjectStack(adapter, klass);
+
+				// get the superclasses according to the database
+				List<Class<?>> superClasses = oldObjectStack.getSuperClasses(klass);
 
 				// check if the real superclass is correctly indicated by the
 				// database
@@ -1487,7 +1439,6 @@ public class TableManager
 				{
 					// klass has been moved, it now has a new superclass.
 					SubclassMover sm = new SubclassMover(adapter);
-					ObjectStack oldObjectStack = getObjectStackFromDatabase(klass, cw);
 					sm.move(oldObjectStack, nuObjectStack, nuObjectStack.getActualRepresentation(), cw);
 					// update the C_IS_A table to reflect new superclass
 					addClassRelation(NameGenerator.getSystemicName(klass), superClassName, cw);
@@ -1552,7 +1503,7 @@ public class TableManager
 
 						// drop the table
 						conditionalDelete(tableName, cw);
-						dropAllIndicesForTable(tableName,cw);
+						dropAllIndicesForTable(tableName, cw);
 						if (!adapter.isSupportsIdentity())
 						{
 							// this adapter relies on sequences, so drop the
@@ -1599,8 +1550,8 @@ public class TableManager
 					for (Entry<String, String> en : valueTypeMap.entrySet())
 					{
 						String colName = en.getKey();
-						int correctLevel = nuObjectStack.getRepresentationLevel(colName);
-						if (correctLevel != level && correctLevel >= 0)
+						Integer correctLevel = nuObjectStack.getRepresentationLevel(colName);
+						if (correctLevel != null && correctLevel != level)
 						{
 							moveField(nuObjectStack, colName, level, correctLevel, cw);
 						}
@@ -1649,10 +1600,10 @@ public class TableManager
 								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 							}
 						}
-						else if(change.isIndexChange())
+						else if (change.isIndexChange())
 						{
-							//indexes have changed
-							recreateIndices(toRep,cw);
+							// indexes have changed
+							recreateIndices(toRep, cw);
 						}
 					}
 				}
@@ -1671,13 +1622,14 @@ public class TableManager
 	/**
 	 * Recreate the indices by dropping all indices and re-creating them.
 	 * 
-	 * @param objRep the description of the class to change
-	 * @throws SQLException 
+	 * @param objRep
+	 *            the description of the class to change
+	 * @throws SQLException
 	 */
 	private void recreateIndices(ObjectRepresentation objRep, ConnectionWrapper cw) throws SQLException
 	{
 		dropAllIndicesForTable(objRep.getTableName(), cw);
-		createIndicesForTable(objRep,cw);
+		createIndicesForTable(objRep, cw);
 	}
 
 	/**
@@ -1734,7 +1686,7 @@ public class TableManager
 		}
 		else
 		{
-			String idStatement = idGen.generateInnerJoins(new String[]{fromTable,toTable});
+			String idStatement = idGen.generateInnerJoins(new String[] { fromTable, toTable });
 			// underlying database does not support joins in UPDATE statements,
 			// use alternate form
 			sb.append("REPLACE INTO ");
@@ -1793,44 +1745,6 @@ public class TableManager
 	}
 
 	/**
-	 * Get the object stack, according to the database.
-	 * 
-	 * @param klass
-	 * @return
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
-	 */
-	private ObjectStack getObjectStackFromDatabase(Class<?> klass, ConnectionWrapper cw) throws SQLException,
-			ClassNotFoundException
-	{
-		List<Class<?>> list = new ArrayList<Class<?>>();
-		list.add(klass);
-		while (!klass.equals(Object.class))
-		{
-			// find the actual superclass of klass
-			List<Class<?>> supers = getSuperClasses(klass, cw);
-			for (Class<?> s : supers)
-			{
-				if (!s.isInterface())
-				{
-					klass = s;
-					list.add(0, klass);
-					break;
-				}
-			}
-		}
-		List<ObjectRepresentation> repList = new ArrayList<ObjectRepresentation>();
-		for (Class<?> c : list)
-		{
-			DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, c, cw);
-			repList.add(0,dor);
-		}
-
-		ObjectStack res = new ObjectStack(adapter, repList);
-		return res;
-	}
-
-	/**
 	 * Check that all objects referenced from tableName via colName are of type
 	 * returnType or a subtype of return type.
 	 * 
@@ -1881,17 +1795,7 @@ public class TableManager
 			if (ObjectTools.isA(sourceClass, nuType))
 			{
 				// update the reference id
-				if (nuType.isInterface())
-				{
-					// if the new type is an interface, cast to java.lang.Object
-					Long objectId = adapter.getPersist().getCastId(Object.class, sourceClass, propertyId, cw);
-					setReferenceTo(tableName, ownerId, colName, objectId, cw);
-				}
-				else
-				{
-					// if the new class is not an interface, update normally
-					setReferenceTo(tableName, ownerId, colName, propertyId, cw);
-				}
+				setReferenceTo(tableName, ownerId, colName, propertyId, cw);
 			}
 			else
 			{
@@ -2241,7 +2145,7 @@ public class TableManager
 			{
 				// new table exists, drop old table
 				conditionalDelete(oldName, cw);
-				dropAllIndicesForTable(oldName,cw);
+				dropAllIndicesForTable(oldName, cw);
 				if (!adapter.isSupportsIdentity())
 				{
 					// this adapter relies on sequences, so drop the
@@ -2611,12 +2515,12 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		
-		//add a row in the C__INDEX table for each link
+
+		// add a row in the C__INDEX table for each link
 		commandString = new StringBuilder("INSERT INTO ");
 		commandString.append(Defaults.INDEX_TABLENAME);
 		commandString.append("(TABLE_NAME,INDEX_NAME,COLUMN_NAME)VALUES(?,?,?)");
-		for(String col:columns)
+		for (String col : columns)
 		{
 			ps = cw.prepareStatement(commandString.toString());
 			ps.setString(1, table);
@@ -2645,8 +2549,8 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		
-		//remove the corresponding row(s) from the C__INDEX table
+
+		// remove the corresponding row(s) from the C__INDEX table
 		StringBuilder commandString = new StringBuilder("DELETE FROM ");
 		commandString.append(Defaults.INDEX_TABLENAME);
 		commandString.append(" WHERE TABLE_NAME = ? AND INDEX_NAME = ?");

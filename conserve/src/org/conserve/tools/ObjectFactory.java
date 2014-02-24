@@ -92,9 +92,8 @@ public class ObjectFactory
 		// get an object representation stack
 		ObjectStack objStack = new ObjectStack(adapter, clazz);
 		// iterate over all the representations in the stack
-		for (int t = 0; t < objStack.getSize(); t++)
+		for(ObjectRepresentation rep:objStack.getAllRepresentations())
 		{
-			ObjectRepresentation rep = objStack.getRepresentation(t);
 			for (int x = 0; x < rep.getPropertyCount(); x++)
 			{
 				String name = rep.getPropertyName(x);

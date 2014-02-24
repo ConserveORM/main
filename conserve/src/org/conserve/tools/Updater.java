@@ -74,10 +74,10 @@ public class Updater
 		{
 			ObjectStack oStack = new ObjectStack(adapter, nuValues.getClass(),
 					nuValues);
-			for (int stackIndex = oStack.getSize() - 1; stackIndex > 0; stackIndex--)
+			List<ObjectRepresentation>reps = oStack.getAllRepresentations();
+			for(ObjectRepresentation rep:reps)
 			{
-
-				ObjectRepresentation rep = oStack.getRepresentation(stackIndex);
+				//TODO: Check if rep has any properties before calculating cast
 				Long repId = adapter.getPersist().getCastId(
 						rep.getRepresentedClass(),
 						oStack.getActualRepresentation().getRepresentedClass(),

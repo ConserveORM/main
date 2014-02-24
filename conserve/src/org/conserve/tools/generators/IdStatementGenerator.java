@@ -27,6 +27,7 @@ import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
+import org.conserve.tools.metadata.ObjectStack.Node;
 
 /**
  * @author Erik Berglund
@@ -49,19 +50,35 @@ public class IdStatementGenerator
 	/**
 	 * @param adapter
 	 */
-	public IdStatementGenerator(AdapterBase adapter, ObjectStack oStack, boolean addJoins)
+	public IdStatementGenerator(AdapterBase adapter, ObjectStack oStack,
+			boolean addJoins)
 	{
 		this.addJoins = addJoins;
 		this.asGenerator = new AsStatementGenerator(adapter);
 		this.addTablesToJoin(oStack);
-		// add join tables
 		if (addJoins)
 		{
-			for (int x = oStack.getSize() - 1; x > 0; x--)
-			{
-				ObjectRepresentation rep = oStack.getRepresentation(x);
-				addLinkStatement(oStack.getRepresentation(x - 1), rep);
-			}
+			// recursively add join tables
+			addLinks(oStack, oStack.getActual());
+		}
+	}
+
+	/**
+	 * Recursively add link statements between each class and its superclass and
+	 * interfaces.
+	 * 
+	 * @param oStack
+	 * @param rep
+	 *            the class to add links for.
+	 */
+	private void addLinks(ObjectStack oStack, Node rep)
+	{
+		List<Node> supers = oStack.getSupers(rep);
+		for (Node sup : supers)
+		{
+			addLinkStatement(sup.getRepresentation(), rep.getRepresentation());
+			// recurse
+			addLinks(oStack, sup);
 		}
 	}
 
@@ -76,17 +93,13 @@ public class IdStatementGenerator
 	{
 		StringBuilder tmp = new StringBuilder(100);
 		// generate the id statement
-		if (addJoins)
+		for (RelationDescriptor rdesc : getRelationDescriptors())
 		{
-			for (RelationDescriptor rdesc : getRelationDescriptors())
+			if (tmp.length() > 0)
 			{
-
-				if (tmp.length() > 0)
-				{
-					tmp.append(" AND ");
-				}
-				tmp.append(rdesc.toString());
+				tmp.append(" AND ");
 			}
+			tmp.append(rdesc.toString());
 		}
 		return tmp.toString();
 	}
@@ -122,7 +135,7 @@ public class IdStatementGenerator
 				}
 				FieldDescriptor first = rdesc.getFirst();
 				FieldDescriptor second = rdesc.getSecond();
-				if(shortenTables.contains(first.getTableName()))
+				if (shortenTables.contains(first.getTableName()))
 				{
 					tmp.append(first.toShortString());
 				}
@@ -137,7 +150,7 @@ public class IdStatementGenerator
 				}
 				else
 				{
-					if(shortenTables.contains(second.getTableName()))
+					if (shortenTables.contains(second.getTableName()))
 					{
 						tmp.append(second.toShortString());
 					}
@@ -174,12 +187,14 @@ public class IdStatementGenerator
 		List<String> ids = new ArrayList<String>();
 		ids.addAll(joinTableIds);
 		ids.addAll(joinPropertyTableIds);
-		return asGenerator.generate(tables, ids, relationDescriptors, omitTables);
+		return asGenerator.generate(tables, ids, relationDescriptors,
+				omitTables);
 	}
 
 	public void addPropertyTableToJoin(String tableName, String asName)
 	{
-		if (!joinTableIds.contains(asName) && !joinPropertyTableIds.contains(asName))
+		if (!joinTableIds.contains(asName)
+				&& !joinPropertyTableIds.contains(asName))
 		{
 			joinPropertyTables.add(tableName);
 			joinPropertyTableIds.add(asName);
@@ -188,7 +203,8 @@ public class IdStatementGenerator
 
 	public void addTableToJoin(String tableName, String asName)
 	{
-		if (!joinTableIds.contains(asName) && !joinPropertyTableIds.contains(asName))
+		if (!joinTableIds.contains(asName)
+				&& !joinPropertyTableIds.contains(asName))
 		{
 			joinTables.add(tableName);
 			joinTableIds.add(asName);
@@ -229,28 +245,34 @@ public class IdStatementGenerator
 		}
 	}
 
-	public void addLinkStatement(ObjectRepresentation superRep, ObjectRepresentation objRep)
+	public void addLinkStatement(ObjectRepresentation superRep,
+			ObjectRepresentation objRep)
 	{
 		// check if the representations have already been joined
 		if (!isJoined(superRep.getAsName(), objRep.getAsName()))
 		{
-			// if not, add a statement to join them
-			FieldDescriptor from = new FieldDescriptor(objRep.getTableName(), objRep.getAsName(), Defaults.ID_COL);
-			FieldDescriptor to = new FieldDescriptor(superRep.getTableName(), superRep.getAsName(),
-					Defaults.REAL_ID_COL);
-			RelationDescriptor relDesc = new RelationDescriptor(from, to);
-			this.addRelationDescriptor(relDesc);
+			// if not, add a statement to join IDs
+			FieldDescriptor obj = new FieldDescriptor(objRep.getTableName(),
+					objRep.getAsName(), Defaults.ID_COL);
+			FieldDescriptor sup = new FieldDescriptor(superRep.getTableName(),
+					superRep.getAsName(), Defaults.REAL_ID_COL);
+			RelationDescriptor relDesc = new RelationDescriptor(obj, sup);
+			addRelationDescriptor(relDesc);
 
-			from = new FieldDescriptor(superRep.getTableName(), superRep.getAsName(), Defaults.REAL_CLASS_COL);
+			//add the real class name
+			obj = new FieldDescriptor(superRep.getTableName(),
+					superRep.getAsName(), Defaults.REAL_CLASS_COL);
 			if (objRep.isArray())
 			{
 				// arrays have a different tablename
-				addRelationDescriptor(new RelationDescriptor(from, Defaults.ARRAY_TABLENAME));
+				addRelationDescriptor(new RelationDescriptor(obj,
+						Defaults.ARRAY_TABLENAME));
 			}
 			else
 			{
-				addRelationDescriptor(new RelationDescriptor(from, NameGenerator.getSystemicName(objRep
-						.getRepresentedClass())));
+				addRelationDescriptor(new RelationDescriptor(obj,
+						NameGenerator.getSystemicName(objRep
+								.getRepresentedClass())));
 			}
 			// indicate that the representations are linked
 			setJoined(superRep.getAsName(), objRep.getAsName());
@@ -258,26 +280,21 @@ public class IdStatementGenerator
 	}
 
 	/**
-	 * Add all tables in propertyStack, up to and including the table for
-	 * propertyClass
+	 * Add all tables in propertyStack.
 	 * 
 	 * @param propertyStack
-	 * @param propertyClass
-	 *            may be null.
 	 */
-	public void addPropertyTablesToJoin(ObjectStack propertyStack, Class<?> propertyClass)
+	public void addPropertyTablesToJoin(ObjectStack propertyStack)
 	{
+		// TODO: Must this recurse from specific to general?
 		boolean propertiesFound = false;
-		for (int x = propertyStack.getSize() - 1; x >= 0; x--)
+		List<ObjectRepresentation> allReps = propertyStack
+				.getAllRepresentations();
+		for (ObjectRepresentation rep : allReps)
 		{
-			ObjectRepresentation rep = propertyStack.getRepresentation(x);
 			if (!propertiesFound)
 			{
 				if (rep.getNonNullPropertyCount() > 0 || rep.isArray())
-				{
-					propertiesFound = true;
-				}
-				else if (propertyClass != null && rep.getRepresentedClass().equals(propertyClass))
 				{
 					propertiesFound = true;
 				}
@@ -286,17 +303,13 @@ public class IdStatementGenerator
 			{
 				if (rep.isArray())
 				{
-					addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
+					addPropertyTableToJoin(Defaults.ARRAY_TABLENAME,
+							rep.getAsName());
 				}
 				else
 				{
 					addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
 				}
-			}
-			if (propertyClass != null && rep.getRepresentedClass().equals(propertyClass))
-			{
-				// end once we reach the desired class
-				break;
 			}
 		}
 	}
@@ -309,21 +322,36 @@ public class IdStatementGenerator
 	 */
 	public void addTablesToJoin(ObjectStack stack)
 	{
-		for (int x = stack.getSize() - 1; x >= 0; x--)
+		// add the actual representation
+		ObjectRepresentation actual = stack.getActualRepresentation();
+		this.joinRepresentations.add(actual);
+		if(actual.isArray())
 		{
-			ObjectRepresentation rep = stack.getRepresentation(x);
-			this.joinRepresentations.add(rep);
-			if (rep.isArray())
+			addTableToJoin(Defaults.ARRAY_TABLENAME, actual.getAsName());
+		}
+		else
+		{
+			addTableToJoin(actual.getTableName(), actual.getAsName());
+		}
+		if (addJoins)
+		{
+			// if we should, add all others
+			List<ObjectRepresentation> allReps = stack.getAllRepresentations();
+			for (ObjectRepresentation rep : allReps)
 			{
-				addTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
-			}
-			else
-			{
-				addTableToJoin(rep.getTableName(), rep.getAsName());
-			}
-			if (!addJoins)
-			{
-				break;
+				if (!rep.equals(actual))
+				{
+					this.joinRepresentations.add(rep);
+					if (rep.isArray())
+					{
+						addTableToJoin(Defaults.ARRAY_TABLENAME,
+								rep.getAsName());
+					}
+					else
+					{
+						addTableToJoin(rep.getTableName(), rep.getAsName());
+					}
+				}
 			}
 		}
 	}

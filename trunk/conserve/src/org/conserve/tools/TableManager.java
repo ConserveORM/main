@@ -1421,7 +1421,6 @@ public class TableManager
 			// check that this class is not an array or primitive
 			if (!klass.isArray() && !ObjectTools.isDatabasePrimitive(klass))
 			{
-
 				// get info on the superclass
 				Class<?> superClass = klass.getSuperclass();
 				String superClassName = NameGenerator.getSystemicName(superClass);
@@ -1794,8 +1793,10 @@ public class TableManager
 			// check compatibility
 			if (ObjectTools.isA(sourceClass, nuType))
 			{
+				//cast the property id from currentType to nuType
+				Long castPropertyId = adapter.getPersist().getCastId(nuType, sourceClass, propertyId, cw);
 				// update the reference id
-				setReferenceTo(tableName, ownerId, colName, propertyId, cw);
+				setReferenceTo(tableName, ownerId, colName, castPropertyId, cw);
 			}
 			else
 			{

@@ -2571,6 +2571,7 @@ public class PersistTest
 		ChangedInheritance three = new ChangedInheritance();
 		three.setValue(3);
 
+		//create external reference for object two
 		pm.saveObject(two);
 
 		ObjectContainerObject coOne = new ObjectContainerObject();
@@ -2592,6 +2593,12 @@ public class PersistTest
 		// make sure the Serializable object was stored
 		List<Serializable> serList = pm.getObjects(Serializable.class, new All());
 		assertEquals(1, serList.size());
+		//make sure the containers are saved
+		List<ObjectContainerObject>contList = pm.getObjects(ObjectContainerObject.class, new All());
+		assertEquals(3,contList.size());
+		assertNotNull(contList.get(0).getFoo());
+		assertNotNull(contList.get(1).getFoo());
+		assertNotNull(contList.get(2).getFoo());
 		pm.close();
 
 		// re-connect to database

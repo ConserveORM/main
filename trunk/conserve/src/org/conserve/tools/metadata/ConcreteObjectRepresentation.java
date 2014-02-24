@@ -67,12 +67,11 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 							getMutatorName(m), m.getReturnType());
 					setters.add(mutator);
 					getters.add(m);
-					Object value = null;
 					if (o != null)
 					{
 						boolean oldAccessValue = m.isAccessible();
 						m.setAccessible(true);
-						value = m.invoke(o);
+						Object value = m.invoke(o);
 						values.add(value);
 						m.setAccessible(oldAccessValue);
 					}
@@ -252,10 +251,6 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				if (this.isReferenceType(x))
 				{
 					Class<?> returnType = returnTypes.get(x);
-					if (returnType.isInterface())
-					{
-						returnType = Object.class;
-					}
 					mName += adapter.getReferenceType(returnType);
 				}
 				else
@@ -301,10 +296,6 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				if (this.isReferenceType(x))
 				{
 					Class<?> returnType = returnTypes.get(x);
-					if (returnType.isInterface())
-					{
-						returnType = Object.class;
-					}
 					containedClasses.add(returnType);
 				}
 			}
@@ -439,14 +430,12 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 							if (!c.equals(value.getClass()))
 							{
 								Class<?> tempClass = c;
-								if (c.isInterface())
-								{
-									// since we can't cast to an interface, just
-									// cast to java.lang.Object.
-									tempClass = Object.class;
-								}
-								long nuId = adapter.getPersist().getCastId(
+								Long nuId = adapter.getPersist().getCastId(
 										tempClass, value.getClass(), id, cw);
+								if(nuId == null)
+								{
+									System.out.println("Could not cast from " + value.getClass()+" to "+ tempClass);
+								}
 								ps.setLong(index, nuId);
 							}
 							else
@@ -472,4 +461,5 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			}
 		}
 	}
+	
 }

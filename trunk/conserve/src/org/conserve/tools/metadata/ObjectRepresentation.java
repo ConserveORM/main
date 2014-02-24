@@ -695,9 +695,10 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	public void removeProperty(String name)
 	{
 		int p = props.indexOf(name);
-		if (p >= 0)
+		while (p >= 0)
 		{
 			removeProperty(p);
+			p = props.indexOf(name);
 		}
 	}
 
@@ -741,5 +742,35 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	{
 		return NameGenerator.getSystemicName(getRepresentedClass());
 	}
+	
 
+	/**
+	 * Returns true iff the represented class is an interface, false otherwise.
+	 * @return
+	 */
+	public boolean isInterface()
+	{
+		return this.clazz.isInterface();
+	}
+
+	/**
+	 * Two object representations are equal if they represent the same class.
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof ObjectRepresentation)
+		{
+			ObjectRepresentation other = (ObjectRepresentation)obj;
+			if(other.getRepresentedClass().equals(getRepresentedClass()))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
 }

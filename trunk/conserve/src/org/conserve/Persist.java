@@ -19,6 +19,7 @@
 package org.conserve;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,10 +46,7 @@ import org.conserve.adapter.MySqlAdapter;
 import org.conserve.adapter.PostgreSqlAdapter;
 import org.conserve.adapter.SqLiteAdapter;
 import org.conserve.aggregate.AggregateFunction;
-import org.conserve.aggregate.Average;
 import org.conserve.aggregate.Count;
-import org.conserve.aggregate.Maximum;
-import org.conserve.aggregate.Minimum;
 import org.conserve.aggregate.Sum;
 import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
@@ -172,7 +170,8 @@ public class Persist
 	}
 
 	/**
-	 * Select the appropriate AdapterBase implementation for a given database url.
+	 * Select the appropriate AdapterBase implementation for a given database
+	 * url.
 	 * 
 	 * @param url
 	 * @return
@@ -184,7 +183,7 @@ public class Persist
 		{
 			res = new MySqlAdapter(this);
 		}
-		else if(url.startsWith("jdbc:mariadb:"))
+		else if (url.startsWith("jdbc:mariadb:"))
 		{
 			res = new MariaAdapter(this);
 		}
@@ -306,57 +305,38 @@ public class Persist
 		int res = 0;
 		try
 		{
-			if (!clazz.isInterface())
+			int deletedCount = 0;
+			String className = NameGenerator.getSystemicName(clazz);
+			// find all matching objects
+			HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(clazz, className, where, null, cw);
+			for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
 			{
-				res = deleteObjectsNonInterface(cw, clazz, where);
-			}
-			else
-			{
-				// get all implementing classes, too
-				List<Class<T>> subClasses = getImplementingClasses(clazz, cw);
-				for (Class<T> subClass : subClasses)
+				Class<?> c = en.getKey();
+				String tableName = NameGenerator.getTableName(c, adapter);
+				List<Long> ids = en.getValue();
+				for (Long id : ids)
 				{
-					// recurse for all all implementing classes
-					res += deleteObjects(cw, subClass, where);
+					// delete objects from cache
+					cache.purge(tableName, id);
+					// unprotect the objects
+					protectionManager.unprotectObjectExternal(tableName, id, cw);
+					// check if objects are part of other object
+					if (!protectionManager.isProtected(tableName, id, cw))
+					{
+						// if not, delete
+						deleteObject(c, id, cw);
+						deletedCount++;
+
+					}
 				}
 			}
+			res = deletedCount;
 		}
 		catch (ClassNotFoundException e)
 		{
 			throw new SQLException(e);
 		}
 		return res;
-	}
-
-	private int deleteObjectsNonInterface(ConnectionWrapper cw, Class<?> clazz, Clause where)
-			throws ClassNotFoundException, SQLException
-	{
-		int deletedCount = 0;
-		String className = NameGenerator.getSystemicName(clazz);
-		// find all matching objects
-		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(clazz, className, where, null, cw);
-		for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
-		{
-			Class<?> c = en.getKey();
-			String tableName = NameGenerator.getTableName(c, adapter);
-			List<Long> ids = en.getValue();
-			for (Long id : ids)
-			{
-				// delete objects from cache
-				cache.purge(tableName, id);
-				// unprotect the objects
-				protectionManager.unprotectObjectExternal(tableName, id, cw);
-				// check if objects are part of other object
-				if (!protectionManager.isProtected(tableName, id, cw))
-				{
-					// if not, delete
-					deleteObject(c, id, cw);
-					deletedCount++;
-
-				}
-			}
-		}
-		return deletedCount;
 	}
 
 	/**
@@ -406,9 +386,20 @@ public class Persist
 	 */
 	public boolean deleteObject(Class<?> clazz, Long id, ConnectionWrapper cw) throws SQLException
 	{
+		boolean res = false;
 		String tableName = NameGenerator.getTableName(clazz, adapter);
-		deleteObject(tableName, id, cw);
-		return deleteObject(clazz.getSuperclass(), NameGenerator.getSystemicName(clazz), id, cw);
+		//delete object itself
+		res = deleteObject(tableName, id, cw);
+		//delete superclass recursively
+		String className = NameGenerator.getSystemicName(clazz);
+		res &= deleteObject(clazz.getSuperclass(), className, id, cw);
+		//delete interfaces recursively
+		Class<?>[] infs = clazz.getInterfaces();
+		for(Class<?>inf:infs)
+		{
+			res &= deleteObject(inf, className, id, cw);
+		}
+		return res;
 	}
 
 	/**
@@ -429,9 +420,11 @@ public class Persist
 			// this means the object is an array, delete the array
 			// delete all the array's members before deleting the array itself
 			deletePropertiesOf(tableName, id, cw);
-			// all arrays also have an entry in the java.lang.Object table, so
-			// we must delete this as well
-			deleteObject(java.lang.Object.class, Defaults.ARRAY_TABLENAME, id, cw);
+			// all arrays also have an entry in the Object, Serializable, and Cloneable tables, so
+			// we must delete those as well
+			deleteObject(Object.class, Defaults.ARRAY_TABLENAME, id, cw);
+			deleteObject(Serializable.class, Defaults.ARRAY_TABLENAME, id, cw);
+			deleteObject(Cloneable.class, Defaults.ARRAY_TABLENAME, id, cw);
 			isArray = true;
 		}
 		StringBuilder statement = new StringBuilder("DELETE FROM ");
@@ -476,10 +469,22 @@ public class Persist
 			Tools.logFine(ps);
 			res = ps.executeUpdate() == 1;
 			ps.close();
-			// recurse
+
 			if (currentId != null)
 			{
-				deleteObject(clazz.getSuperclass(), NameGenerator.getSystemicName(clazz), currentId, cw);
+				String className = NameGenerator.getSystemicName(clazz);
+				
+				//recurse superclass
+				deleteObject(clazz.getSuperclass(), className, currentId, cw);
+				
+				//recurse interfaces
+				Class<?>[] infs = clazz.getInterfaces();
+				for(Class<?>inf:infs)
+				{
+					deleteObject(inf, className,currentId,cw);
+				}
+				
+				//delete properties
 				deletePropertiesOf(tableName, currentId, cw);
 			}
 		}
@@ -618,7 +623,6 @@ public class Persist
 		if (clazz == null)
 		{
 			clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
-
 		}
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		if (!tableManager.tableExists(tableName, cw))
@@ -633,10 +637,11 @@ public class Persist
 		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
 
 		StringBuilder statement = new StringBuilder("SELECT ");
+		statement.append("DISTINCT(");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.ID_COL);
-		statement.append(",");
+		statement.append("),");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.REAL_CLASS_COL);
@@ -650,7 +655,6 @@ public class Persist
 			sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
 		}
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
-		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
@@ -663,10 +667,10 @@ public class Persist
 			if (map.get(Defaults.REAL_CLASS_COL) != null)
 			{
 				// get the real class and id
-				className = (String) map.get(Defaults.REAL_CLASS_COL);
-				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
+				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
+				Long realDbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, className, null, dbId, cw);
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, subClassName, null, realDbId, cw);
 				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 				{
 					Class<?> c = en.getKey();
@@ -739,7 +743,8 @@ public class Persist
 		catch (Exception e)
 		{
 			// cancel the operation
-			cw.rollbackAndDiscard();
+			cw.commitAndDiscard();
+			//cw.rollbackAndDiscard();
 			// re-throw the original exception
 			throw new SQLException(e);
 		}
@@ -874,36 +879,97 @@ public class Persist
 	 * @param clazz
 	 *            the class of objects to return, subclasses will also be
 	 *            returned.
-	 * @param clause
+	 * @param clauses
 	 *            the clause that all the returned objects must satisfy.
 	 * @param cw
 	 *            the connection wrapper to use for this operation.
 	 * @return an ArrayList of the desired type.
 	 * @throws SQLException
 	 */
-	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
+	@SuppressWarnings("unchecked")
+	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Clause... clauses) throws SQLException
 	{
-		ArrayList<T> res = new ArrayList<T>();
+		for (Clause clause : clauses)
+		{
+			clause.setQueryClass(clazz);
+		}
+		List<T> res = new ArrayList<T>();
+		if (!tableManager.tableExists(clazz, cw))
+		{
+			return res;
+		}
+
 		try
 		{
-			if (!clazz.isInterface())
+			StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+			whereGenerator.setClauses(clauses);
+			StatementPrototype sp = whereGenerator.generate(clazz, true);
+			PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
+			ResultSet rs = ps.executeQuery();
+			List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
+			ps.close();
+			for (HashMap<String, Object> map : propertyVector)
 			{
-				// get an actual object from the database
-				res.addAll(getObjectsNonInterface(clazz, cw, clause));
-			}
-			else
-			{
-				// get all implementing classes, too
-				List<Class<T>> implementingClasses = getImplementingClasses(clazz, cw);
-				removeDuplicateSubClasses(implementingClasses);
-				for (Class<T> implementingClass : implementingClasses)
+				Long dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
+				// If a row has a REALCLASS entry, load the subclass
+				if (map.get(Defaults.REAL_CLASS_COL) != null)
 				{
-					// recurse for all subclasses
-					res.addAll(getObjects(cw, implementingClass, clause));
+					// get the real class and id
+					dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
+					String className = (String) map.get(Defaults.REAL_CLASS_COL);
+					if (className.equals(Defaults.ARRAY_TABLENAME))
+					{
+						// arrays are not loaded in response to WHERE queries,
+						// only as members of specific objects.
+						continue;
+					}
+					else
+					{
+						// load the real class
+						clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+						// primitives are not loaded in response to queries,
+						// only as
+						// parts of other objects
+						if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class))
+								&& !(clazz.equals(Number.class)))
+						{
+							// get the subclass-specific data
+							getSubClassData(map, clazz, dbId, cw);
+							// load the real class info
+							className = (String) map.get(Defaults.REAL_CLASS_COL);
+							dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
+							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+
+						}
+						else
+						{
+							continue;
+						}
+					}
+				}
+				if (!clazz.isArray())
+				{
+					String tableName = NameGenerator.getTableName(clazz, adapter);
+					// check if the object is known
+					Object cachedObject = cache.getObject(tableName, dbId);
+					if (cachedObject == null)
+					{
+						// object was not found in cache
+						// create new object
+						T nuObject = ObjectFactory.createObject(adapter, cache, map, clazz, cw, tableName, dbId);
+						res.add(nuObject);
+						// add object to cache
+						cache.storeObject(tableName, nuObject, dbId);
+					}
+					else
+					{
+						// the object was found, add it to result array
+						res.add((T) cachedObject);
+					}
 				}
 			}
 		}
-		catch (ClassNotFoundException e)
+		catch (Exception e)
 		{
 			throw new SQLException(e);
 		}
@@ -925,26 +991,137 @@ public class Persist
 	 *            the search parameters.
 	 * @throws SQLException
 	 */
-	public <T> void getObjects(SearchListener<T> listener, Class<T> clazz, Clause... clause) throws SQLException
+	@SuppressWarnings("unchecked")
+	public <T> void getObjects(SearchListener<T> listener, Class<T> clazz, Clause... clauses) throws SQLException
 	{
 		try
 		{
-			if (!clazz.isInterface())
+			for (Clause clause : clauses)
 			{
-				// get an actual object from the database
-				getObjectsNonInterface(listener,clazz, clause);
+				clause.setQueryClass(clazz);
 			}
-			else
+			ConnectionWrapper cw = getConnectionWrapper();
+			if (!tableManager.tableExists(clazz, cw))
 			{
-				// get all implementing classes, too
-				ConnectionWrapper cw = getConnectionWrapper();
-				List<Class<T>> implementingClasses = getImplementingClasses(clazz, cw);
-				cw.commitAndDiscard();
-				removeDuplicateSubClasses(implementingClasses);
-				for (Class<T> implementingClass : implementingClasses)
+				cw.discard();
+				return;
+			}
+
+			boolean containsOrder = containsOrderStatement(clauses);
+
+			StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+			whereGenerator.setClauses(clauses);
+			StatementPrototype sp = whereGenerator.generate(clazz, true);
+			long currentObject = 0;
+			long maxTotalCount = -1;
+			if (!containsOrder)
+			{
+				// there's no "ORDER BY" statement in this query, add one.
+				Order order = new Order(new DatabaseIDSorter(clazz));
+				// recreate the statement
+				whereGenerator = new StatementPrototypeGenerator(adapter);
+				Clause[] nuClauses = new Clause[clauses.length + 1];
+				System.arraycopy(clauses, 0, nuClauses, 0, clauses.length);
+				nuClauses[nuClauses.length - 1] = order;
+				whereGenerator.setClauses(nuClauses);
+				sp = whereGenerator.generate(clazz, true);
+			}
+			if (sp.getOffset() != null)
+			{
+				currentObject = sp.getOffset();
+			}
+			if (sp.getLimit() != null)
+			{
+				// user only wants maxTotalCount objects, keep track of this number
+				maxTotalCount = sp.getLimit();
+			}
+			long searchStartedAt = currentObject;
+			// alter the search to only return one object at a time
+			sp.setLimit(1L);
+			while (true)
+			{
+				sp.setOffset(currentObject);
+				// query the database
+				PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
+				ResultSet rs = ps.executeQuery();
+				// get the property map
+				List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
+				// close the query
+				ps.close();
+				boolean found = false;
+				for (HashMap<String, Object> map : propertyVector)
 				{
-					// recurse for all subclasses
-					getObjects(listener, implementingClass, clause);
+					Long dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
+					// If a row has a REALCLASS entry, load the subclass
+					if (map.get(Defaults.REAL_CLASS_COL) != null)
+					{
+						// get the real class and id
+						dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
+						String className = (String) map.get(Defaults.REAL_CLASS_COL);
+						if (className.equals(Defaults.ARRAY_TABLENAME))
+						{
+							// arrays are not loaded in response to WHERE queries,
+							// only as members of specific objects.
+							continue;
+						}
+						else
+						{
+							// load the real class
+							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+							// primitives are not loaded in response to queries,
+							// only as
+							// parts of other objects
+							if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class))
+									&& !(clazz.equals(Number.class)))
+							{
+								// get the subclass-specific data
+								getSubClassData(map, clazz, dbId, cw);
+								// load the real class info
+								className = (String) map.get(Defaults.REAL_CLASS_COL);
+								dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
+								clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+							}
+							else
+							{
+								continue;
+							}
+						}
+					}
+					if (!clazz.isArray())
+					{
+						currentObject++;
+						found = true;
+						String tableName = NameGenerator.getTableName(clazz, adapter);
+						// check if the object is known
+						Object cachedObject = cache.getObject(tableName, dbId);
+						if (cachedObject == null)
+						{
+							// object was not found in cache
+							// create new object
+							T nuObject = ObjectFactory.createObject(adapter, cache, map, clazz, cw, tableName, dbId);
+							// add object to cache
+							cache.storeObject(tableName, nuObject, dbId);
+							// tell listener about object
+							listener.objectFound(nuObject);
+						}
+						else
+						{
+							// the object was found in cache, pass it to listener
+							listener.objectFound((T) cachedObject);
+						}
+					}
+				}
+				// no objects found?
+				if (!found)
+				{
+					// search is complete
+					break;
+				}
+				// found enough objects?
+				if (maxTotalCount >= 0 && currentObject >= (searchStartedAt + maxTotalCount))
+				{
+					// search is complete
+					break;
 				}
 			}
 		}
@@ -1005,66 +1182,6 @@ public class Persist
 		return (Long) res[0];
 	}
 
-	/**
-	 * Remove the entries from classes that is the subclass of any other class
-	 * in the list.
-	 * 
-	 * @param subClasses
-	 *            the List to check for subclasses.
-	 */
-	private <T> void removeDuplicateSubClasses(List<Class<T>> subClasses)
-	{
-		for (int x = 0; x < subClasses.size(); x++)
-		{
-			// get the class at this location
-			Class<T> clazz = subClasses.get(x);
-			// check if the class is a subclass
-			for (int y = 0; y < subClasses.size(); y++)
-			{
-				if (x != y)
-				{
-					Class<T> possibleSubClass = subClasses.get(y);
-					if (isSubClassOf(clazz, possibleSubClass))
-					{
-						// remove the subclass
-						subClasses.remove(y);
-						// take one step back
-						y--;
-						if (y < x)
-						{
-							// the list has changed before the position of x,
-							// step out
-							x = y;
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Checks if possibleSubClass is in the inheritance tree below clazz.
-	 * 
-	 * @param clazz
-	 *            the possible parent class.
-	 * @param possibleSubClass
-	 *            the class to check for dependence on clazz.
-	 * @return true if possibleSubClass is a subclass of clazz.
-	 */
-	private boolean isSubClassOf(Class<?> clazz, Class<?> possibleSubClass)
-	{
-		Class<?> superClass = possibleSubClass.getSuperclass();
-		while (superClass != null)
-		{
-			if (superClass.equals(clazz))
-			{
-				return true;
-			}
-			superClass = superClass.getSuperclass();
-		}
-		return false;
-	}
 
 	/**
 	 * Find all classes that implements or extends clazz.
@@ -1079,8 +1196,8 @@ public class Persist
 	 * @throws ClassNotFoundException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> List<Class<T>> getImplementingClasses(Class<T> clazz, ConnectionWrapper cw)
-			throws SQLException, ClassNotFoundException
+	public <T> List<Class<T>> getImplementingClasses(Class<T> clazz, ConnectionWrapper cw) throws SQLException,
+			ClassNotFoundException
 	{
 		ArrayList<Class<T>> res = new ArrayList<Class<T>>();
 		StringBuilder sb = new StringBuilder();
@@ -1119,246 +1236,6 @@ public class Persist
 		this.cache.storeObject(tableName, o, dbId);
 	}
 
-	/**
-	 * Get all objects of class clazz that satisfy the clause.
-	 * 
-	 * @param clazz
-	 * @param className
-	 * @param clauses
-	 * @return
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
-	 */
-	@SuppressWarnings("unchecked")
-	private <T> List<T> getObjectsNonInterface(Class<T> clazz, ConnectionWrapper cw, Clause... clauses)
-			throws SQLException, ClassNotFoundException
-	{
-		for (Clause clause : clauses)
-		{
-			clause.setQueryClass(clazz);
-		}
-		ArrayList<T> res = new ArrayList<T>();
-		if (!tableManager.tableExists(clazz, cw))
-		{
-			return res;
-		}
-
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-		whereGenerator.setClauses(clauses);
-		StatementPrototype sp = whereGenerator.generate(clazz, true);
-		PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
-		ResultSet rs = ps.executeQuery();
-		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
-		ps.close();
-		for (HashMap<String, Object> map : propertyVector)
-		{
-			Long dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
-			// If a row has a REALCLASS entry, load the subclass
-			if (map.get(Defaults.REAL_CLASS_COL) != null)
-			{
-				// get the real class and id
-				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
-				String className = (String) map.get(Defaults.REAL_CLASS_COL);
-				if (className.equals(Defaults.ARRAY_TABLENAME))
-				{
-					// arrays are not loaded in response to WHERE queries,
-					// only as members of specific objects.
-					continue;
-				}
-				else
-				{
-					// load the real class
-					clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
-					// primitives are not loaded in response to queries, only as
-					// parts of other objects
-					if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class))
-							&& !(clazz.equals(Number.class)))
-					{
-						// get the subclass-specific data
-						getSubClassData(map, clazz, dbId, cw);
-						// load the real class info
-						className = (String) map.get(Defaults.REAL_CLASS_COL);
-						dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
-						clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
-
-					}
-					else
-					{
-						continue;
-					}
-				}
-			}
-			if (!clazz.isArray())
-			{
-				String tableName = NameGenerator.getTableName(clazz, adapter);
-				// check if the object is known
-				Object cachedObject = cache.getObject(tableName, dbId);
-				if (cachedObject == null)
-				{
-					// object was not found in cache
-					// create new object
-					T nuObject = ObjectFactory.createObject(adapter, cache, map, clazz, cw, tableName, dbId);
-					res.add(nuObject);
-					// add object to cache
-					cache.storeObject(tableName, nuObject, dbId);
-				}
-				else
-				{
-					// the object was found, add it to result array
-					res.add((T) cachedObject);
-				}
-			}
-		}
-		return res;
-	}
-	
-
-
-	/**
-	 * Get all objects of class clazz that satisfy the clause.
-	 * 
-	 * @param clazz
-	 * @param className
-	 * @param clauses
-	 * @return
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
-	 */
-	@SuppressWarnings("unchecked")
-	private <T> void getObjectsNonInterface(SearchListener<T> listener,Class<T> clazz, Clause... clauses)
-			throws SQLException, ClassNotFoundException
-	{
-		for (Clause clause : clauses)
-		{
-			clause.setQueryClass(clazz);
-		}
-		ConnectionWrapper cw = getConnectionWrapper();
-		if (!tableManager.tableExists(clazz, cw))
-		{
-			cw.discard();
-			return;
-		}
-		
-		boolean containsOrder = containsOrderStatement(clauses);
-		
-		
-
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-		whereGenerator.setClauses(clauses);
-		StatementPrototype sp = whereGenerator.generate(clazz, true);
-		long currentObject = 0;
-		long maxTotalCount = -1;
-		if(!containsOrder)
-		{
-			//there's no "ORDER BY" statement in this query, add one.
-			Order order = new Order(new DatabaseIDSorter(clazz));
-			//recreate the statement
-			whereGenerator = new StatementPrototypeGenerator(adapter);
-			Clause[] nuClauses = new Clause[clauses.length+1];
-			System.arraycopy(clauses, 0, nuClauses,0,clauses.length);
-			nuClauses[nuClauses.length-1]=order;
-			whereGenerator.setClauses(nuClauses);
-			sp = whereGenerator.generate(clazz, true);
-		}
-		if(sp.getOffset()!=null)
-		{
-			currentObject = sp.getOffset();
-		}
-		if(sp.getLimit()!=null)
-		{
-			//user only wants maxTotalCount objects, keep track of this number
-			maxTotalCount = sp.getLimit();
-		}
-		long searchStartedAt  = currentObject;
-		//alter the search to only return one object at a time
-		sp.setLimit(1L);
-		while(true)
-		{			
-			sp.setOffset(currentObject);
-			//query the database
-			PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
-			ResultSet rs = ps.executeQuery();
-			//get the property map
-			List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
-			//close the query
-			ps.close();
-			boolean found = false;
-			for (HashMap<String, Object> map : propertyVector)
-			{
-				Long dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
-				// If a row has a REALCLASS entry, load the subclass
-				if (map.get(Defaults.REAL_CLASS_COL) != null)
-				{
-					// get the real class and id
-					dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
-					String className = (String) map.get(Defaults.REAL_CLASS_COL);
-					if (className.equals(Defaults.ARRAY_TABLENAME))
-					{
-						// arrays are not loaded in response to WHERE queries,
-						// only as members of specific objects.
-						continue;
-					}
-					else
-					{
-						// load the real class
-						clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
-						// primitives are not loaded in response to queries,
-						// only as
-						// parts of other objects
-						if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class))
-								&& !(clazz.equals(Number.class)))
-						{
-							// get the subclass-specific data
-							getSubClassData(map, clazz, dbId, cw);
-							// load the real class info
-							className = (String) map.get(Defaults.REAL_CLASS_COL);
-							dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
-							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
-						}
-						else
-						{
-							continue;
-						}
-					}
-				}
-				if (!clazz.isArray())
-				{
-					currentObject++;
-					found = true;
-					String tableName = NameGenerator.getTableName(clazz, adapter);
-					// check if the object is known
-					Object cachedObject = cache.getObject(tableName, dbId);
-					if (cachedObject == null)
-					{
-						// object was not found in cache
-						// create new object
-						T nuObject = ObjectFactory.createObject(adapter, cache, map, clazz, cw, tableName, dbId);
-						// add object to cache
-						cache.storeObject(tableName, nuObject, dbId);
-						// tell listener about object
-						listener.objectFound(nuObject);
-					}
-					else
-					{
-						// the object was found in cache, pass it to listener
-						listener.objectFound((T)cachedObject);
-					}
-				}
-			}
-			//no objects found?
-			if(!found)
-			{
-				//search is complete
-				break;
-			}
-			//found enough objects?
-			if(maxTotalCount>=0 && currentObject>=(searchStartedAt+maxTotalCount))
-			{
-				//search is complete
-				break;
-			}
-		}
-	}
 
 	/**
 	 * Return true if any of the clauses in the argument is an instance of
@@ -1414,10 +1291,6 @@ public class Persist
 	public <T> T getObject(ConnectionWrapper cw, Class<T> clazz, Long id, ObjectRowMap cache) throws SQLException,
 			ClassNotFoundException
 	{
-		if (clazz.isInterface())
-		{
-			clazz = (Class<T>) Object.class;
-		}
 		String className = NameGenerator.getSystemicName(clazz);
 		T res = null;
 		if (!tableManager.tableExists(NameGenerator.getTableName(clazz, adapter), cw))
@@ -1517,14 +1390,9 @@ public class Persist
 	 * 
 	 * @throws SQLException
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> boolean objectExists(ConnectionWrapper cw, Class<T> clazz, Long id) throws SQLException
 	{
 		boolean res = false;
-		if (clazz.isInterface())
-		{
-			clazz = (Class<T>) Object.class;
-		}
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		if (!tableManager.tableExists(tableName, cw))
 		{
@@ -1807,18 +1675,17 @@ public class Persist
 		{
 			StatementPrototypeGenerator gen = new StatementPrototypeGenerator(adapter);
 
-			StatementPrototype sp = gen.generate(realClass, true);
-			sp.addEqualsClause(gen.getTypeStack().getRepresentation(gen.getTypeStack().getLevel(realClass)).getAsName()
+			StatementPrototype sp = gen.generateCast(realClass,c);
+			sp.addEqualsClause(gen.getTypeStack().getRepresentation(realClass).getAsName()
 					+ "." + Defaults.ID_COL, id);
 			StringBuilder prepend = new StringBuilder("SELECT ");
-			prepend.append(gen.getTypeStack().getRepresentation(gen.getTypeStack().getLevel(c)).getAsName());
+			prepend.append(gen.getTypeStack().getRepresentation(c).getAsName());
 			prepend.append(".");
 			prepend.append(Defaults.ID_COL);
 			prepend.append(" FROM ");
 			PreparedStatement ps = sp.toPreparedStatement(cw, prepend.toString());
 			try
 			{
-				Tools.logFine(ps);
 				ResultSet rs = ps.executeQuery();
 				if (rs.next())
 				{
@@ -2118,50 +1985,90 @@ public class Persist
 		Number[] res = null;
 		try
 		{
-			if (!clazz.isInterface())
+			// create an array to hold the results
+			res = new Number[functions.length];
+
+			// make sure the class exists
+			if (tableManager.tableExists(clazz, cw))
 			{
-				// get an actual value from the database
-				res = calculateAggregateNonInterface(cw, clazz, functions, where);
+
+				// generate the WHERE part of the statement
+				StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+				whereGenerator.setClauses(where);
+				StatementPrototype sp = whereGenerator.generate(clazz, true);
+
+				// generate the SELECT part of the statement
+				StringBuilder selection = new StringBuilder("SELECT ");
+				for (int x = 0; x < functions.length; x++)
+				{
+					AggregateFunction af = functions[x];
+					selection.append(af.getStringRepresentation(whereGenerator.getTypeStack()));
+					if (x < functions.length - 1)
+					{
+						selection.append(",");
+					}
+				}
+				selection.append(" FROM ");
+
+				// generate query
+				PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
+				Tools.logFine(ps);
+
+				// execute query
+				ResultSet rs = ps.executeQuery();
+
+				// parse results
+				if (rs.next())
+				{
+					for (int x = 0; x < functions.length; x++)
+					{
+
+						res[x] = getValueFromQuery(rs, functions[x], whereGenerator.getTypeStack(), x + 1);
+					}
+				}
+
+				ps.close();
 			}
 			else
 			{
-				res = new Number[functions.length];
-				// an array to keep track of counts for average calculations
-				long[] counts = new long[functions.length];
-				// get all implementing classes, too
-				List<Class<T>> implementingClasses = getImplementingClasses(clazz, cw);
-				removeDuplicateSubClasses(implementingClasses);
-
-				// combine the results of all implementing classes
-				for (Class<T> implementingClass : implementingClasses)
+				ObjectStack stack = new ObjectStack(adapter, clazz);
+				// the class does not exist
+				// fill in res with values that make sense
+				for (int x = 0; x < functions.length; x++)
 				{
-					Number[] tmp = calculateAggregate(cw, implementingClass, functions, where);
-					for (int x = 0; x < tmp.length; x++)
+					Class<? extends Number> n = functions[x].getReturnType(stack);
+					if (functions[x] instanceof Count || functions[x] instanceof Sum)
 					{
-						if (functions[x] instanceof Average)
+						// count is always Long, sum is always either Long or
+						// Double.
+						if (n.equals(Long.class))
 						{
-							// get the count
-							Number[] count = calculateAggregate(cw, implementingClass,
-									new AggregateFunction[] { new Count(functions[x].getMethodName()) }, where);
-							tmp[x] = ((Double) tmp[x]) * (Long) count[0];
-							counts[x] += (Long) count[0];
+							res[x] = new Long(0);
 						}
-						res[x] = combineResults(res[x], tmp[x], functions[x]);
+						else
+						{
+							res[x] = new Double(0);
+						}
 					}
-				}
-				for (int x = 0; x < res.length; x++)
-				{
-					// re-calculate averages based on counts
-					if (functions[x] instanceof Average && counts[x] > 0)
+					else
 					{
-						res[x] = res[x].doubleValue() / counts[x];
+						// average, max, and min of an empty set does not make sense
+						if (n.equals(Float.class))
+						{
+							res[x] = Float.NaN;
+						}
+						else if (n.equals(Double.class))
+						{
+							res[x] = Double.NaN;
+						}
+						else
+						{
+							// no way to represent NaN in integer classes, leave as
+							// null and hope calling code knows how to handle this
+						}
 					}
 				}
 			}
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new SQLException(e);
 		}
 		catch (NoSuchMethodException e)
 		{
@@ -2173,204 +2080,7 @@ public class Persist
 		}
 		return res;
 	}
-
-	/**
-	 * Combine the two numbers according to the type of operation, return the
-	 * result.
-	 * 
-	 * @param number
-	 * @param number2
-	 * @param function
-	 * @return
-	 */
-	private Number combineResults(Number number, Number number2, AggregateFunction function)
-	{
-		Number res = null;
-		if (number == null)
-		{
-			res = number2;
-		}
-		else if (function instanceof Sum || function instanceof Average)
-		{
-			// add the result
-			if (number instanceof Long || number instanceof Integer || number instanceof Short
-					|| number instanceof Byte)
-			{
-				res = number.longValue() + number2.longValue();
-			}
-			else if (number instanceof Double || number instanceof Float)
-			{
-				res = number.doubleValue() + number2.doubleValue();
-			}
-		}
-		else if (function instanceof Minimum)
-		{
-			// get the smallest value
-			if (number instanceof Long)
-			{
-				res = Math.min(number.longValue(), number2.longValue());
-			}
-			else if (number instanceof Integer)
-			{
-				res = Math.min(number.intValue(), number2.intValue());
-			}
-			else if (number instanceof Short)
-			{
-				res = (short) Math.min(number.intValue(), number2.intValue());
-			}
-			else if (number instanceof Byte)
-			{
-				res = (byte) Math.min(number.intValue(), number2.intValue());
-			}
-			else if (number instanceof Double)
-			{
-				res = Math.min(number.doubleValue(), number2.doubleValue());
-			}
-			else if (number instanceof Float)
-			{
-				res = Math.min(number.floatValue(), number2.floatValue());
-			}
-		}
-		else if (function instanceof Maximum)
-		{
-			// get the largest value
-			if (number instanceof Long)
-			{
-				res = Math.max(number.longValue(), number2.longValue());
-			}
-			else if (number instanceof Integer)
-			{
-				res = Math.max(number.intValue(), number2.intValue());
-			}
-			else if (number instanceof Short)
-			{
-				res = (short) Math.max(number.intValue(), number2.intValue());
-			}
-			else if (number instanceof Byte)
-			{
-				res = (byte) Math.max(number.intValue(), number2.intValue());
-			}
-			else if (number instanceof Double)
-			{
-				res = Math.max(number.doubleValue(), number2.doubleValue());
-			}
-			else if (number instanceof Float)
-			{
-				res = Math.max(number.floatValue(), number2.floatValue());
-			}
-		}
-		return res;
-	}
-
-	/**
-	 * Get the result of all the aggregate functions of all the named fields
-	 * that match all clauses.
-	 * 
-	 * @param cw
-	 *            the connection to use for the query.
-	 * @param clazz
-	 *            the class to calculate aggregate functions on, can not be an
-	 *            interface.
-	 * @param functions
-	 *            the aggregate functions to calculate
-	 * @param where
-	 * @return an array of appropriate Number sublasses (Double, Integer, Long,
-	 *         Short, Byte, Float).
-	 * @throws SQLException
-	 * @throws SecurityException
-	 * @throws NoSuchMethodException
-	 */
-	private Number[] calculateAggregateNonInterface(ConnectionWrapper cw, Class<?> clazz,
-			AggregateFunction[] functions, Clause[] where) throws SQLException, NoSuchMethodException,
-			SecurityException
-	{
-		// create an array to hold the results
-		Number[] res = new Number[functions.length];
-
-		// make sure the class exists
-		if (tableManager.tableExists(clazz, cw))
-		{
-
-			// generate the WHERE part of the statement
-			StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-			whereGenerator.setClauses(where);
-			StatementPrototype sp = whereGenerator.generate(clazz, true);
-
-			// generate the SELECT part of the statement
-			StringBuilder selection = new StringBuilder("SELECT ");
-			for (int x = 0; x < functions.length; x++)
-			{
-				AggregateFunction af = functions[x];
-				selection.append(af.getStringRepresentation(whereGenerator.getTypeStack()));
-				if (x < functions.length - 1)
-				{
-					selection.append(",");
-				}
-			}
-			selection.append(" FROM ");
-
-			// generate query
-			PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
-			Tools.logFine(ps);
-
-			// execute query
-			ResultSet rs = ps.executeQuery();
-
-			// parse results
-			if (rs.next())
-			{
-				for (int x = 0; x < functions.length; x++)
-				{
-
-					res[x] = getValueFromQuery(rs, functions[x], whereGenerator.getTypeStack(), x + 1);
-				}
-			}
-
-			ps.close();
-		}
-		else
-		{
-			ObjectStack stack = new ObjectStack(adapter, clazz);
-			// the class does not exist
-			// fill in res with values that make sense
-			for (int x = 0; x < functions.length; x++)
-			{
-				Class<? extends Number> n = functions[x].getReturnType(stack);
-				if (functions[x] instanceof Count || functions[x] instanceof Sum)
-				{
-					// count is always Long, sum is always either Long or
-					// Double.
-					if (n.equals(Long.class))
-					{
-						res[x] = new Long(0);
-					}
-					else
-					{
-						res[x] = new Double(0);
-					}
-				}
-				else
-				{
-					// average, max, and min of an empty set does not make sense
-					if (n.equals(Float.class))
-					{
-						res[x] = Float.NaN;
-					}
-					else if (n.equals(Double.class))
-					{
-						res[x] = Double.NaN;
-					}
-					else
-					{
-						// no way to represent NaN in integer classes, leave as
-						// null and hope calling code knows how to handle this
-					}
-				}
-			}
-		}
-		return res;
-	}
-
+	
 	/**
 	 * @param rs
 	 * @param aggregateFunction

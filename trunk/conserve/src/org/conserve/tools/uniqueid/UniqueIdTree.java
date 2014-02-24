@@ -19,6 +19,7 @@
 package org.conserve.tools.uniqueid;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
@@ -31,7 +32,7 @@ import org.conserve.tools.metadata.ObjectStack;
  */
 public class UniqueIdTree
 {
-	private ArrayList<ObjectStack> namedStacks;
+	private List<ObjectStack> namedStacks;
 	private UniqueIdGenerator generator;
 
 	public UniqueIdTree(UniqueIdGenerator generator)
@@ -47,47 +48,56 @@ public class UniqueIdTree
 	 */
 	public void nameStack(ObjectStack stack)
 	{
-		//forbid the existing table names to be used as aliases
-		for(int lvl = 0;lvl<stack.getSize();lvl++)
+		// forbid the existing table names to be used as aliases
+		for (String tableName : stack.getAllTableNames())
 		{
-			generator.addForbiddenString(stack.getRepresentation(lvl).getTableName());
+			generator.addForbiddenString(tableName);
 		}
 		// find the existing stack that most closely match the new stack
+		// as defined by the number of nodes that are common in both stacks
 		ObjectStack closestStack = null;
-		int maxHeight = -1;
-		for (ObjectStack existing : namedStacks)
+		// the match level is the number of matching nodes
+		int maxLevel = -1;
+		for (ObjectStack candidate : namedStacks)
 		{
-			int maxLevel = Math.min(stack.getSize(), existing.getSize());
-			for (int x = 0; x < maxLevel; x++)
+
+			int matchCount = 0;
+			for (ObjectRepresentation rep : stack.getAllRepresentations())
 			{
-				ObjectRepresentation o1 = stack.getRepresentation(x);
-				ObjectRepresentation o2 = existing.getRepresentation(x);
-				if (!o1.getRepresentedClass().equals(o2.getRepresentedClass()))
+				if (candidate.containsClass(rep.getRepresentedClass()))
 				{
-					break;
+					matchCount++;
 				}
-				else
+			}
+
+			if (matchCount > maxLevel)
+			{
+				//this is the candidate with the largest number of common nodes
+				maxLevel = matchCount;
+				closestStack = candidate;
+			}
+		}
+		if (closestStack != null)
+		{
+			// copy names from existing to new stack
+			for(ObjectRepresentation rep:stack.getAllRepresentations())
+			{
+				ObjectRepresentation other = closestStack.getRepresentation(rep.getRepresentedClass());
+				if(other != null && other.getAsName()!=null)
 				{
-					if (x > maxHeight)
-					{
-						maxHeight = x;
-						closestStack = existing;
-					}
+					rep.setAsName(other.getAsName());
 				}
 			}
 		}
-		// copy names from existing to new stack
-		for (int x = 0; x <= maxHeight; x++)
+		//generate new names
+		for(ObjectRepresentation rep:stack.getAllRepresentations())
 		{
-			stack.getRepresentation(x).setAsName(
-					closestStack.getRepresentation(x).getAsName());
+			if(rep.getAsName()==null)
+			{
+				rep.setAsName(generator.next());
+			}
 		}
-		// fill in remaining names from generator
-		for (int x = maxHeight + 1; x < stack.getSize(); x++)
-		{
-			stack.getRepresentation(x).setAsName(generator.next());
-		}
-		if (maxHeight < (stack.getSize() - 1))
+		if (maxLevel < (stack.getSize() - 1))
 		{
 			// add new stack to list
 			namedStacks.add(stack);

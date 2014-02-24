@@ -227,7 +227,6 @@ public class PersistTest
 		persist.saveObject(lso);
 		// insert the same object again
 		persist.saveObject(lso);
-		// new less-simple object
 		persist.close();
 	}
 
@@ -497,8 +496,10 @@ public class PersistTest
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		persist.dropTable(Object.class);
 
+		int arraySize = 1;
+		
 		ComplexObject co = new ComplexObject();
-		SimplestObject[][][] array = new SimplestObject[1][1][1];
+		SimplestObject[][][] array = new SimplestObject[arraySize][arraySize][1];
 		for (int x = 0; x < array.length; x++)
 		{
 			for (int y = 0; y < array[x].length; y++)
@@ -520,10 +521,17 @@ public class PersistTest
 		co = cos.get(0);
 		SimplestObject[][][] resArray = (SimplestObject[][][]) co.getObject();
 		assertTrue(resArray != null);
-		assertEquals(1, resArray.length);
-		assertEquals(1, resArray[0].length);
+		assertEquals(arraySize, resArray.length);
+		assertEquals(arraySize, resArray[0].length);
 		assertEquals(1, resArray[0][0].length);
-		assertTrue(resArray[0][0][0] != null);
+
+		for (int x = 0; x < resArray.length; x++)
+		{
+			for (int y = 0; y < resArray[0].length; y++)
+			{
+				assertTrue(resArray[x][y][0] != null);
+			}
+		}
 		co2 = cos.get(1);
 		SimplestObject[][][] resArray2 = (SimplestObject[][][]) co2.getObject();
 		assertTrue(resArray != resArray2);
@@ -745,10 +753,11 @@ public class PersistTest
 		foo.add(1.1);
 		persist.saveObject(foo);
 		persist.close();
-
+/*
 		persist = new PersistenceManager(driver, database, login, password);
 
-		List<ArrayList<Object>> result = persist.getObjects(new ArrayList<Object>());
+		@SuppressWarnings("rawtypes")
+		List<ArrayList> result = persist.getObjects(ArrayList.class, new All());
 		assertEquals(1, result.size());
 		ArrayList<?> first = result.get(0);
 		assertEquals(2, first.size());
@@ -756,7 +765,7 @@ public class PersistTest
 		assertEquals(1.1, first.get(1));
 		List<Object> all = persist.getObjects(new Object());
 		assertEquals(1, all.size());
-		persist.close();
+		persist.close();*/
 
 	}
 

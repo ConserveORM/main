@@ -422,7 +422,7 @@ public class PersistenceManager
 	@SuppressWarnings("unchecked")
 	public <T> List<T> getObjects(ConnectionWrapper cw, T pattern) throws SQLException
 	{
-		return persist.getObjects(cw, (Class<T>) pattern.getClass(), new Equal(pattern, (Class<T>) pattern.getClass()));
+		return getObjects(cw, (Class<T>) pattern.getClass(), pattern);
 	}
 
 	/**
@@ -784,9 +784,6 @@ public class PersistenceManager
 	 */
 	public void dropTable(ConnectionWrapper cw, Class<?> c) throws SQLException
 	{
-		// delete all the objects of this class
-		// this ensures that all dependent objects are cleared, e.g. arrays.
-		deleteObjects(cw, c, new All());
 		persist.getTableManager().dropTableForClass(c, cw);
 	}
 

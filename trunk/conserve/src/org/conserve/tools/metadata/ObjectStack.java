@@ -18,11 +18,15 @@
  *******************************************************************************/
 package org.conserve.tools.metadata;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
@@ -30,6 +34,8 @@ import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
+import org.conserve.tools.Tools;
+import org.conserve.tools.metadata.ObjectStack.Node;
 
 /**
  * Wrapper that encapsulates all ObjectRepresentations for an object.
@@ -40,9 +46,34 @@ import org.conserve.tools.ObjectTools;
  */
 public class ObjectStack
 {
-	//private ArrayList<ObjectRepresentation> representations = new ArrayList<ObjectRepresentation>();
 	private RepresentationTree representations = new RepresentationTree();
 	private AdapterBase adapter;
+	private int size = 0;// the height from the lowest to the highest level
+	private int heightOfObject; // the height of the tree node that cointains
+								// java.lang.Object.
+
+	/**
+	 * Load the object stack from the database.
+	 * 
+	 * @param cw
+	 *            the connection to the database.
+	 * @param adapter
+	 * @param klass
+	 *            the class to load a stack for.
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	public ObjectStack(ConnectionWrapper cw, AdapterBase adapter, Class<?> klass) throws SQLException,
+			ClassNotFoundException
+	{
+		this.adapter = adapter;
+		// fill in the root node
+		DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, klass, cw);
+		representations.setActual(dor);
+		loadRecursively(cw, representations.root);
+		// calculate lowest level
+		calculateLevels();
+	}
 
 	public ObjectStack(AdapterBase adapter, Class<?> c)
 	{
@@ -54,109 +85,276 @@ public class ObjectStack
 		this(adapter, c, o, null);
 	}
 
+	/**
+	 * Create a stack from an extant class and, optionally, object.
+	 * 
+	 * @param adapter
+	 * @param c
+	 *            the class to create a stack for
+	 * @param o
+	 *            optional object of class c, used to fill in values.
+	 * @param delayBuffer
+	 */
 	public ObjectStack(AdapterBase adapter, Class<?> c, Object o, DelayedInsertionBuffer delayBuffer)
 	{
 		this.adapter = adapter;
-		Node tmp = null;
-		while (c != null)
-		{
-			ObjectRepresentation rep = new ConcreteObjectRepresentation(adapter, c, o, delayBuffer);
-			if(tmp == null)
-			{
-				representations.setActual(rep);
-				tmp = representations.root;
-			}
-			else
-			{
-				tmp = tmp.addSuper(rep);
-			}
-			c = c.getSuperclass();
-		}
+		ObjectRepresentation or = new ConcreteObjectRepresentation(adapter, c, o, delayBuffer);
+		representations.setActual(or);
+		// recursively load the rest of the representations
+		loadRecursively(representations.root, o, delayBuffer);
+
+		// calculate lowest level
+		calculateLevels();
 		// remove duplicate values
-		for (int x = getSize() - 1; x >= 0; x--)
-		{
-			// get the representation at this level
-			ObjectRepresentation rep = getRepresentation(x);
-			// find the properties at this level
-			for (int p = 0; p < rep.getPropertyCount(); p++)
-			{
-				String name = rep.getPropertyName(p);
-				// check if any of the superclasses has a similarly-named
-				// property
-				for (int y = x - 1; y >= 0; y--)
-				{
-					ObjectRepresentation superRep = getRepresentation(y);
-					if (superRep.hasProperty(name))
-					{
-						rep.removeProperty(p);
-						p--;
-						break;
-					}
-				}
-			}
-		}
+		removeDupes();
+
 		// check for implementations of Collection
 		if (this.getActualRepresentation().isImplementation(Collection.class))
 		{
-			// find the lowest level that still implements Collection
-			ObjectRepresentation lastKnownImplementor = getActualRepresentation();
-			// we know that the bottom implements collection, skip it
-			for (int x = this.getSize() - 2; x >= 0; x--)
+			//switch to bug-fix implementation of Collection
+			for(ObjectRepresentation rep:this.getAllRepresentations())
 			{
-				if (this.getRepresentation(x).isImplementation(Collection.class))
+				if(rep.getRepresentedClass().equals(Collection.class))
 				{
-					lastKnownImplementor = this.getRepresentation(x);
-				}
-				else
-				{
-					break;
+					rep.implementCollection();
 				}
 			}
-			// switch on the virtual properties in this level
-			lastKnownImplementor.implementCollection();
 		}
 		// do the same for Map as for Collection
 		if (this.getActualRepresentation().isImplementation(Map.class))
 		{
-			// find the lowest level that still implements Collection
-			ObjectRepresentation lastKnownImplementor = getActualRepresentation();
-			// we know that the bottom implements collection, skip it
-			for (int x = this.getSize() - 2; x >= 0; x--)
+			//switch to bug-fix implementation of Map
+			for(ObjectRepresentation rep:this.getAllRepresentations())
 			{
-				if (this.getRepresentation(x).isImplementation(Map.class))
+				if(rep.getRepresentedClass().equals(Map.class))
 				{
-					lastKnownImplementor = this.getRepresentation(x);
-				}
-				else
-				{
-					break;
+					rep.implementMap();
 				}
 			}
-			// switch on the virtual properties in this level
-			lastKnownImplementor.implementMap();
 		}
 	}
 
 	/**
-	 * @param adapter
-	 * @param list
+	 * Recursively remove properties that exists in superclasses.
+	 * 
+	 * @param n
 	 */
-	public ObjectStack(AdapterBase adapter, List<ObjectRepresentation> list)
+	private void removeDupes()
 	{
-		this.adapter = adapter;
-		Node tmp = null;
-		for (ObjectRepresentation k : list)
+		Queue<Node> queue = new LinkedList<Node>();
+		queue.offer(representations.root);
+
+		while (!queue.isEmpty())
 		{
-			if(tmp == null)
+			Node n = queue.poll();
+			// remove items that exist in the superclass
+			ObjectRepresentation rep = n.getRepresentation();
+			List<Node> supers = n.getSupers();
+			//iterate over all the superclasses
+			for (Node s : supers)
 			{
-				representations.setActual(k);
-				tmp = representations.root;
-			}
-			else
-			{
-				tmp = tmp.addSuper(k);
+				// iterate over all properties
+				for (int p = 0; p < rep.getPropertyCount(); p++)
+				{
+					String name = rep.getPropertyName(p);
+					// check if any of the superclasses has a similarly-named
+					// property
+					if (hasPropertyRecursive(s,name))
+					{
+						rep.removeProperty(name);
+						break;
+					}
+				}
+				//add the supernodes
+				queue.offer(s);
 			}
 		}
+	}
+
+	/**
+	 * Check if Node s or any of its super-nodes has a property with the given name.
+	 * @param s
+	 * @param name
+	 * @return
+	 */
+	private boolean hasPropertyRecursive(Node s, String name)
+	{
+		if(s.getRepresentation().hasProperty(name))
+		{
+			return true;
+		}
+		List<Node>supers =s.getSupers();
+		for(Node superNode:supers)
+		{
+			if(hasPropertyRecursive(superNode, name))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Fill in all nodes from database until none are left.
+	 * 
+	 * @param n
+	 * @throws SQLException
+	 */
+	private void loadRecursively(ConnectionWrapper cw, Node n) throws SQLException, ClassNotFoundException
+	{
+		if (n.getRepresentation().getRepresentedClass().equals(Object.class))
+		{
+			heightOfObject = n.getHeight();
+		}
+		List<Class<?>> supers = getSuperClassesFromDatabase(n.getRepresentation().getRepresentedClass(), cw);
+		for (Class<?> s : supers)
+		{
+			DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, s, cw);
+			Node nu = n.addSuper(dor);
+			// recurse
+			loadRecursively(cw, nu);
+		}
+	}
+
+	/**
+	 * Iteratively load the stack based on an extant class.
+	 * 
+	 * @param n
+	 *            the parent node containing the subclass.
+	 * @param delayBuffer
+	 * @param o
+	 */
+	private void loadRecursively(Node n, Object o, DelayedInsertionBuffer delayBuffer)
+	{
+
+		if (n.getRepresentation().getRepresentedClass().equals(Object.class))
+		{
+			heightOfObject = n.getHeight();
+		}
+		Class<?> c = n.getRepresentation().getRepresentedClass();
+		List<Class<?>> supers = new ArrayList<Class<?>>();
+
+		// save the superclass
+		Class<?> superClass = c.getSuperclass();
+		if (superClass != null)
+		{
+			supers.add(superClass);
+		}
+		// save all interfaces
+		for (Class<?> i : c.getInterfaces())
+		{
+			if(!ObjectTools.implementsInterfaceIncludingSuper(superClass, i))
+			{
+				supers.add(i);
+			}
+		}
+		// recursively go up the tree
+		for (Class<?> s : supers)
+		{
+			ObjectRepresentation or = new ConcreteObjectRepresentation(adapter, s, o, delayBuffer);
+			Node nu = n.addSuper(or);
+			// recurse
+			loadRecursively(nu, o, delayBuffer);
+		}
+	}
+
+	/**
+	 * Calculate the lowest level by iterating over the levels and tracking the
+	 * lowest one.
+	 */
+	private void calculateLevels()
+	{
+		size = representations.getMaxHeight() + 1;
+	}
+
+	/**
+	 * Get a list of all superclasses and interfaces implemented directly by
+	 * this class, according to the database.
+	 * 
+	 * @param subClass
+	 * @param cw
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<Class<?>> getSuperClassesFromDatabase(Class<?> subClass, ConnectionWrapper cw) throws SQLException
+	{
+		List<Class<?>> res = new ArrayList<Class<?>>();
+		try
+		{
+			StringBuilder query = new StringBuilder("SELECT SUPERCLASS FROM ");
+			query.append(Defaults.IS_A_TABLENAME);
+			query.append(" WHERE SUBCLASS = ?");
+			PreparedStatement ps = cw.prepareStatement(query.toString());
+			ps.setString(1, NameGenerator.getSystemicName(subClass));
+			Tools.logFine(ps);
+			if (ps.execute())
+			{
+				ResultSet rs = ps.getResultSet();
+				while (rs.next())
+				{
+					String name = rs.getString(1);
+					Class<?> c = ObjectTools.lookUpClass(name, adapter);
+					res.add(c);
+				}
+				rs.close();
+			}
+			ps.close();
+		}
+		catch (ClassNotFoundException cnfe)
+		{
+			throw new SQLException(cnfe);
+		}
+
+		return res;
+	}
+
+	/**
+	 * Get a list of all superclasses we know the given class has.
+	 * 
+	 * @param subClass
+	 * @return
+	 */
+	public List<Class<?>> getSuperClasses(Class<?> subClass)
+	{
+		List<Class<?>> res = new ArrayList<Class<?>>();
+		Node node = null;
+		for (Node n : representations.allNodes())
+		{
+			if (n.getRepresentation().getRepresentedClass().equals(subClass))
+			{
+				node = n;
+				break;
+			}
+		}
+		if (node != null)
+		{
+			List<Node> supers = node.getSupers();
+			for (Node s : supers)
+			{
+				res.add(s.getRepresentation().getRepresentedClass());
+			}
+		}
+		return res;
+	}
+
+	/**
+	 * Get a list of all super-representation nodes of the given representation node. A
+	 * super-representation is a direct superclass or directly implemented
+	 * interface.
+	 * 
+	 * @param subRep
+	 * @return
+	 */
+	public List<Node> getSupers(Node subRep)
+	{
+		List<Node> res = new ArrayList<>();
+
+		if (subRep != null)
+		{
+			List<Node> supers = subRep.getSupers();
+			res.addAll(supers);
+		}
+		return res;
 	}
 
 	/**
@@ -168,23 +366,22 @@ public class ObjectStack
 	 */
 	public int getSize()
 	{
-		return representations.getMaxHeight()+1;
+		return size;
 	}
 
 	/**
-	 * Get the representation at a given level.
+	 * Get the concrete representation at a given level - this method does not
+	 * return interfaces.
 	 * 
 	 * @param level
-	 * @return the reperesentation of this object at the given class level.
+	 * @return the representation of this object at the given class level.
 	 */
 	public ObjectRepresentation getRepresentation(int level)
 	{
-		//TODO: Handle multiple supers
-		int size = getSize();
-		for(Node n:representations.allNodes())
+		for (Node n : representations.allNodes())
 		{
-			int l = size-n.getHeight()-1;
-			if(l == level)
+			int l = heightToLevel(n.getHeight());
+			if (l == level && !n.getRepresentation().isInterface())
 			{
 				return n.getRepresentation();
 			}
@@ -193,8 +390,41 @@ public class ObjectStack
 	}
 
 	/**
-	 * Get the representation that has a given property name. If there is no
-	 * such representation, return null.
+	 * Get all representations at a given level, including interfaces.
+	 * 
+	 * @param level
+	 *            the level to get representations at - 0 is "object" level.
+	 * @return
+	 */
+	public List<ObjectRepresentation> getRepresentations(int level)
+	{
+		List<ObjectRepresentation> res = new ArrayList<ObjectRepresentation>();
+		for (Node n : representations.allNodes())
+		{
+			int l = heightToLevel(n.getHeight());
+			if (l == level)
+			{
+				res.add(n.getRepresentation());
+			}
+		}
+		return res;
+	}
+
+	/**
+	 * Convert height (specific-to-general) to level (general-to-specific).
+	 * 
+	 * @param height
+	 *            the number of levels from the actual representation
+	 * @return the number of levels from java.lang.Object.
+	 */
+	private int heightToLevel(int height)
+	{
+		return heightOfObject - height;
+	}
+
+	/**
+	 * Get the most general representation that has a given property name. If
+	 * there is no such representation, return null.
 	 * 
 	 * @param propertyName
 	 * @return
@@ -203,9 +433,9 @@ public class ObjectStack
 	{
 		ObjectRepresentation res = null;
 		int maxLevel = -1;
-		for(Node n:representations.allNodes())
+		for (Node n : representations.allNodes())
 		{
-			if(n.getRepresentation().hasProperty(propertyName) && n.getHeight()>maxLevel)
+			if (n.getRepresentation().hasProperty(propertyName) && n.getHeight() > maxLevel)
 			{
 				maxLevel = n.getHeight();
 				res = n.getRepresentation();
@@ -216,28 +446,28 @@ public class ObjectStack
 
 	/**
 	 * Get the level at which the given property is represented. If there is no
-	 * such representation, return negative.
+	 * such representation, return null.
 	 * 
 	 * @param propertyName
 	 * @return
 	 */
-	public int getRepresentationLevel(String propertyName)
+	public Integer getRepresentationLevel(String propertyName)
 	{
-		int maxLevel = -1;
-		for(Node n:representations.allNodes())
+		Integer maxLevel = null;
+		for (Node n : representations.allNodes())
 		{
-			if(n.getRepresentation().hasProperty(propertyName) && n.getHeight()>maxLevel)
+			if (n.getRepresentation().hasProperty(propertyName) && (maxLevel == null || n.getHeight() > maxLevel))
 			{
 				maxLevel = n.getHeight();
 			}
 		}
-		if(maxLevel>=0)
+		if (maxLevel != null)
 		{
-			return representations.getMaxHeight()-maxLevel;
+			return representations.getMaxHeight() - maxLevel;
 		}
 		else
 		{
-			return -1;
+			return null;
 		}
 	}
 
@@ -250,52 +480,51 @@ public class ObjectStack
 	 */
 	public ObjectRepresentation getRepresentation(Class<?> clazz)
 	{
-		int level = getLevel(clazz);
-		if (level >= 0)
+		Node n = getNode(clazz);
+		if(n!=null)
 		{
-			return getRepresentation(level);
+			return n.getRepresentation();
 		}
-		else
-		{
-			return null;
-		}
+		return null;
 	}
+	
+	/**
+	 * Get the node that contains the representation of a given class.
+	 * @param clazz
+	 * @return
+	 */
+	public Node getNode(Class<?> clazz)
+	{
+		for (Node n : representations.allNodes())
+		{
+			if (n.getRepresentation().getRepresentedClass().equals(clazz))
+			{
+				return n;
+			}
+		}
+		return null;
+	}
+
 
 	/**
 	 * 
-	 * Get the representational level of the given class. Returns -1 if there is
-	 * no such class in the stack.
+	 * Get the representational level of the given class. Returns null if there
+	 * is no such class in the stack.
 	 * 
 	 * @param c
 	 * @return the level (where 0 equals Object.class) of the class c within
 	 *         this stack.
 	 */
-	public int getLevel(Class<?> c)
+	public Integer getLevel(Class<?> c)
 	{
-		if (c.isInterface())
+		for (Node n : representations.allNodes())
 		{
-			// find the highest level that implements the interface
-			for (int x = getSize() - 1; x >= 0; x--)
+			if (n.getRepresentation().getRepresentedClass().equals(c))
 			{
-				Class<?> candidate = getRepresentation(x).getRepresentedClass();
-				if (ObjectTools.implementsInterfaceIncludingSuper(candidate, c))
-				{
-					return x;
-				}
-			}
-
-		}
-		else
-		{
-			for (int x = 0; x < getSize(); x++)
-			{
-				if (getRepresentation(x).getRepresentedClass().equals(c))
-				{
-					return x;
-				}
+				return heightToLevel(n.getHeight());
 			}
 		}
-		return -1;
+		return null;
 	}
 
 	/**
@@ -308,7 +537,7 @@ public class ObjectStack
 	 */
 	public void save(ConnectionWrapper cw) throws SQLException
 	{
-		saveNoCache(cw, 0);
+		saveNoCache(cw, null);
 		// store the object in the object-row map
 		ObjectRepresentation rep = this.getActualRepresentation();
 		adapter.getPersist().saveToCache(rep.getTableName(), rep.getObject(), rep.getId());
@@ -324,29 +553,98 @@ public class ObjectStack
 	 * 
 	 * @throws SQLException
 	 */
-	public void saveNoCache(ConnectionWrapper cw, int minLevel) throws SQLException
+	public void saveNoCache(ConnectionWrapper cw, Integer minLevel) throws SQLException
+	{
+		// recursively store the object
+		saveNoCache(cw, representations.root, minLevel, null, null);
+	}
+
+	/**
+	 * Recursively store the object in the database without creating a cache
+	 * reference.
+	 * 
+	 * @param cw
+	 * @param root
+	 * @param minLevel
+	 * @param subClassName
+	 * @param subClassId
+	 * @throws SQLException
+	 */
+	private void saveNoCache(ConnectionWrapper cw, Node root, Integer minLevel, String subClassName, Long subClassId)
+			throws SQLException
 	{
 
-		// storage for the subclass name and table id
-		String className = null;
-		Long id = null;
-		// iterate up from the lowest level towards java.lang.Object
-		for (int x = getSize() - 1; x >= minLevel; x--)
+		// save the object
+		ConcreteObjectRepresentation crep = (ConcreteObjectRepresentation) root.getRepresentation();
+		adapter.getPersist().getTableManager().ensureTableExists(crep, cw);
+		crep.save(cw, subClassName, subClassId);
+
+		// get the current class name
+		String className = root.getRepresentation().getSystemicName();
+		if (root.getRepresentation().isArray())
 		{
-			// only ConcreteObjectRepresentations can be saved
-			ConcreteObjectRepresentation rep = (ConcreteObjectRepresentation) getRepresentation(x);
-			adapter.getPersist().getTableManager().ensureTableExists(rep, cw);
-			rep.save(cw, className, id);
-			if (rep.isArray())
-			{
-				className = Defaults.ARRAY_TABLENAME;
-			}
-			else
-			{
-				className = NameGenerator.getSystemicName(rep.getRepresentedClass());
-			}
-			id = rep.getId();
+			className = Defaults.ARRAY_TABLENAME;
 		}
+
+		// get the superclasses
+		List<Node> supers = root.getSupers();
+		for (Node s : supers)
+		{
+			// recurse
+			// interfaces are saved all the way to the top,
+			// minLevel is ignored if null
+			// otherwise go up to minlevel
+			if (crep.isInterface() || minLevel == null || heightToLevel(s.getHeight()) >= minLevel)
+			{
+				saveNoCache(cw, s, minLevel, className, crep.getId());
+			}
+		}
+	}
+	
+	/**
+	 * Get the actual object representation node, or the root node.
+	 * @return
+	 */
+	public Node getActual()
+	{
+		return this.representations.root;
+	}
+
+	/**
+	 * Get a list of all table names in this stack.
+	 * 
+	 * @return
+	 */
+	public List<String> getAllTableNames()
+	{
+		List<String> res = new ArrayList<>();
+		for (Node n : representations.allNodes())
+		{
+			res.add(n.getRepresentation().getTableName());
+		}
+		return res;
+	}
+
+	/**
+	 * Return the largest level-number any class in the stack has.
+	 * java.lang.Object has level = 0.
+	 * 
+	 * @return
+	 */
+	public int getMaxLevel()
+	{
+		return heightToLevel(0);
+	}
+
+	/**
+	 * Return the smallest level-number any class in the stack has.
+	 * java.lang.Object has level = 0.
+	 * 
+	 * @return
+	 */
+	public int getMinLevel()
+	{
+		return getMaxLevel() - getSize() + 1;
 	}
 
 	/**
@@ -358,52 +656,72 @@ public class ObjectStack
 	 */
 	public ObjectRepresentation getActualRepresentation()
 	{
-		return getRepresentation(getSize() - 1);
+		return this.representations.getActual();
 	}
 
-	private class Node
+	public List<ObjectRepresentation> getAllRepresentations()
 	{
-		private List<Node>superclasses = new ArrayList<Node>();
+		return this.representations.getAllRepresentations();
+	}
+	
+	/**
+	 * Check if this object stack contains a certain class.
+	 * @param clazz
+	 * @return
+	 */
+	public boolean containsClass(Class<?> clazz)
+	{
+		for(ObjectRepresentation rep:getAllRepresentations())
+		{
+			if(rep.getRepresentedClass().equals(clazz))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public class Node
+	{
+		private List<Node> superclasses = new ArrayList<Node>();
 		private ObjectRepresentation representation;
 		private int height;
-		
-		public Node(ObjectRepresentation rep,int height)
+
+		public Node(ObjectRepresentation rep, int height)
 		{
 			this.representation = rep;
 			this.height = height;
 		}
-		
+
 		public Node addSuper(ObjectRepresentation rep)
 		{
-			Node n = new Node(rep,height+1);
+			Node n = new Node(rep, height + 1);
 			superclasses.add(n);
 			return n;
 		}
-		
+
 		public int getHeight()
 		{
 			return height;
 		}
-		
-		public List<Node>getSupers()
+
+		/**
+		 * Get the direct superclasses and implemented interface of the class
+		 * contained in this node.
+		 * 
+		 * @return
+		 */
+		public List<Node> getSupers()
 		{
 			return superclasses;
 		}
-		public List<ObjectRepresentation>getSuperReps()
-		{
-			List<ObjectRepresentation>res = new ArrayList<ObjectRepresentation>();
-			for(Node n:superclasses)
-			{
-				res.add(n.getRepresentation());
-			}
-			return res;
-		}
+
 		public ObjectRepresentation getRepresentation()
 		{
 			return representation;
 		}
 	}
-	
+
 	/**
 	 * Keep track of all subclass-superclass relations this object is part of.
 	 * Since any class in an object can have more than one superclass (we are
@@ -416,41 +734,58 @@ public class ObjectStack
 	 * @author Erik Berglund
 	 * 
 	 */
-	private class RepresentationTree 
+	private class RepresentationTree
 	{
 		Node root;
-		
+
 		public RepresentationTree()
 		{
 		}
-		
+
+		/**
+		 * @return
+		 * 
+		 */
+		public List<ObjectRepresentation> getAllRepresentations()
+		{
+			List<ObjectRepresentation> res = new ArrayList<ObjectRepresentation>();
+			List<Node> allNodes = allNodes();
+			for (Node n : allNodes)
+			{
+				res.add(n.getRepresentation());
+			}
+			return res;
+
+		}
+
 		public void setActual(ObjectRepresentation actual)
 		{
-			this.root = new Node(actual,0);
+			this.root = new Node(actual, 0);
 		}
-		
+
 		public ObjectRepresentation getActual()
 		{
 			return root.getRepresentation();
 		}
-		
+
 		/**
 		 * Calculate the maximum height from root to leaf
+		 * 
 		 * @return
 		 */
 		public int getMaxHeight()
 		{
 			return getMaxHeight(root);
 		}
-		
+
 		/**
-		 * @param root2
+		 * @param n
 		 * @return
 		 */
 		private int getMaxHeight(Node n)
 		{
 			int height = n.getHeight();
-			for(Node t:n.getSupers())
+			for (Node t : n.getSupers())
 			{
 				height = Math.max(height, getMaxHeight(t));
 			}
@@ -459,18 +794,19 @@ public class ObjectStack
 
 		/**
 		 * Get a list of all the nodes in no particular order.
+		 * 
 		 * @return
 		 */
 		public List<Node> allNodes()
 		{
-			List<Node>res = new ArrayList<Node>();
-			addNode(res,root);
-			
+			List<Node> res = new ArrayList<Node>();
+			addNode(res, root);
+
 			return res;
 		}
 
 		/**
-		 * Recursivley add nodes to a list.
+		 * Recursively add nodes to a list.
 		 * 
 		 * @param res
 		 * @param n
@@ -478,13 +814,14 @@ public class ObjectStack
 		private void addNode(List<Node> res, Node n)
 		{
 			res.add(n);
-			for(Node t:n.getSupers())
+			for (Node t : n.getSupers())
 			{
-				addNode(res,t);
+				addNode(res, t);
 			}
 		}
 
-
 	}
+
+
 
 }

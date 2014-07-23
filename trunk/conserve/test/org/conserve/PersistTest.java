@@ -1466,11 +1466,6 @@ public class PersistTest
 		seekBook.addKeyWord("science fiction");
 		List<Book> scifiBooks = persist.getObjects(Book.class, new Equal(seekBook));
 		assertEquals(4, scifiBooks.size());
-		// print the title of the scifi books
-		for (Book book : scifiBooks)
-		{
-			System.out.println(book.getTitle());
-		}
 
 		// find all authors with the first name 'Isaac'.
 		Author asimov = new Author();

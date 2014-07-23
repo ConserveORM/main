@@ -53,7 +53,6 @@ import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.select.Clause;
-import org.conserve.select.StatementPrototypeGenerator;
 import org.conserve.sort.DatabaseIDSorter;
 import org.conserve.sort.Order;
 import org.conserve.tools.ArrayEntryWriter;
@@ -69,6 +68,7 @@ import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.TableManager;
 import org.conserve.tools.Tools;
 import org.conserve.tools.Updater;
+import org.conserve.tools.generators.StatementPrototypeGenerator;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 import org.conserve.tools.metadata.MapEntry;
 import org.conserve.tools.metadata.ObjectRepresentation;
@@ -791,12 +791,12 @@ public class Persist
 		{
 			delayBuffer = new DelayedInsertionBuffer(adapter.getPersist());
 		}
-		else if (delayBuffer.isKnown(id))
+		else if (delayBuffer.isKnown(id,object))
 		{
 			Long dbId = cache.getDatabaseId(object);
 			return dbId;
 		}
-		delayBuffer.addId(id);
+		delayBuffer.addId(id,object);
 		Long res = null;
 		String tableName = null;
 		if (object.getClass().isArray())

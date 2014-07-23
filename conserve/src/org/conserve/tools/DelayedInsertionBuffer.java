@@ -21,14 +21,19 @@ package org.conserve.tools;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.conserve.Persist;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.protection.ProtectionManager;
 
+
 /**
+ * 
  * Maintains a list of objects to be inserted at a later time, with the
- * associated
+ * associated reference.
  * 
  * @author Erik Berglund
  * 
@@ -36,7 +41,7 @@ import org.conserve.tools.protection.ProtectionManager;
 public class DelayedInsertionBuffer
 {
 	private ArrayList<InsertionObject> buffer = new ArrayList<InsertionObject>();
-	private ArrayList<Long> idBuffer = new ArrayList<Long>();
+	private Map<Long,List<Object>> idBuffer = new HashMap<Long,List<Object>>();
 	private Persist persist;
 
 
@@ -45,14 +50,31 @@ public class DelayedInsertionBuffer
 		this.persist = persist;
 	}
 
-	public boolean isKnown(Long id)
+	public boolean isKnown(Long id, Object obj)
 	{
-		return idBuffer.contains(id);
+		List<Object> list = idBuffer.get(id);
+		if(list != null)
+		{
+			for(Object o:list)
+			{
+				if(o == obj)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
-	public void addId(Long id)
+	public void addId(Long id, Object obj)
 	{
-		idBuffer.add(id);
+		List<Object> list = idBuffer.get(id);
+		if(list == null)
+		{
+			list = new ArrayList<Object>();
+			idBuffer.put(id, list);
+		}
+		list.add(obj);
 	}
 
 	/**

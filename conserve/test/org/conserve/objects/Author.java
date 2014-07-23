@@ -36,7 +36,6 @@ public class Author
 	
 	public Author()
 	{
-		books = new HashSet<Book>();
 	}
 	
 	/**
@@ -104,6 +103,10 @@ public class Author
 	 */
 	public void addBook(Book book)
 	{
+		if(books == null)
+		{
+			books = new HashSet<>();
+		}
 		books.add(book);
 		book.addAuthor(this);
 	}

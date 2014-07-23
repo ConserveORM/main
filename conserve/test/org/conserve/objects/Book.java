@@ -29,9 +29,9 @@ import org.conserve.annotations.MaxLength;
  */
 public class Book
 {
-	private Set<Author>authors=new HashSet<Author>();
+	private Set<Author>authors;
 	private Integer publishedYear;
-	private HashSet<String>keyWords = new HashSet<String>();
+	private HashSet<String>keyWords;
 	private String title;
 	
 	public Book()
@@ -103,11 +103,19 @@ public class Book
 	}
 	public void addAuthor(Author author)
 	{
+		if(authors==null)
+		{
+			authors = new HashSet<>();
+		}
 		authors.add(author);
 	}
 	
 	public void addKeyWord(String keyWord)
 	{
+		if(keyWords == null)
+		{
+			keyWords = new HashSet<>();
+		}
 		this.keyWords.add(keyWord);
 	}
 	

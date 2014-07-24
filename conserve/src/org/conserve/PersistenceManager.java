@@ -29,7 +29,6 @@ import java.util.Properties;
 
 import org.conserve.aggregate.AggregateFunction;
 import org.conserve.connection.ConnectionWrapper;
-import org.conserve.select.All;
 import org.conserve.select.Clause;
 import org.conserve.select.discriminators.Equal;
 

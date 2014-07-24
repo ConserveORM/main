@@ -35,7 +35,6 @@ import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.Tools;
-import org.conserve.tools.metadata.ObjectStack.Node;
 
 /**
  * Wrapper that encapsulates all ObjectRepresentations for an object.

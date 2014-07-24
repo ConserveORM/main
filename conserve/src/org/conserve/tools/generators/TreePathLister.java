@@ -69,20 +69,25 @@ public class TreePathLister
 	}
 
 	/**
-	 * Remove all parts of paths that are at the end of the path and does not contain any parameters.
-	 * If a path contains no parameters, it will be removed.
+	 * Remove all parts of paths that are at the end of the path and does not
+	 * contain any parameters. If a path contains no parameters, it will be
+	 * removed.
+	 * 
 	 * @param allPaths
 	 */
 	public void prunePaths(List<List<ObjectRepresentation>> allPaths)
 	{
-		for(int x = 0;x<allPaths.size();x++)
+		for (int x = 0; x < allPaths.size(); x++)
 		{
-			List<ObjectRepresentation>path = allPaths.get(x);
-			//remove from end of path
-			for(int t = path.size()-1;t>0;t--)
+			List<ObjectRepresentation> path = allPaths.get(x);
+			// remove from end of path
+			for (int t = path.size() - 1; t > 0; t--)
 			{
-				//stop if we find a concrete representation or a non-empty interface
-				if(path.get(t).getPropertyCount()>0 || path.get(t).getRepresentedClass().equals(Object.class))
+				// stop if we find a concrete representation or a non-empty
+				// interface
+				if (path.get(t).getNonNullPropertyCount() > 0
+						|| path.get(t).getRepresentedClass()
+								.equals(Object.class))
 				{
 					break;
 				}
@@ -91,7 +96,45 @@ public class TreePathLister
 					path.remove(t);
 				}
 			}
-			if(path.size()<=1 && allPaths.size()>1)
+			if (path.size() <= 1 && allPaths.size() > 1)
+			{
+				allPaths.remove(path);
+				x--;
+			}
+		}
+	}
+
+	/**
+	 * Remove all references below (with a lower array index) the indicated
+	 * selection class if they contain no properties.
+	 * 
+	 * @param allPaths
+	 * @param selectionClass
+	 */
+	public void pruneInheritance(List<List<ObjectRepresentation>> allPaths,
+			Class<?> selectionClass)
+	{
+		for (int x = 0; x < allPaths.size(); x++)
+		{
+			List<ObjectRepresentation> path = allPaths.get(x);
+			// remove from start of path
+			for (int t = 0; t < path.size(); t++)
+			{
+				// stop if we find a concrete representation or a non-empty
+				// interface
+				ObjectRepresentation rep = path.get(t);
+				if (rep.getNonNullPropertyCount() > 0
+						|| rep.getRepresentedClass().equals(selectionClass))
+				{
+					break;
+				}
+				else
+				{
+					path.remove(t);
+					t--;
+				}
+			}
+			if (path.size() == 0)
 			{
 				allPaths.remove(path);
 				x--;

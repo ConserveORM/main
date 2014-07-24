@@ -806,7 +806,7 @@ public class PersistTest
 		persist.close();
 
 		persist = new PersistenceManager(driver, database, login, password);
-		List<HashMap<Object, Object>> results = persist.getObjects(new HashMap<Object, Object>());
+		List<HashMap> results = persist.getObjects(HashMap.class,new All());
 		assertEquals(1, results.size());
 		HashMap<?, ?> first = results.get(0);
 		assertEquals(2, first.size());
@@ -1608,12 +1608,21 @@ public class PersistTest
 		List<Foo> foos = persist.getObjects(Foo.class, new Equal(searchFoo));
 		assertEquals(1, foos.size());
 
-		// assert that the Foo object can be retrieved with a ConcreteBar1
-		// object.
+		// assert that the Foo object can't be retrieved with a ConcreteBar1
+		// object if we use strict inheritance
 		ConcreteBar1 cbar1 = new ConcreteBar1();
 		cbar1.setAbstractName("f");
 		cbar1.setConcreteName("C");
-		cbar1.setFooProperty("foo");
+		searchFoo.setBar(cbar1);
+		foos = persist.getObjects(Foo.class, new Equal(searchFoo, true));
+		assertEquals(0, foos.size());
+		
+		
+		// assert that the Foo object can be retrieved with a ConcreteBar1
+		// object if we don't use strict inheritance
+		cbar1 = new ConcreteBar1();
+		cbar1.setAbstractName("f");
+		cbar1.setConcreteName("C");
 		searchFoo.setBar(cbar1);
 		foos = persist.getObjects(Foo.class, new Equal(searchFoo, false));
 		assertEquals(1, foos.size());
@@ -3881,6 +3890,7 @@ public class PersistTest
 		// make sure everything is saved
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
+		assertEquals(4,pm.getCount(Object.class, new All()));
 		// remove the interface from the contained objects
 		new TestTools(pm.getPersist()).changeName(MyFooContainer.class, MyNonFooContainer.class);
 		pm.updateSchema(MyNonFooContainer.class);
@@ -3889,12 +3899,16 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(0, pm.getCount(MyNonFooContainer.class, new All()));
+		assertEquals(2,pm.getCount(Object.class, new All()));
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
+		pm.dropTable(Object.class);
 		pm.close();
 
 		// Test 2: Create some entries that are part of another object
 		pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables
-		pm.dropTable(Object.class);
 		fco = new FooContainerOwner();
 		fco.setFooContainer(new MyFooContainer());
 		pm.saveObject(fco);

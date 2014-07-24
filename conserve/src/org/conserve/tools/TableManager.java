@@ -67,7 +67,8 @@ public class TableManager
 	private AdapterBase adapter;
 	private ArrayList<Class<?>> existingClasses = new ArrayList<Class<?>>();
 
-	public TableManager(boolean createSchema, DataConnectionPool connectionPool, AdapterBase adapter)
+	public TableManager(boolean createSchema,
+			DataConnectionPool connectionPool, AdapterBase adapter)
 	{
 		this.adapter = adapter;
 		this.connectionPool = connectionPool;
@@ -80,7 +81,8 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws SchemaPermissionException
 	 */
-	public void initializeSystemTables() throws SQLException, SchemaPermissionException
+	public void initializeSystemTables() throws SQLException,
+			SchemaPermissionException
 	{
 		// check if the system tables exist
 		ConnectionWrapper cw = connectionPool.getConnectionWrapper();
@@ -91,7 +93,8 @@ public class TableManager
 			if (tableExists(Defaults.SCHEMA_VERSION_TABLENAME, cw))
 			{
 				// get the existing schema version
-				String query = "SELECT VERSION FROM " + Defaults.SCHEMA_VERSION_TABLENAME;
+				String query = "SELECT VERSION FROM "
+						+ Defaults.SCHEMA_VERSION_TABLENAME;
 				PreparedStatement ps = cw.prepareStatement(query);
 				Tools.logFine(ps);
 				ResultSet rs = ps.executeQuery();
@@ -106,11 +109,14 @@ public class TableManager
 			else
 			{
 				// schema version table does not exist, create it
-				createTable(Defaults.SCHEMA_VERSION_TABLENAME, new String[] { "VERSION" },
+				createTable(Defaults.SCHEMA_VERSION_TABLENAME,
+						new String[] { "VERSION" },
 						new String[] { adapter.getIntegerTypeKeyword() }, cw);
 
 				// insert the current version
-				String commandString = "INSERT INTO  " + Defaults.SCHEMA_VERSION_TABLENAME + "  (VERSION ) values (?)";
+				String commandString = "INSERT INTO  "
+						+ Defaults.SCHEMA_VERSION_TABLENAME
+						+ "  (VERSION ) values (?)";
 				PreparedStatement ps = cw.prepareStatement(commandString);
 				ps.setInt(1, schemaTypeVersion);
 				Tools.logFine(ps);
@@ -123,7 +129,8 @@ public class TableManager
 			}
 			else if (existingSchema > schemaTypeVersion)
 			{
-				throw new SQLException("Database schema is version " + existingSchema + " but Conserve is version "
+				throw new SQLException("Database schema is version "
+						+ existingSchema + " but Conserve is version "
 						+ schemaTypeVersion);
 			}
 
@@ -133,13 +140,16 @@ public class TableManager
 			{
 				if (!this.createSchema)
 				{
-					throw new SchemaPermissionException(Defaults.INDEX_TABLENAME
-							+ " does not exist, but can't create it.");
+					throw new SchemaPermissionException(
+							Defaults.INDEX_TABLENAME
+									+ " does not exist, but can't create it.");
 				}
 				createTable(
 						Defaults.INDEX_TABLENAME,
-						new String[] { "TABLE_NAME", "COLUMN_NAME", "INDEX_NAME" },
-						new String[] { adapter.getVarCharKeyword(), adapter.getVarCharKeyword(),
+						new String[] { "TABLE_NAME", "COLUMN_NAME",
+								"INDEX_NAME" },
+						new String[] { adapter.getVarCharKeyword(),
+								adapter.getVarCharKeyword(),
 								adapter.getVarCharKeyword() }, cw);
 			}
 			if (!tableExists(Defaults.IS_A_TABLENAME, cw))
@@ -149,51 +159,69 @@ public class TableManager
 					throw new SchemaPermissionException(Defaults.IS_A_TABLENAME
 							+ " does not exist, but can't create it.");
 				}
-				createTable(Defaults.IS_A_TABLENAME, new String[] { "SUPERCLASS", "SUBCLASS" },
-						new String[] { adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+				createTable(
+						Defaults.IS_A_TABLENAME,
+						new String[] { "SUPERCLASS", "SUBCLASS" },
+						new String[] { adapter.getVarCharIndexed(),
+								adapter.getVarCharIndexed() }, cw);
 				// create an index on the superclass name, since this is the
 				// one we will be searching for most frequently
-				createIndex(Defaults.IS_A_TABLENAME, new String[] { "SUPERCLASS" + adapter.getKeyLength() },
+				createIndex(Defaults.IS_A_TABLENAME,
+						new String[] { "SUPERCLASS" + adapter.getKeyLength() },
 						Defaults.IS_A_TABLENAME + "_SUPERCLASS_INDEX", cw);
 			}
 			if (!tableExists(Defaults.HAS_A_TABLENAME, cw))
 			{
 				if (!this.createSchema)
 				{
-					throw new SchemaPermissionException(Defaults.HAS_A_TABLENAME
-							+ " does not exist, but can't create it.");
+					throw new SchemaPermissionException(
+							Defaults.HAS_A_TABLENAME
+									+ " does not exist, but can't create it.");
 				}
 
 				createTable(
 						Defaults.HAS_A_TABLENAME,
-						new String[] { "OWNER_TABLE", "OWNER_ID", Defaults.RELATION_NAME_COL, "PROPERTY_TABLE",
+						new String[] { "OWNER_TABLE", "OWNER_ID",
+								Defaults.RELATION_NAME_COL, "PROPERTY_TABLE",
 								"PROPERTY_ID", "PROPERTY_CLASS" },
-						new String[] { adapter.getVarCharIndexed(), adapter.getLongTypeKeyword(),
-								adapter.getVarCharKeyword(), adapter.getVarCharIndexed(), adapter.getLongTypeKeyword(),
+						new String[] { adapter.getVarCharIndexed(),
+								adapter.getLongTypeKeyword(),
+								adapter.getVarCharKeyword(),
+								adapter.getVarCharIndexed(),
+								adapter.getLongTypeKeyword(),
 								adapter.getVarCharIndexed() }, cw);
 
 				// create an index on the tablename/id combinations, since
 				// this is the one we will be searching for most frequently
-				createIndex(Defaults.HAS_A_TABLENAME,
-						new String[] { "OWNER_TABLE" + adapter.getKeyLength(), "OWNER_ID" }, Defaults.HAS_A_TABLENAME
-								+ "_OWNER_INDEX", cw);
-				createIndex(Defaults.HAS_A_TABLENAME, new String[] { "PROPERTY_TABLE" + adapter.getKeyLength(),
-						"PROPERTY_ID" }, Defaults.HAS_A_TABLENAME + "_PROPERTY_INDEX", cw);
+				createIndex(Defaults.HAS_A_TABLENAME, new String[] {
+						"OWNER_TABLE" + adapter.getKeyLength(), "OWNER_ID" },
+						Defaults.HAS_A_TABLENAME + "_OWNER_INDEX", cw);
+				createIndex(Defaults.HAS_A_TABLENAME, new String[] {
+						"PROPERTY_TABLE" + adapter.getKeyLength(),
+						"PROPERTY_ID" }, Defaults.HAS_A_TABLENAME
+						+ "_PROPERTY_INDEX", cw);
 
 			}
 			if (!tableExists(Defaults.ARRAY_TABLENAME, cw))
 			{
 				if (!this.createSchema)
 				{
-					throw new SchemaPermissionException(Defaults.ARRAY_TABLENAME
-							+ " does not exist, but can't create it.");
+					throw new SchemaPermissionException(
+							Defaults.ARRAY_TABLENAME
+									+ " does not exist, but can't create it.");
 				}
 				if (adapter.isSupportsIdentity())
 				{
 					// create the table with an identity column
-					createTable(Defaults.ARRAY_TABLENAME, new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL,
-							Defaults.COMPONENT_CLASS_COL }, new String[] { adapter.getIdentity() + " PRIMARY KEY",
-							adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+					createTable(
+							Defaults.ARRAY_TABLENAME,
+							new String[] { Defaults.ID_COL,
+									Defaults.COMPONENT_TABLE_COL,
+									Defaults.COMPONENT_CLASS_COL },
+							new String[] {
+									adapter.getIdentity() + " PRIMARY KEY",
+									adapter.getVarCharIndexed(),
+									adapter.getVarCharIndexed() }, cw);
 				}
 				else
 				{
@@ -204,10 +232,14 @@ public class TableManager
 						// create the table as usual
 						createTable(
 								Defaults.ARRAY_TABLENAME,
-								new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL,
+								new String[] { Defaults.ID_COL,
+										Defaults.COMPONENT_TABLE_COL,
 										Defaults.COMPONENT_CLASS_COL },
-								new String[] { adapter.getLongTypeKeyword() + " PRIMARY KEY",
-										adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+								new String[] {
+										adapter.getLongTypeKeyword()
+												+ " PRIMARY KEY",
+										adapter.getVarCharIndexed(),
+										adapter.getVarCharIndexed() }, cw);
 						// create the trigger sequence
 						createTriggeredSequence(cw, Defaults.ARRAY_TABLENAME);
 
@@ -220,16 +252,18 @@ public class TableManager
 				}
 				// create an index on the id, as this is the one we
 				// will be searching for most frequently
-				createIndex(Defaults.ARRAY_TABLENAME, new String[] { Defaults.ID_COL }, Defaults.ARRAY_TABLENAME
-						+ "_INDEX", cw);
+				createIndex(Defaults.ARRAY_TABLENAME,
+						new String[] { Defaults.ID_COL },
+						Defaults.ARRAY_TABLENAME + "_INDEX", cw);
 			}
 
 			if (!tableExists(Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY, cw))
 			{
 				if (!this.createSchema)
 				{
-					throw new SchemaPermissionException(Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY
-							+ " does not exist, but can't create it.");
+					throw new SchemaPermissionException(
+							Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY
+									+ " does not exist, but can't create it.");
 				}
 				if (adapter.isSupportsIdentity())
 				{
@@ -237,7 +271,8 @@ public class TableManager
 					create.append(Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY);
 					create.append("(");
 					create.append(Defaults.ID_COL);
-					create.append(" " + adapter.getIdentity() + " PRIMARY KEY, ");
+					create.append(" " + adapter.getIdentity()
+							+ " PRIMARY KEY, ");
 					create.append(Defaults.ARRAY_POSITION);
 					create.append(" INT, ");
 					create.append(Defaults.COMPONENT_CLASS_COL);
@@ -259,7 +294,8 @@ public class TableManager
 					create.append(Defaults.ID_COL);
 					create.append("))");
 
-					PreparedStatement ps = cw.prepareStatement(create.toString());
+					PreparedStatement ps = cw.prepareStatement(create
+							.toString());
 					Tools.logFine(ps);
 					ps.execute();
 					ps.close();
@@ -272,7 +308,8 @@ public class TableManager
 					if (adapter.isSupportsTriggers())
 					{
 						// create the table as usual
-						StringBuilder create = new StringBuilder("CREATE TABLE ");
+						StringBuilder create = new StringBuilder(
+								"CREATE TABLE ");
 						create.append(Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY);
 						create.append("(");
 						create.append(Defaults.ID_COL);
@@ -300,13 +337,15 @@ public class TableManager
 						create.append(Defaults.ID_COL);
 						create.append("))");
 						String createString = create.toString();
-						PreparedStatement ps = cw.prepareStatement(createString);
+						PreparedStatement ps = cw
+								.prepareStatement(createString);
 						Tools.logFine(ps);
 						ps.execute();
 						ps.close();
 
 						// create the triggered sequence
-						createTriggeredSequence(cw, Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY);
+						createTriggeredSequence(cw,
+								Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY);
 
 					}
 					else
@@ -328,8 +367,10 @@ public class TableManager
 				// create the type table
 				createTable(
 						Defaults.TYPE_TABLENAME,
-						new String[] { "OWNER_TABLE", "COLUMN_NAME", "COLUMN_CLASS" },
-						new String[] { adapter.getVarCharIndexed(), adapter.getVarCharIndexed(),
+						new String[] { "OWNER_TABLE", "COLUMN_NAME",
+								"COLUMN_CLASS" },
+						new String[] { adapter.getVarCharIndexed(),
+								adapter.getVarCharIndexed(),
 								adapter.getVarCharIndexed() }, cw);
 
 			}
@@ -338,13 +379,17 @@ public class TableManager
 			{
 				if (!this.createSchema)
 				{
-					throw new SchemaPermissionException(Defaults.TABLE_NAME_TABLENAME
-							+ " does not exist, but can't create it.");
+					throw new SchemaPermissionException(
+							Defaults.TABLE_NAME_TABLENAME
+									+ " does not exist, but can't create it.");
 				}
 				// create the table to store associations between class names
 				// and table names
-				createTable(Defaults.TABLE_NAME_TABLENAME, new String[] { "CLASS", "TABLENAME" }, new String[] {
-						adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+				createTable(
+						Defaults.TABLE_NAME_TABLENAME,
+						new String[] { "CLASS", "TABLENAME" },
+						new String[] { adapter.getVarCharIndexed(),
+								adapter.getVarCharIndexed() }, cw);
 			}
 
 			// commit, return connection to pool
@@ -361,7 +406,8 @@ public class TableManager
 	 * @param existingSchema
 	 * @throws SQLException
 	 */
-	private void upgradeSchema(int existingSchema, ConnectionWrapper cw) throws SQLException
+	private void upgradeSchema(int existingSchema, ConnectionWrapper cw)
+			throws SQLException
 	{
 
 		// alter the schema
@@ -373,15 +419,19 @@ public class TableManager
 			if (tableExists(Defaults.ARRAY_TABLENAME, cw))
 			{
 				// rename COMPONENT_TYPE TO COMPONENT_TABLE
-				this.renameColumn(Defaults.ARRAY_TABLENAME, "COMPONENT_TYPE", Defaults.COMPONENT_TABLE_COL, cw);
+				this.renameColumn(Defaults.ARRAY_TABLENAME, "COMPONENT_TYPE",
+						Defaults.COMPONENT_TABLE_COL, cw);
 				// rename COMPONENT_CLASS_NAME TO COMPONENT_TYPE
-				this.renameColumn(Defaults.ARRAY_TABLENAME, "COMPONENT_CLASS_NAME", Defaults.COMPONENT_CLASS_COL, cw);
+				this.renameColumn(Defaults.ARRAY_TABLENAME,
+						"COMPONENT_CLASS_NAME", Defaults.COMPONENT_CLASS_COL,
+						cw);
 			}
 			// C__HAS_A
 			if (tableExists(Defaults.HAS_A_TABLENAME, cw))
 			{
 				// add RELATION_NAME column
-				this.createColumn(Defaults.HAS_A_TABLENAME, Defaults.RELATION_NAME_COL, String.class, cw);
+				this.createColumn(Defaults.HAS_A_TABLENAME,
+						Defaults.RELATION_NAME_COL, String.class, cw);
 				// get a map of all classes
 				List<Class<?>> classList = this.populateClassList(cw);
 				HashMap<String, Class<?>> tableNameMap = new HashMap<String, Class<?>>();
@@ -394,8 +444,10 @@ public class TableManager
 				// for each entry in C__HAS_A with a null RELATION_NAME and a
 				// non-null OWNER_TABLE, do the following:
 
-				String commandString = "SELECT * FROM " + Defaults.HAS_A_TABLENAME + " WHERE "
-						+ Defaults.RELATION_NAME_COL + " IS NULL AND OWNER_TABLE IS NOT NULL";
+				String commandString = "SELECT * FROM "
+						+ Defaults.HAS_A_TABLENAME + " WHERE "
+						+ Defaults.RELATION_NAME_COL
+						+ " IS NULL AND OWNER_TABLE IS NOT NULL";
 				PreparedStatement ps = cw.prepareStatement(commandString);
 				Tools.logFine(ps);
 				ResultSet rs = ps.executeQuery();
@@ -422,7 +474,8 @@ public class TableManager
 		}
 
 		// save the current version
-		String commandString = "UPDATE  " + Defaults.SCHEMA_VERSION_TABLENAME + " SET VERSION = ?";
+		String commandString = "UPDATE  " + Defaults.SCHEMA_VERSION_TABLENAME
+				+ " SET VERSION = ?";
 		PreparedStatement ps = cw.prepareStatement(commandString);
 		ps.setInt(1, schemaTypeVersion);
 		Tools.logFine(ps);
@@ -437,7 +490,8 @@ public class TableManager
 	 *            the name of the table to create a trigger for.
 	 * @throws SQLException
 	 */
-	private void createTriggeredSequence(ConnectionWrapper cw, String tableName) throws SQLException
+	private void createTriggeredSequence(ConnectionWrapper cw, String tableName)
+			throws SQLException
 	{
 
 		// create a thread-safe sequence
@@ -449,9 +503,12 @@ public class TableManager
 		ps.close();
 		// create a trigger that updates on insert of the desired table
 		String triggerName = Tools.getTriggerName(tableName, adapter);
-		String toExectue = "CREATE TRIGGER " + triggerName + " FOR " + tableName + " ACTIVE BEFORE INSERT POSITION 0\n"
-				+ "AS\n" + "BEGIN \n" + "if (NEW." + Defaults.ID_COL + " is NULL) then NEW." + Defaults.ID_COL
-				+ " = GEN_ID(" + sequenceName + ", 1);\n" + "RDB$SET_CONTEXT('USER_SESSION', 'LAST__INSERT__ID', new."
+		String toExectue = "CREATE TRIGGER " + triggerName + " FOR "
+				+ tableName + " ACTIVE BEFORE INSERT POSITION 0\n" + "AS\n"
+				+ "BEGIN \n" + "if (NEW." + Defaults.ID_COL
+				+ " is NULL) then NEW." + Defaults.ID_COL + " = GEN_ID("
+				+ sequenceName + ", 1);\n"
+				+ "RDB$SET_CONTEXT('USER_SESSION', 'LAST__INSERT__ID', new."
 				+ Defaults.ID_COL + ");\n" + "END";
 		ps = cw.prepareStatement(toExectue);
 		Tools.logFine(ps);
@@ -470,16 +527,20 @@ public class TableManager
 	 * @param objRes
 	 *            .getTableName() the name of the database table.
 	 */
-	private boolean tableExists(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
+	private boolean tableExists(ObjectRepresentation objRes,
+			ConnectionWrapper cw) throws SQLException
 	{
 		return tableExists(objRes.getTableName(), cw);
 	}
 
-	public boolean tableExists(Class<?> clazz, ConnectionWrapper cw) throws SQLException
+	public boolean tableExists(Class<?> clazz, ConnectionWrapper cw)
+			throws SQLException
 	{
 		if (clazz.isArray())
 		{
-			return tableExists(NameGenerator.getArrayMemberTableName(clazz.getComponentType(), adapter), cw);
+			return tableExists(
+					NameGenerator.getArrayMemberTableName(
+							clazz.getComponentType(), adapter), cw);
 		}
 		else
 		{
@@ -498,7 +559,8 @@ public class TableManager
 	 * @return true if the table has this column, false otherwise.
 	 * @throws SQLException
 	 */
-	private boolean columnExists(String tableName, String columnName, ConnectionWrapper cw) throws SQLException
+	private boolean columnExists(String tableName, String columnName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		if (adapter.tableNamesAreLowerCase())
 		{
@@ -506,14 +568,16 @@ public class TableManager
 		}
 		Connection c = cw.getConnection();
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, columnName);
+		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName,
+				columnName);
 		boolean res = false;
 		if (rs.next())
 		{
 			res = true;
 			if (rs.next())
 			{
-				throw new SQLException("Multiple results found for table " + tableName + " and column " + columnName);
+				throw new SQLException("Multiple results found for table "
+						+ tableName + " and column " + columnName);
 			}
 		}
 		return res;
@@ -526,7 +590,8 @@ public class TableManager
 	 * @return true if the table exists, false otherwise.
 	 * @throws SQLException
 	 */
-	public boolean tableExists(String tableName, ConnectionWrapper cw) throws SQLException
+	public boolean tableExists(String tableName, ConnectionWrapper cw)
+			throws SQLException
 	{
 		if (adapter.tableNamesAreLowerCase())
 		{
@@ -534,26 +599,30 @@ public class TableManager
 		}
 		Connection c = cw.getConnection();
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getTables(c.getCatalog(), null, tableName, new String[] { "TABLE" });
+		ResultSet rs = metaData.getTables(c.getCatalog(), null, tableName,
+				new String[] { "TABLE" });
 		boolean res = false;
 		if (rs.next())
 		{
 			res = true;
 			if (rs.next())
 			{
-				throw new SQLException("Multiple results found for table " + tableName);
+				throw new SQLException("Multiple results found for table "
+						+ tableName);
 			}
 		}
 		rs.close();
 		return res;
 	}
 
-	private void createTable(ConcreteObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException,
+	private void createTable(ConcreteObjectRepresentation objRes,
+			ConnectionWrapper cw) throws SQLException,
 			SchemaPermissionException
 	{
 		if (!this.createSchema)
 		{
-			throw new SchemaPermissionException(objRes.getTableName() + " does not exist, but can't be created.");
+			throw new SchemaPermissionException(objRes.getTableName()
+					+ " does not exist, but can't be created.");
 		}
 		String createStatement = objRes.getTableCreationStatement(cw);
 
@@ -581,12 +650,14 @@ public class TableManager
 		if (!objRes.isPrimitive())
 		{
 			// store an association between the class name and the table name
-			setTableNameForClass(objRes.getSystemicName(), objRes.getTableName(), cw);
+			setTableNameForClass(objRes.getSystemicName(),
+					objRes.getTableName(), cw);
 		}
 		createIndicesForTable(objRes, cw);
 	}
 
-	private void createIndicesForTable(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
+	private void createIndicesForTable(ObjectRepresentation objRes,
+			ConnectionWrapper cw) throws SQLException
 	{
 		// get the set of index names
 		Set<String> indexNames = objRes.getIndexNames();
@@ -608,20 +679,23 @@ public class TableManager
 	 * 
 	 * @throws SQLException
 	 */
-	private void createClassRelation(Class<?> subClass, ConnectionWrapper cw) throws SQLException
+	private void createClassRelation(Class<?> subClass, ConnectionWrapper cw)
+			throws SQLException
 	{
 		String subClassName = NameGenerator.getSystemicName(subClass);
 		// insert relation for the superclass
 		Class<?> superClass = subClass.getSuperclass();
 		if (superClass != null)
 		{
-			addClassRelationConditionally(subClassName, NameGenerator.getSystemicName(superClass), cw);
+			addClassRelationConditionally(subClassName,
+					NameGenerator.getSystemicName(superClass), cw);
 		}
 		// insert relations for all interfaces
 		Class<?>[] interfaces = subClass.getInterfaces();
 		for (Class<?> infc : interfaces)
 		{
-			addClassRelationConditionally(subClassName, NameGenerator.getSystemicName(infc), cw);
+			addClassRelationConditionally(subClassName,
+					NameGenerator.getSystemicName(infc), cw);
 			// recurse into super-interfaces
 			createClassRelation(infc, cw);
 		}
@@ -641,10 +715,11 @@ public class TableManager
 	 * 
 	 * @throws SQLException
 	 */
-	private void addClassRelationConditionally(String subClass, String superClass, ConnectionWrapper cw)
-			throws SQLException
+	private void addClassRelationConditionally(String subClass,
+			String superClass, ConnectionWrapper cw) throws SQLException
 	{
-		PreparedStatement query = cw.prepareStatement("SELECT COUNT(*) FROM " + Defaults.IS_A_TABLENAME
+		PreparedStatement query = cw.prepareStatement("SELECT COUNT(*) FROM "
+				+ Defaults.IS_A_TABLENAME
 				+ " WHERE SUBCLASS = ? AND SUPERCLASS = ?");
 		query.setString(1, subClass);
 		query.setString(2, superClass);
@@ -667,8 +742,8 @@ public class TableManager
 		}
 	}
 
-	public void ensureColumnExists(String tableName, String columnName, Class<?> paramType, ConnectionWrapper cw)
-			throws SQLException
+	public void ensureColumnExists(String tableName, String columnName,
+			Class<?> paramType, ConnectionWrapper cw) throws SQLException
 	{
 		if (createSchema)
 		{
@@ -688,7 +763,8 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws SchemaPermissionException
 	 */
-	public void ensureTableExists(ConcreteObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
+	public void ensureTableExists(ConcreteObjectRepresentation objRes,
+			ConnectionWrapper cw) throws SQLException
 	{
 		if (createSchema)
 		{
@@ -714,15 +790,16 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws SchemaPermissionException
 	 */
-	public void ensureTableExists(Class<?> c, ConnectionWrapper cw) throws SQLException
+	public void ensureTableExists(Class<?> c, ConnectionWrapper cw)
+			throws SQLException
 	{
 		if (createSchema)
 		{
 			if (c != null)
 			{
 				ObjectStack oStack = new ObjectStack(this.adapter, c, null);
-				for(ObjectRepresentation rep:oStack.getAllRepresentations())
-				{					
+				for (ObjectRepresentation rep : oStack.getAllRepresentations())
+				{
 					ensureTableExists((ConcreteObjectRepresentation) rep, cw);
 				}
 			}
@@ -736,13 +813,16 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws
 	 */
-	private List<Class<?>> populateClassList(ConnectionWrapper cw) throws SQLException
+	private List<Class<?>> populateClassList(ConnectionWrapper cw)
+			throws SQLException
 	{
 		List<Class<?>> res = new ArrayList<Class<?>>();
 		try
 		{
 			// find all sub-classes
-			PreparedStatement ps = cw.prepareStatement("SELECT DISTINCT(SUBCLASS) FROM " + Defaults.IS_A_TABLENAME);
+			PreparedStatement ps = cw
+					.prepareStatement("SELECT DISTINCT(SUBCLASS) FROM "
+							+ Defaults.IS_A_TABLENAME);
 			Tools.logFine(ps);
 			if (ps.execute())
 			{
@@ -760,7 +840,8 @@ public class TableManager
 			}
 			ps.close();
 			// find all super-classes
-			ps = cw.prepareStatement("SELECT DISTINCT(SUPERCLASS) FROM " + Defaults.IS_A_TABLENAME);
+			ps = cw.prepareStatement("SELECT DISTINCT(SUPERCLASS) FROM "
+					+ Defaults.IS_A_TABLENAME);
 			Tools.logFine(ps);
 			if (ps.execute())
 			{
@@ -795,7 +876,8 @@ public class TableManager
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<Class<?>> getSubClasses(Class<?> superclass, ConnectionWrapper cw) throws SQLException
+	private List<Class<?>> getSubClasses(Class<?> superclass,
+			ConnectionWrapper cw) throws SQLException
 	{
 		List<Class<?>> res = new ArrayList<Class<?>>();
 		try
@@ -834,7 +916,8 @@ public class TableManager
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<String> getSubClassNames(Class<?> superclass, ConnectionWrapper cw) throws SQLException
+	private List<String> getSubClassNames(Class<?> superclass,
+			ConnectionWrapper cw) throws SQLException
 	{
 		List<String> res = new ArrayList<String>();
 		StringBuilder query = new StringBuilder("SELECT SUBCLASS FROM ");
@@ -865,7 +948,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void dropTableHelper(Class<?> c, ConnectionWrapper cw, List<Class<?>> classList) throws SQLException
+	private void dropTableHelper(Class<?> c, ConnectionWrapper cw,
+			List<Class<?>> classList) throws SQLException
 	{
 		// get the name of the table
 		String tableName = NameGenerator.getTableName(c, adapter);
@@ -875,7 +959,8 @@ public class TableManager
 			existingClasses.remove(c);
 
 			// remove all protection entries
-			adapter.getPersist().getProtectionManager().unprotectObjects(cw, tableName);
+			adapter.getPersist().getProtectionManager()
+					.unprotectObjects(cw, tableName);
 			// delete all instances of the class
 			adapter.getPersist().deleteObjects(cw, c, new All());
 			// drop table of subclasses
@@ -887,7 +972,8 @@ public class TableManager
 			// delete meta-info
 			deleteIsATableEntries(c, cw);
 			removeTypeInfo(tableName, cw);
-			removeTableNameForClass(NameGenerator.getSystemicName(c), tableName, cw);
+			removeTableNameForClass(NameGenerator.getSystemicName(c),
+					tableName, cw);
 
 			// drop the table
 			conditionalDelete(tableName, cw);
@@ -904,7 +990,8 @@ public class TableManager
 				ps.close();
 			}
 			// find all classes that reference c, delete them.
-			ArrayList<Class<?>> referencingClasses = getReferencingClasses(c, classList);
+			ArrayList<Class<?>> referencingClasses = getReferencingClasses(c,
+					classList);
 			for (Class<?> ref : referencingClasses)
 			{
 				dropTableHelper(ref, cw, classList);
@@ -913,7 +1000,8 @@ public class TableManager
 		}
 	}
 
-	private void conditionalDelete(String tableName, ConnectionWrapper cw) throws SQLException
+	private void conditionalDelete(String tableName, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder query = new StringBuilder("DROP TABLE ");
 		if (this.adapter.isSupportsExistsKeyword())
@@ -973,7 +1061,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void dropAllIndicesForTable(String tableName, ConnectionWrapper cw) throws SQLException
+	private void dropAllIndicesForTable(String tableName, ConnectionWrapper cw)
+			throws SQLException
 	{
 		// first, get a list of indices
 		StringBuilder queryString = new StringBuilder("SELECT INDEX_NAME FROM ");
@@ -1004,7 +1093,8 @@ public class TableManager
 	 *            the class to look for references to.
 	 * @return
 	 */
-	private ArrayList<Class<?>> getReferencingClasses(Class<?> c, List<Class<?>> classList)
+	private ArrayList<Class<?>> getReferencingClasses(Class<?> c,
+			List<Class<?>> classList)
 	{
 		// we don't care about self-reference
 		classList.remove(c);
@@ -1020,12 +1110,14 @@ public class TableManager
 				{
 					Class<?> propertyType = m.getReturnType();
 
-					if (m.isAnnotationPresent(AsClob.class) && m.getReturnType().equals(char[].class)
+					if (m.isAnnotationPresent(AsClob.class)
+							&& m.getReturnType().equals(char[].class)
 							&& adapter.isSupportsClob())
 					{
 						propertyType = Clob.class;
 					}
-					else if (m.isAnnotationPresent(AsBlob.class) && m.getReturnType().equals(byte[].class)
+					else if (m.isAnnotationPresent(AsBlob.class)
+							&& m.getReturnType().equals(byte[].class)
 							&& adapter.isSupportsBlob())
 					{
 						propertyType = Blob.class;
@@ -1049,7 +1141,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void deleteIsATableEntries(Class<?> c, ConnectionWrapper cw) throws SQLException
+	private void deleteIsATableEntries(Class<?> c, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder query = new StringBuilder("DELETE FROM ");
 		query.append(Defaults.IS_A_TABLENAME);
@@ -1064,6 +1157,42 @@ public class TableManager
 	}
 
 	/**
+	 * Delete all instances of superclass that are actually instances of subClass.
+	 * 
+	 * @param superClass
+	 * @param subClass
+	 * @param cw
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	private void deleteObsoleteSuperClassInstances(Class<?> superClass,
+			Class<?> subClass, ObjectStack oldStack, ConnectionWrapper cw) throws SQLException,
+			ClassNotFoundException
+	{
+		String tableName = NameGenerator.getTableName(superClass, adapter);
+		StringBuilder query = new StringBuilder("SELECT ");
+		query.append(Defaults.ID_COL);
+		query.append(" FROM ");
+		query.append(tableName);
+		query.append(" WHERE ");
+		query.append(Defaults.REAL_CLASS_COL);
+		query.append(" = ?");
+		PreparedStatement ps = cw.prepareStatement(query.toString());
+		ps.setString(1, NameGenerator.getSystemicName(subClass));
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		while(rs.next())
+		{
+			//get the database id of an entry that should be deleted
+			long id = rs.getLong(1);
+			adapter.getPersist().deleteObject(superClass, id, cw);
+		}
+		ps.close();
+		
+	}
+
+
+	/**
 	 * Delete the superclass-subclass relation for a pair of classes. Also
 	 * update protection entries and references that are no longer satisfied.
 	 * 
@@ -1075,8 +1204,8 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void deleteClassRelation(Class<?> superClass, Class<?> subClass, ConnectionWrapper cw) throws SQLException,
-			ClassNotFoundException
+	private void deleteClassRelation(Class<?> superClass, Class<?> subClass,
+			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
 		String superClassName = NameGenerator.getSystemicName(superClass);
 		String subClassName = NameGenerator.getSystemicName(subClass);
@@ -1091,14 +1220,26 @@ public class TableManager
 		ps.execute();
 		ps.close();
 
+		deleteProtectionEntriesFromClassRelation(superClass, subClass, cw);
+	}
+
+	private void deleteProtectionEntriesFromClassRelation(Class<?> superClass,
+			Class<?> subClass, ConnectionWrapper cw) throws SQLException,
+			ClassNotFoundException
+	{
+		String superClassName = NameGenerator.getSystemicName(superClass);
+		String subClassName = NameGenerator.getSystemicName(subClass);
+
 		// find all classes that reference superClass or one of its
 		// superclasses that are not common to the new superclass of
 		// subClass. If any instance points to an object that is really
 		// subClass, delete the protection entry. If the referenced object
 		// is unprotected, delete that too.
 
-		List<Class<?>> noLongerSupported = ObjectTools.getAllLegalReferenceTypes(superClass);
-		List<Class<?>> stillSupported = ObjectTools.getAllLegalReferenceTypes(subClass);
+		List<Class<?>> noLongerSupported = ObjectTools
+				.getAllLegalReferenceTypes(superClass);
+		List<Class<?>> stillSupported = ObjectTools
+				.getAllLegalReferenceTypes(subClass);
 		// remove all in noLongerSupported that are in stillSupported
 		for (int x = 0; x < noLongerSupported.size(); x++)
 		{
@@ -1114,7 +1255,8 @@ public class TableManager
 
 		// find all rows in C__TYPE_TABLE where COLUMN_CLASS is
 		// the old superclass.
-		query = new StringBuilder("SELECT OWNER_TABLE,COLUMN_NAME FROM ");
+		StringBuilder query = new StringBuilder(
+				"SELECT OWNER_TABLE,COLUMN_NAME FROM ");
 		query.append(Defaults.TYPE_TABLENAME);
 		query.append(" WHERE COLUMN_CLASS = ?");
 		PreparedStatement stmt = cw.prepareStatement(query.toString());
@@ -1128,7 +1270,8 @@ public class TableManager
 			// find all entries in C__HAS_A (protection entries) where owner
 			// and relation name is from the search results, and property is
 			// the new subclass
-			query = new StringBuilder("SELECT OWNER_ID,PROPERTY_TABLE, PROPERTY_ID FROM ");
+			query = new StringBuilder(
+					"SELECT OWNER_ID,PROPERTY_TABLE, PROPERTY_ID FROM ");
 			query.append(Defaults.HAS_A_TABLENAME);
 			query.append(" WHERE OWNER_TABLE=? AND RELATION_NAME=? AND PROPERTY_CLASS=?");
 			PreparedStatement innerStmt = cw.prepareStatement(query.toString());
@@ -1140,14 +1283,18 @@ public class TableManager
 			while (innerRes.next())
 			{
 				// remove the reference
-				setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
+				setReferenceTo(ownerTable, innerRes.getLong(1), relationName,
+						null, cw);
 				// remove protection entry
-				pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2), innerRes.getLong(3),
-						cw);
+				pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1),
+						innerRes.getString(2), innerRes.getLong(3), cw);
 				// if item is unprotected, remove it
-				if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
+				if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3),
+						cw))
 				{
-					adapter.getPersist().deleteObject(innerRes.getString(2), innerRes.getLong(3), cw);
+					Class<?>lookUpClass = ObjectTools.lookUpClass(getClassForTableName(innerRes.getString(2),cw), adapter);
+					adapter.getPersist().deleteObject(lookUpClass,
+							innerRes.getLong(3), cw);
 				}
 			}
 			innerStmt.close();
@@ -1159,7 +1306,7 @@ public class TableManager
 		List<Class<?>> subs = getSubClasses(subClass, cw);
 		for (Class<?> sub : subs)
 		{
-			deleteClassRelation(superClass, sub, cw);
+			deleteProtectionEntriesFromClassRelation(superClass, sub, cw);
 		}
 	}
 
@@ -1175,7 +1322,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public synchronized void dropTableForClass(Class<?> c, ConnectionWrapper cw) throws SQLException
+	public synchronized void dropTableForClass(Class<?> c, ConnectionWrapper cw)
+			throws SQLException
 	{
 		// only drop tables if we can create tables.
 		if (this.createSchema)
@@ -1200,8 +1348,9 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void changeColumnType(String tableName, String column, Class<?> oldClass, Class<?> nuClass,
-			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	private void changeColumnType(String tableName, String column,
+			Class<?> oldClass, Class<?> nuClass, ConnectionWrapper cw)
+			throws SQLException, ClassNotFoundException
 	{
 		String oldType = adapter.getColumnType(oldClass, null);
 		String nuType = adapter.getColumnType(nuClass, null);
@@ -1254,8 +1403,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void copyValues(String tableName, String fromColumn, String toColumn, ConnectionWrapper cw)
-			throws SQLException
+	private void copyValues(String tableName, String fromColumn,
+			String toColumn, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("UPDATE ");
 		sb.append(tableName);
@@ -1278,8 +1427,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void renameColumn(String tableName, String oldName, String nuName, ConnectionWrapper cw)
-			throws SQLException
+	private void renameColumn(String tableName, String oldName, String nuName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		// check that the old column exists
 		if (adapter.tableNamesAreLowerCase())
@@ -1292,10 +1441,15 @@ public class TableManager
 			if (adapter.canRenameColumn())
 			{
 				String statement = adapter.getRenameColumnStatement();
-				statement = statement.replace(Defaults.TABLENAME_PLACEHOLDER, tableName);
-				statement = statement.replace(Defaults.OLD_COLUMN_NAME_PLACEHOLDER, oldName);
-				statement = statement.replace(Defaults.NEW_COLUMN_NAME_PLACEHOLDER, nuName);
-				statement = statement.replace(Defaults.NEW_COLUMN_DESCRIPTION_PLACEHOLDER, columns.get(oldName));
+				statement = statement.replace(Defaults.TABLENAME_PLACEHOLDER,
+						tableName);
+				statement = statement.replace(
+						Defaults.OLD_COLUMN_NAME_PLACEHOLDER, oldName);
+				statement = statement.replace(
+						Defaults.NEW_COLUMN_NAME_PLACEHOLDER, nuName);
+				statement = statement.replace(
+						Defaults.NEW_COLUMN_DESCRIPTION_PLACEHOLDER,
+						columns.get(oldName));
 				PreparedStatement ps = cw.prepareStatement(statement);
 				Tools.logFine(ps);
 				ps.executeUpdate();
@@ -1306,7 +1460,8 @@ public class TableManager
 				// can't rename column
 
 				// get the old colums
-				Map<String, String> oldCols = this.getDatabaseColumns(tableName, cw);
+				Map<String, String> oldCols = this.getDatabaseColumns(
+						tableName, cw);
 				Map<String, String> nuCols = new HashMap<String, String>();
 				nuCols.putAll(oldCols);
 				// rename the column in nuCols
@@ -1320,7 +1475,8 @@ public class TableManager
 				}
 				while (temporaryName.length() > adapter.getMaximumNameLength())
 				{
-					temporaryName = temporaryName.substring(0, temporaryName.length() - 1);
+					temporaryName = temporaryName.substring(0,
+							temporaryName.length() - 1);
 				}
 				StringBuilder stmt = new StringBuilder("CREATE TABLE ");
 				stmt.append(temporaryName);
@@ -1412,8 +1568,9 @@ public class TableManager
 	 * @throws SchemaPermissionException
 	 * @throws ClassNotFoundException
 	 */
-	public void updateTableForClass(Class<?> klass, ConnectionWrapper cw) throws SQLException,
-			SchemaPermissionException, ClassNotFoundException
+	public void updateTableForClass(Class<?> klass, ConnectionWrapper cw)
+			throws SQLException, SchemaPermissionException,
+			ClassNotFoundException
 	{
 		// only update tables if we are allowed to
 		if (this.createSchema)
@@ -1423,14 +1580,16 @@ public class TableManager
 			{
 				// get info on the superclass
 				Class<?> superClass = klass.getSuperclass();
-				String superClassName = NameGenerator.getSystemicName(superClass);
+				String superClassName = NameGenerator
+						.getSystemicName(superClass);
 
 				// read the objectstack from the database
 				ObjectStack oldObjectStack = new ObjectStack(cw, adapter, klass);
 				ObjectStack nuObjectStack = new ObjectStack(adapter, klass);
 
 				// get the superclasses according to the database
-				List<Class<?>> superClasses = oldObjectStack.getSuperClasses(klass);
+				List<Class<?>> superClasses = oldObjectStack
+						.getSuperClasses(klass);
 
 				// check if the real superclass is correctly indicated by the
 				// database
@@ -1438,13 +1597,21 @@ public class TableManager
 				{
 					// klass has been moved, it now has a new superclass.
 					SubclassMover sm = new SubclassMover(adapter);
-					sm.move(oldObjectStack, nuObjectStack, nuObjectStack.getActualRepresentation(), cw);
+					sm.move(oldObjectStack, nuObjectStack,
+							nuObjectStack.getActualRepresentation(), cw);
 					// update the C_IS_A table to reflect new superclass
-					addClassRelation(NameGenerator.getSystemicName(klass), superClassName, cw);
-					Class<?> oldSuperClass = oldObjectStack.getRepresentation(oldObjectStack.getLevel(klass) - 1)
+					addClassRelation(NameGenerator.getSystemicName(klass),
+							superClassName, cw);
+					Class<?> oldSuperClass = oldObjectStack.getRepresentation(
+							oldObjectStack.getLevel(klass) - 1)
 							.getRepresentedClass();
 					deleteClassRelation(oldSuperClass, klass, cw);
 				}
+
+				// TODO: Code for altering superclasses and implemented
+				// interfaces should be unified,
+				// as there is no longer any difference between the two in how
+				// they are represented
 
 				// make sure each entry in superClasses is still in the current
 				// list
@@ -1470,6 +1637,9 @@ public class TableManager
 							// the superclass is no longer a superclass
 							// delete the entry
 							deleteClassRelation(dbSuperClass, klass, cw);
+							// remove the instances of dbSuperClass that are
+							// superclasses of klass, recursively
+							deleteObsoleteSuperClassInstances(dbSuperClass, klass, oldObjectStack,cw);
 						}
 					}
 				}
@@ -1481,7 +1651,8 @@ public class TableManager
 					if (!superClasses.contains(iface))
 					{
 						// update the C_IS_A table to reflect new interface
-						addClassRelation(NameGenerator.getSystemicName(klass), NameGenerator.getSystemicName(iface), cw);
+						addClassRelation(NameGenerator.getSystemicName(klass),
+								NameGenerator.getSystemicName(iface), cw);
 					}
 				}
 
@@ -1508,10 +1679,13 @@ public class TableManager
 							// this adapter relies on sequences, so drop the
 							// corresponding
 							// sequence
-							String sequenceName = Tools.getSequenceName(tableName, adapter);
-							String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
+							String sequenceName = Tools.getSequenceName(
+									tableName, adapter);
+							String dropGeneratorQuery = "DROP GENERATOR "
+									+ sequenceName;
 
-							PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
+							PreparedStatement ps = cw
+									.prepareStatement(dropGeneratorQuery);
 							Tools.logFine(ps);
 							ps.execute();
 							ps.close();
@@ -1521,18 +1695,23 @@ public class TableManager
 						// it
 
 						// update subclass entries
-						dropAllSubclassEntries(NameGenerator.getTableName(klass, adapter), subClass, cw);
+						dropAllSubclassEntries(
+								NameGenerator.getTableName(klass, adapter),
+								subClass, cw);
 
 						// update protection entries
-						updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", tableName,
+						updateAllRelations(Defaults.HAS_A_TABLENAME,
+								"PROPERTY_TABLE", tableName,
 								NameGenerator.getTableName(klass, adapter), cw);
-						updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", subClass,
+						updateAllRelations(Defaults.HAS_A_TABLENAME,
+								"PROPERTY_CLASS", subClass,
 								NameGenerator.getSystemicName(klass), cw);
 
 						// update type table: only property class, as no
 						// properties should be left in the subclass before
 						// removing it
-						updateAllRelations(Defaults.TYPE_TABLENAME, "COLUMN_CLASS", subClass,
+						updateAllRelations(Defaults.TYPE_TABLENAME,
+								"COLUMN_CLASS", subClass,
 								NameGenerator.getSystemicName(klass), cw);
 
 					}
@@ -1541,25 +1720,31 @@ public class TableManager
 				// Check if any property has been moved up or down
 				for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
 				{
-					String tablename = nuObjectStack.getRepresentation(level).getTableName();
+					String tablename = nuObjectStack.getRepresentation(level)
+							.getTableName();
 					// find the list of name type pairs for the corresponding
 					// database table
-					Map<String, String> valueTypeMap = getDatabaseColumns(tablename, cw);
+					Map<String, String> valueTypeMap = getDatabaseColumns(
+							tablename, cw);
 
 					for (Entry<String, String> en : valueTypeMap.entrySet())
 					{
 						String colName = en.getKey();
-						Integer correctLevel = nuObjectStack.getRepresentationLevel(colName);
+						Integer correctLevel = nuObjectStack
+								.getRepresentationLevel(colName);
 						if (correctLevel != null && correctLevel != level)
 						{
-							moveField(nuObjectStack, colName, level, correctLevel, cw);
+							moveField(nuObjectStack, colName, level,
+									correctLevel, cw);
 						}
 					}
 
 				}
 
-				ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
-				ObjectRepresentation toRep = nuObjectStack.getActualRepresentation();
+				ObjectRepresentation fromRep = new DatabaseObjectRepresentation(
+						adapter, klass, cw);
+				ObjectRepresentation toRep = nuObjectStack
+						.getActualRepresentation();
 
 				try
 				{
@@ -1568,35 +1753,47 @@ public class TableManager
 					{
 						if (change.isDeletion())
 						{
-							dropColumn(toRep.getTableName(), change.getFromName(), cw);
+							dropColumn(toRep.getTableName(),
+									change.getFromName(), cw);
 						}
 						else if (change.isCreation())
 						{
-							createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+							createColumn(toRep.getTableName(),
+									change.getToName(), change.getToClass(), cw);
 						}
 						else if (change.isNameChange())
 						{
-							renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
+							renameColumn(toRep.getTableName(),
+									change.getFromName(), change.getToName(),
+									cw);
 						}
 						else if (change.isTypeChange())
 						{
-							if (CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
+							if (CompabilityCalculator.calculate(
+									change.getFromClass(), change.getToClass()))
 							{
 								// there is a conversion available
 								// change the column type
-								changeColumnType(toRep.getTableName(), change.getToName(), change.getFromClass(),
+								changeColumnType(toRep.getTableName(),
+										change.getToName(),
+										change.getFromClass(),
 										change.getToClass(), cw);
 
 								// Update object references and remove
 								// incompatible entries
-								updateReferences(toRep.getTableName(), change.getToName(), change.getFromClass(),
+								updateReferences(toRep.getTableName(),
+										change.getToName(),
+										change.getFromClass(),
 										change.getToClass(), cw);
 							}
 							else
 							{
 								// no conversion, drop and recreate.
-								dropColumn(toRep.getTableName(), change.getFromName(), cw);
-								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+								dropColumn(toRep.getTableName(),
+										change.getFromName(), cw);
+								createColumn(toRep.getTableName(),
+										change.getToName(),
+										change.getToClass(), cw);
 							}
 						}
 						else if (change.isIndexChange())
@@ -1614,7 +1811,8 @@ public class TableManager
 		}
 		else
 		{
-			throw new SchemaPermissionException("We do not have permission to change the database schema.");
+			throw new SchemaPermissionException(
+					"We do not have permission to change the database schema.");
 		}
 	}
 
@@ -1625,7 +1823,8 @@ public class TableManager
 	 *            the description of the class to change
 	 * @throws SQLException
 	 */
-	private void recreateIndices(ObjectRepresentation objRep, ConnectionWrapper cw) throws SQLException
+	private void recreateIndices(ObjectRepresentation objRep,
+			ConnectionWrapper cw) throws SQLException
 	{
 		dropAllIndicesForTable(objRep.getTableName(), cw);
 		createIndicesForTable(objRep, cw);
@@ -1642,22 +1841,31 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void moveField(ObjectStack nuObjectStack, String colName, int fromLevel, int toLevel, ConnectionWrapper cw)
+	private void moveField(ObjectStack nuObjectStack, String colName,
+			int fromLevel, int toLevel, ConnectionWrapper cw)
 			throws SQLException
 	{
 		// generate aliases
 		UniqueIdTree idTree = new UniqueIdTree(new UniqueIdGenerator());
 		idTree.nameStack(nuObjectStack);
 
-		String fromTable = nuObjectStack.getRepresentation(fromLevel).getTableName();
-		String fromTableAs = nuObjectStack.getRepresentation(fromLevel).getAsName();
-		String toTable = nuObjectStack.getRepresentation(toLevel).getTableName();
+		String fromTable = nuObjectStack.getRepresentation(fromLevel)
+				.getTableName();
+		String fromTableAs = nuObjectStack.getRepresentation(fromLevel)
+				.getAsName();
+		String toTable = nuObjectStack.getRepresentation(toLevel)
+				.getTableName();
 		String toTableAs = nuObjectStack.getRepresentation(toLevel).getAsName();
 
 		// create a new field of the right type in toTable
-		ensureColumnExists(toTable, colName, nuObjectStack.getRepresentation(toLevel).getReturnType(colName), cw);
+		ensureColumnExists(
+				toTable,
+				colName,
+				nuObjectStack.getRepresentation(toLevel).getReturnType(colName),
+				cw);
 
-		IdStatementGenerator idGen = new IdStatementGenerator(adapter, nuObjectStack, true);
+		IdStatementGenerator idGen = new IdStatementGenerator(adapter,
+				nuObjectStack, true);
 		int minLevel = Math.min(fromLevel, toLevel);
 
 		// copy the values
@@ -1685,7 +1893,8 @@ public class TableManager
 		}
 		else
 		{
-			String idStatement = idGen.generateInnerJoins(new String[] { fromTable, toTable });
+			String idStatement = idGen.generateInnerJoins(new String[] {
+					fromTable, toTable });
 			// underlying database does not support joins in UPDATE statements,
 			// use alternate form
 			sb.append("REPLACE INTO ");
@@ -1714,7 +1923,8 @@ public class TableManager
 			if (o.isRequiresvalue())
 			{
 				index++;
-				Tools.setParameter(ps, o.getValue().getClass(), index, o.getValue());
+				Tools.setParameter(ps, o.getValue().getClass(), index,
+						o.getValue());
 			}
 		}
 		Tools.logFine(ps);
@@ -1758,8 +1968,9 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void updateReferences(String tableName, String colName, Class<?> currentType, Class<?> nuType,
-			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	private void updateReferences(String tableName, String colName,
+			Class<?> currentType, Class<?> nuType, ConnectionWrapper cw)
+			throws SQLException, ClassNotFoundException
 	{
 
 		// Get affected entries from HAS_A table
@@ -1789,12 +2000,14 @@ public class TableManager
 			String propertyTable = rs.getString(2);
 			Long propertyId = rs.getLong(3);
 			String propertyClassName = rs.getString(4);
-			Class<?> sourceClass = ObjectTools.lookUpClass(propertyClassName, adapter);
+			Class<?> sourceClass = ObjectTools.lookUpClass(propertyClassName,
+					adapter);
 			// check compatibility
 			if (ObjectTools.isA(sourceClass, nuType))
 			{
-				//cast the property id from currentType to nuType
-				Long castPropertyId = adapter.getPersist().getCastId(nuType, sourceClass, propertyId, cw);
+				// cast the property id from currentType to nuType
+				Long castPropertyId = adapter.getPersist().getCastId(nuType,
+						sourceClass, propertyId, cw);
 				// update the reference id
 				setReferenceTo(tableName, ownerId, colName, castPropertyId, cw);
 			}
@@ -1804,12 +2017,14 @@ public class TableManager
 				// null the reference in the owner table
 				setReferenceTo(tableName, ownerId, colName, null, cw);
 				// remove protection
-				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
+				pm.unprotectObjectInternal(tableName, ownerId, propertyTable,
+						propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
 					// then delete the entity
-					adapter.getPersist().deleteObject(sourceClass, propertyId, cw);
+					adapter.getPersist().deleteObject(sourceClass, propertyId,
+							cw);
 				}
 			}
 		}
@@ -1831,8 +2046,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void setReferenceTo(String tableName, Long id, String colName, Long nuReference, ConnectionWrapper cw)
-			throws SQLException
+	private void setReferenceTo(String tableName, Long id, String colName,
+			Long nuReference, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder("UPDATE ");
 		statement.append(tableName);
@@ -1871,9 +2086,11 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void addClassRelation(String className, String superClassName, ConnectionWrapper cw) throws SQLException
+	private void addClassRelation(String className, String superClassName,
+			ConnectionWrapper cw) throws SQLException
 	{
-		PreparedStatement ps = cw.prepareStatement("INSERT INTO " + Defaults.IS_A_TABLENAME
+		PreparedStatement ps = cw.prepareStatement("INSERT INTO "
+				+ Defaults.IS_A_TABLENAME
 				+ " (SUBCLASS,SUPERCLASS) values (?,?)");
 		ps.setString(1, className);
 		ps.setString(2, superClassName);
@@ -1891,16 +2108,17 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void createColumn(String tableName, String columnName, Class<?> returnType, ConnectionWrapper cw)
-			throws SQLException
+	private void createColumn(String tableName, String columnName,
+			Class<?> returnType, ConnectionWrapper cw) throws SQLException
 	{
 		String columnType = adapter.getColumnType(returnType, null).trim();
-		PreparedStatement ps = cw
-				.prepareStatement("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnType);
+		PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + tableName
+				+ " ADD " + columnName + " " + columnType);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		addTypeInfo(tableName, columnName, NameGenerator.getSystemicName(returnType), cw);
+		addTypeInfo(tableName, columnName,
+				NameGenerator.getSystemicName(returnType), cw);
 	}
 
 	/**
@@ -1912,8 +2130,8 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	public void dropColumn(String tableName, String column, ConnectionWrapper cw) throws SQLException,
-			ClassNotFoundException
+	public void dropColumn(String tableName, String column, ConnectionWrapper cw)
+			throws SQLException, ClassNotFoundException
 	{
 		dropUprotectedReferences(tableName, column, cw);
 		if (adapter.canDropColumn())
@@ -1940,14 +2158,16 @@ public class TableManager
 			}
 			while (tempTableName.length() > adapter.getMaximumNameLength())
 			{
-				tempTableName = tempTableName.substring(0, tempTableName.length() - 1);
+				tempTableName = tempTableName.substring(0,
+						tempTableName.length() - 1);
 			}
 			setTableName(tableName, tempTableName, cw);
 
 			// 2. create a new table with same columns minus the one we want to
 			// remove and
 			// 3. copy data from old table to new table
-			cloneTableWithoutColumns(tempTableName, tableName, new String[] { column }, cw);
+			cloneTableWithoutColumns(tempTableName, tableName,
+					new String[] { column }, cw);
 
 			// 4. drop old table
 			conditionalDelete(tempTableName, cw);
@@ -1970,8 +2190,9 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void cloneTableWithoutColumns(String oldTableName, String nuTableName, String[] columnsToDrop,
-			ConnectionWrapper cw) throws SQLException
+	private void cloneTableWithoutColumns(String oldTableName,
+			String nuTableName, String[] columnsToDrop, ConnectionWrapper cw)
+			throws SQLException
 	{
 
 		// get the old colums
@@ -2056,8 +2277,8 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void dropUprotectedReferences(String tableName, String column, ConnectionWrapper cw) throws SQLException,
-			ClassNotFoundException
+	private void dropUprotectedReferences(String tableName, String column,
+			ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
 		// Get affected entries from HAS_A table
 		StringBuilder statement = new StringBuilder("SELECT ");
@@ -2087,19 +2308,22 @@ public class TableManager
 			if (propertyClassName != null)
 			{
 				// remove protection
-				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
+				pm.unprotectObjectInternal(tableName, ownerId, propertyTable,
+						propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
 					// then delete the entity
-					Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);
+					Class<?> c = ObjectTools.lookUpClass(propertyClassName,
+							adapter);
 					adapter.getPersist().deleteObject(c, propertyId, cw);
 				}
 			}
 			else
 			{
 				// we're dealing with an array, delete it especially
-				adapter.getPersist().deleteObject(propertyTable, propertyId, cw);
+				adapter.getPersist()
+						.deleteObject(propertyTable, propertyId, cw);
 			}
 		}
 		rs.close();
@@ -2114,7 +2338,8 @@ public class TableManager
 	 * @return
 	 * @throws SQLException
 	 */
-	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
+	public Map<String, String> getDatabaseColumns(String tableName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		// TODO: Use metadata table instead
 		Map<String, String> res = new HashMap<String, String>();
@@ -2122,7 +2347,8 @@ public class TableManager
 		Connection c = cw.getConnection();
 
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, null);
+		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName,
+				null);
 		while (rs.next())
 		{
 			res.put(rs.getString(4), rs.getString(6));
@@ -2138,7 +2364,8 @@ public class TableManager
 	 * @param newName
 	 * @throws SQLException
 	 */
-	public void setTableName(String oldName, String newName, ConnectionWrapper cw) throws SQLException
+	public void setTableName(String oldName, String newName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		if (tableExists(oldName, cw))
 		{
@@ -2152,10 +2379,13 @@ public class TableManager
 					// this adapter relies on sequences, so drop the
 					// corresponding
 					// sequence
-					String sequenceName = Tools.getSequenceName(oldName, adapter);
-					String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
+					String sequenceName = Tools.getSequenceName(oldName,
+							adapter);
+					String dropGeneratorQuery = "DROP GENERATOR "
+							+ sequenceName;
 
-					PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
+					PreparedStatement ps = cw
+							.prepareStatement(dropGeneratorQuery);
 					Tools.logFine(ps);
 					ps.execute();
 					ps.close();
@@ -2164,7 +2394,8 @@ public class TableManager
 			else
 			{
 				// new table does not exist, rename old table
-				String tableRenameStmt = adapter.getTableRenameStatement(oldName, newName);
+				String tableRenameStmt = adapter.getTableRenameStatement(
+						oldName, newName);
 				PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
 				Tools.logFine(ps);
 				ps.execute();
@@ -2173,8 +2404,8 @@ public class TableManager
 		}
 	}
 
-	public void changeTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw)
-			throws SQLException
+	public void changeTypeInfo(String tableName, String propertyName,
+			Class<?> returnType, ConnectionWrapper cw) throws SQLException
 	{
 		removeTypeInfo(tableName, propertyName, cw);
 		addTypeInfo(tableName, propertyName, returnType, cw);
@@ -2189,10 +2420,11 @@ public class TableManager
 	 * @param returnType
 	 * @throws SQLException
 	 */
-	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw)
-			throws SQLException
+	public void addTypeInfo(String tableName, String propertyName,
+			Class<?> returnType, ConnectionWrapper cw) throws SQLException
 	{
-		addTypeInfo(tableName, propertyName, NameGenerator.getSystemicName(returnType), cw);
+		addTypeInfo(tableName, propertyName,
+				NameGenerator.getSystemicName(returnType), cw);
 	}
 
 	/**
@@ -2204,8 +2436,8 @@ public class TableManager
 	 * @param returnType
 	 * @throws SQLException
 	 */
-	public void addTypeInfo(String tableName, String propertyName, String returnType, ConnectionWrapper cw)
-			throws SQLException
+	public void addTypeInfo(String tableName, String propertyName,
+			String returnType, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("INSERT INTO ");
 		stmt.append(Defaults.TYPE_TABLENAME);
@@ -2227,7 +2459,8 @@ public class TableManager
 	 * @param propertyName
 	 * @throws SQLException
 	 */
-	public void removeTypeInfo(String tableName, String propertyName, ConnectionWrapper cw) throws SQLException
+	public void removeTypeInfo(String tableName, String propertyName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("DELETE FROM ");
 		stmt.append(Defaults.TYPE_TABLENAME);
@@ -2246,7 +2479,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void removeTypeInfo(String tableName, ConnectionWrapper cw) throws SQLException
+	private void removeTypeInfo(String tableName, ConnectionWrapper cw)
+			throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("DELETE FROM ");
 		stmt.append(Defaults.TYPE_TABLENAME);
@@ -2267,7 +2501,8 @@ public class TableManager
 	 *            the name of the table for the class.
 	 * @throws SQLException
 	 */
-	private void setTableNameForClass(String className, String tableName, ConnectionWrapper cw) throws SQLException
+	private void setTableNameForClass(String className, String tableName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("INSERT INTO ");
 		stmt.append(Defaults.TABLE_NAME_TABLENAME);
@@ -2294,7 +2529,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void removeTableNameForClass(String className, String tableName, ConnectionWrapper cw) throws SQLException
+	private void removeTableNameForClass(String className, String tableName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("DELETE FROM ");
 		stmt.append(Defaults.TABLE_NAME_TABLENAME);
@@ -2341,7 +2577,8 @@ public class TableManager
 	 * @return the table name.
 	 * @throws SQLException
 	 */
-	public String getTableNameForClass(String className, ConnectionWrapper cw) throws SQLException
+	public String getTableNameForClass(String className, ConnectionWrapper cw)
+			throws SQLException
 	{
 		String res = null;
 		StringBuilder stmt = new StringBuilder("SELECT TABLENAME FROM ");
@@ -2369,7 +2606,8 @@ public class TableManager
 	 *         that belongs to the given table.
 	 * @throws SQLException
 	 */
-	public String getClassForTableName(String tableName, ConnectionWrapper cw) throws SQLException
+	public String getClassForTableName(String tableName, ConnectionWrapper cw)
+			throws SQLException
 	{
 		String res = null;
 		StringBuilder stmt = new StringBuilder("SELECT CLASS FROM ");
@@ -2397,7 +2635,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void updateAllRelations(String table, String column, String oldValue, String newValue, ConnectionWrapper cw)
+	private void updateAllRelations(String table, String column,
+			String oldValue, String newValue, ConnectionWrapper cw)
 			throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("UPDATE ");
@@ -2415,8 +2654,8 @@ public class TableManager
 		ps.close();
 	}
 
-	private void dropAllSubclassEntries(String superClassTable, String subClassName, ConnectionWrapper cw)
-			throws SQLException
+	private void dropAllSubclassEntries(String superClassTable,
+			String subClassName, ConnectionWrapper cw) throws SQLException
 	{
 		// delete the subclass from C__IS_A table
 		StringBuilder stmt = new StringBuilder("DELETE FROM ");
@@ -2452,12 +2691,13 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void createTable(String tableName, String[] columnNames, String[] columnTypes, ConnectionWrapper cw)
-			throws SQLException
+	private void createTable(String tableName, String[] columnNames,
+			String[] columnTypes, ConnectionWrapper cw) throws SQLException
 	{
 		if (columnNames.length != columnTypes.length)
 		{
-			throw new IllegalArgumentException("List of column names and column types must have equal length.");
+			throw new IllegalArgumentException(
+					"List of column names and column types must have equal length.");
 		}
 		StringBuilder create = new StringBuilder("CREATE TABLE ");
 		create.append(tableName);
@@ -2496,7 +2736,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public void createIndex(String table, String[] columns, String indexName, ConnectionWrapper cw) throws SQLException
+	public void createIndex(String table, String[] columns, String indexName,
+			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder commandString = new StringBuilder("CREATE INDEX ");
 		commandString.append(indexName);
@@ -2520,7 +2761,8 @@ public class TableManager
 		// add a row in the C__INDEX table for each link
 		commandString = new StringBuilder("INSERT INTO ");
 		commandString.append(Defaults.INDEX_TABLENAME);
-		commandString.append("(TABLE_NAME,INDEX_NAME,COLUMN_NAME)VALUES(?,?,?)");
+		commandString
+				.append("(TABLE_NAME,INDEX_NAME,COLUMN_NAME)VALUES(?,?,?)");
 		for (String col : columns)
 		{
 			ps = cw.prepareStatement(commandString.toString());
@@ -2543,7 +2785,8 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
+	public void dropIndex(String table, String indexName, ConnectionWrapper cw)
+			throws SQLException
 	{
 		String statement = adapter.getDropIndexStatement(table, indexName);
 		PreparedStatement ps = cw.prepareStatement(statement);

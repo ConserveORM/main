@@ -340,6 +340,10 @@ public class StatementPrototypeGenerator
 		TreePathLister tpl = new TreePathLister();
 		List<List<ObjectRepresentation>> allPaths = tpl.generateLists(oStack);
 		tpl.prunePaths(allPaths);
+		if(!sel.isStrictInheritance())
+		{
+			tpl.pruneInheritance(allPaths,sel.getSelectionClass());
+		}
 
 		// go through the list of paths and add all relevant query parts
 		for (List<ObjectRepresentation> path : allPaths)
@@ -352,6 +356,12 @@ public class StatementPrototypeGenerator
 				if (subRep != null)
 				{
 					sp.getIdStatementGenerator().addLinkStatement(rep, subRep);
+				}
+				else
+				{
+					//make sure the class is in the link table		
+					sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
+					
 				}
 				// prepare for next step
 				subRep = rep;

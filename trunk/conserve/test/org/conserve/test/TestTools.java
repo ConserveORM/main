@@ -2,6 +2,7 @@ package org.conserve.test;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 import org.conserve.Persist;
 import org.conserve.adapter.AdapterBase;
@@ -10,6 +11,7 @@ import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.Tools;
+import org.conserve.tools.metadata.ObjectStack;
 
 /**
  * Tools that are used during testing.
@@ -128,16 +130,17 @@ public class TestTools
 			updateISArelation(oldClassName, newClassName, "SUPERCLASS", cw);
 			updateISArelation(oldClassName, newClassName, "SUBCLASS", cw);
 			// update superclasses
-			Class<?> superClass = newClass.getSuperclass();
-			if (superClass != null)
+			ObjectStack oldStack = new ObjectStack(adapter,oldClass);
+			List<Class<?>> superClasses = oldStack.getSuperClasses(oldClass);
+			for(Class<?>superClass:superClasses)
 			{
 				updateSuperClass(NameGenerator.getTableName(superClass, adapter), oldClassName, newClassName, cw);
-				// if the old superclass is different from the old
-				Class<?> oldSuperClass = oldClass.getSuperclass();
-				if (oldSuperClass != null && !oldSuperClass.equals(superClass))
-				{
-					updateSuperClass(NameGenerator.getTableName(oldSuperClass, adapter), oldClassName, newClassName, cw);
-				}
+			}
+			ObjectStack nuStack = new ObjectStack(adapter,newClass);
+			superClasses = nuStack.getSuperClasses(newClass);
+			for(Class<?>superClass:superClasses)
+			{
+				updateSuperClass(NameGenerator.getTableName(superClass, adapter), oldClassName, newClassName, cw);
 			}
 			// update array tables
 			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);

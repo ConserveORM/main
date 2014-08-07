@@ -410,7 +410,8 @@ public class ObjectTools
 	 */
 	public static boolean isValidMethod(Method m)
 	{
-		if ((!Modifier.isStatic(m.getModifiers()) && !m.getName().equals("getClass")
+		int mod = m.getModifiers();
+		if ((!Modifier.isStatic(mod) && !m.isSynthetic() &&  !m.getName().equals("getClass")
 				&& !m.isAnnotationPresent(Transient.class) && !m.getReturnType().equals(void.class)
 				&& (m.getName().startsWith("get") || m.getName().startsWith("is")) && m.getParameterTypes().length == 0))
 		{

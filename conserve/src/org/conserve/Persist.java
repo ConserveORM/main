@@ -743,8 +743,7 @@ public class Persist
 		catch (Exception e)
 		{
 			// cancel the operation
-			cw.commitAndDiscard();
-			//cw.rollbackAndDiscard();
+			cw.rollbackAndDiscard();
 			// re-throw the original exception
 			throw new SQLException(e);
 		}
@@ -2012,7 +2011,6 @@ public class Persist
 
 				// generate query
 				PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
-				Tools.logFine(ps);
 
 				// execute query
 				ResultSet rs = ps.executeQuery();

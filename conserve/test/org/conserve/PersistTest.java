@@ -910,7 +910,7 @@ public class PersistTest
 		HashSet<String> unorderedSearchSet = new HashSet<String>();
 		unorderedSearchSet.add("ANOTHER VALUE");
 		searchResults = persist.getObjects(Collection.class, new Equal(
-				unorderedSearchSet));
+				unorderedSearchSet,false));
 		// ensure that there are two
 		assertEquals(2, searchResults.size());
 

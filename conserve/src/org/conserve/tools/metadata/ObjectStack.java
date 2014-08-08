@@ -110,7 +110,8 @@ public class ObjectStack
 		// remove duplicate values
 		removeDuplicatedProperties();
 		// clean up the tree
-		removeDuplicatedNodes(representations.root,new ArrayList<Class<?>>(),new ArrayList<Node>());
+		removeDuplicatedNodes(representations.root, new ArrayList<Class<?>>(),
+				new ArrayList<Node>());
 
 		// check for implementations of Collection
 		if (this.getActualRepresentation().isImplementation(Collection.class))
@@ -142,7 +143,7 @@ public class ObjectStack
 			List<Node> nodes)
 	{
 		List<Node> supers = node.getSupers();
-		for (int x = 0;x<supers.size();x++)
+		for (int x = 0; x < supers.size(); x++)
 		{
 			Node s = supers.get(x);
 			Class<?> c = s.getRepresentation().getRepresentedClass();
@@ -154,10 +155,10 @@ public class ObjectStack
 			}
 			else
 			{
-				//merge the two sub-trees
+				// merge the two sub-trees
 				int seenIndex = seenClasses.indexOf(c);
-				Node realNode  = nodes.get(seenIndex);
-				node.replaceSuper(x,realNode);
+				Node realNode = nodes.get(seenIndex);
+				node.replaceSuper(x, realNode);
 			}
 		}
 	}
@@ -630,13 +631,24 @@ public class ObjectStack
 			}
 
 			// get the superclasses
+			//this is done out-of-order to match up to search order, see TreePathListener.java.
 			List<Node> supers = root.getSupers();
-			for (Node s : supers)
+			if (supers.size() > 0)
 			{
-				// recurse
-				// interfaces are saved all the way to the top,
-				// minLevel is ignored if null
-				// otherwise go up to minlevel
+				for (int x = 1; x < supers.size(); x++)
+				{
+					Node s = supers.get(x);
+					// recurse
+					// interfaces are saved all the way to the top,
+					// minLevel is ignored if null
+					// otherwise go up to minlevel
+					if (s.getRepresentation().isInterface() || minLevel == null
+							|| heightToLevel(s.getHeight()) >= minLevel)
+					{
+						saveNoCache(cw, s, minLevel, className, crep.getId());
+					}
+				}
+				Node s = supers.get(0);
 				if (s.getRepresentation().isInterface() || minLevel == null
 						|| heightToLevel(s.getHeight()) >= minLevel)
 				{
@@ -816,7 +828,7 @@ public class ObjectStack
 			List<Node> allNodes = allNodes();
 			for (Node n : allNodes)
 			{
-				if(!res.contains(n.getRepresentation()))
+				if (!res.contains(n.getRepresentation()))
 				{
 					res.add(n.getRepresentation());
 				}

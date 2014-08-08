@@ -123,10 +123,8 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 	@Override
 	public void setQueryClass(Class<?> queryClass)
 	{
-		if (ObjectTools.isSubClassOf(getSelectionClass(), queryClass))
-		{
-			setSelectionClass(queryClass);
-		}
+		setSelectionClass(queryClass);
+		super.setQueryClass(queryClass);
 	}
 
 	/**

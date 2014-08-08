@@ -29,6 +29,7 @@ public class TreePathLister
 		List<List<ObjectRepresentation>> res = new ArrayList<>();
 		// get the actual object
 		Node actual = oStack.getActual();
+		actual.setSaved(true);
 		List<ObjectRepresentation> initialList = new ArrayList<>();
 		initialList.add(actual.getRepresentation());
 		res.add(initialList);
@@ -55,16 +56,24 @@ public class TreePathLister
 			for (int x = 1; x < supers.size(); x++)
 			{
 				Node superNode = supers.get(x);
-				List<ObjectRepresentation> sideList = new ArrayList<>(
-						initialList);
-				res.add(sideList);
-				sideList.add(superNode.getRepresentation());
-				recursiveGenerate(oStack, res, sideList, superNode);
+				if (!superNode.isSaved())
+				{
+					superNode.setSaved(true);
+					List<ObjectRepresentation> sideList = new ArrayList<>(
+							initialList);
+					res.add(sideList);
+					sideList.add(superNode.getRepresentation());
+					recursiveGenerate(oStack, res, sideList, superNode);
+				}
 			}
 			// add the first superclass to the existing list
 			Node superNode = supers.get(0);
-			initialList.add(superNode.getRepresentation());
-			recursiveGenerate(oStack, res, initialList, superNode);
+			if (!superNode.isSaved())
+			{
+				superNode.setSaved(true);
+				initialList.add(superNode.getRepresentation());
+				recursiveGenerate(oStack, res, initialList, superNode);
+			}
 		}
 	}
 

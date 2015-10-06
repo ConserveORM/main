@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.conserve.adapter.AdapterBase;
+import org.conserve.select.Clause;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.metadata.ObjectStack.Node;
@@ -38,21 +38,23 @@ public class IdStatementGenerator
 	private AsStatementGenerator asGenerator;
 	private boolean addJoins;
 
-	private List<String> joinTables = new ArrayList<String>();
-	private List<String> joinTableIds = new ArrayList<String>();
-	private List<String> joinPropertyTables = new ArrayList<String>();
-	private List<String> joinPropertyTableIds = new ArrayList<String>();
-	private List<ObjectRepresentation> joinRepresentations = new ArrayList<ObjectRepresentation>();
+	private List<String> joinTables = new ArrayList<>();
+	private List<String> joinTableIds = new ArrayList<>();
+	private List<String> joinPropertyTables = new ArrayList<>();
+	private List<String> joinPropertyTableIds = new ArrayList<>();
+	private List<ObjectRepresentation> joinRepresentations = new ArrayList<>();
 
 	private HashMap<String, ArrayList<String>> joinedTables = new HashMap<String, ArrayList<String>>();
 	private List<RelationDescriptor> relationDescriptors = new ArrayList<RelationDescriptor>();
+	private AdapterBase adapter;
 
 	/**
 	 * @param adapter
 	 */
 	public IdStatementGenerator(AdapterBase adapter, ObjectStack oStack,
-			boolean addJoins)
+			Clause[] clauses, boolean addJoins)
 	{
+		this.adapter = adapter;
 		this.addJoins = addJoins;
 		this.asGenerator = new AsStatementGenerator(adapter);
 		this.addTablesToJoin(oStack);
@@ -62,6 +64,8 @@ public class IdStatementGenerator
 			addLinks(oStack, oStack.getActual());
 		}
 	}
+
+
 
 	/**
 	 * Recursively add link statements between each class and its superclass and
@@ -86,10 +90,9 @@ public class IdStatementGenerator
 	 * Generate an id statement.
 	 * 
 	 * @param oStack
-	 * @param minLevel
 	 * @return
 	 */
-	public String generate(int minLevel)
+	public String generate()
 	{
 		StringBuilder tmp = new StringBuilder(100);
 		// generate the id statement
@@ -255,25 +258,10 @@ public class IdStatementGenerator
 			FieldDescriptor obj = new FieldDescriptor(objRep.getTableName(),
 					objRep.getAsName(), Defaults.ID_COL);
 			FieldDescriptor sup = new FieldDescriptor(superRep.getTableName(),
-					superRep.getAsName(), Defaults.REAL_ID_COL);
+					superRep.getAsName(), Defaults.ID_COL);
 			RelationDescriptor relDesc = new RelationDescriptor(obj, sup);
 			addRelationDescriptor(relDesc);
 
-			//add the real class name
-			obj = new FieldDescriptor(superRep.getTableName(),
-					superRep.getAsName(), Defaults.REAL_CLASS_COL);
-			if (objRep.isArray())
-			{
-				// arrays have a different tablename
-				addRelationDescriptor(new RelationDescriptor(obj,
-						Defaults.ARRAY_TABLENAME));
-			}
-			else
-			{
-				addRelationDescriptor(new RelationDescriptor(obj,
-						NameGenerator.getSystemicName(objRep
-								.getRepresentedClass())));
-			}
 			// indicate that the representations are linked
 			setJoined(superRep.getAsName(), objRep.getAsName());
 		}
@@ -325,7 +313,7 @@ public class IdStatementGenerator
 		// add the actual representation
 		ObjectRepresentation actual = stack.getActualRepresentation();
 		this.joinRepresentations.add(actual);
-		if(actual.isArray())
+		if (actual.isArray())
 		{
 			addTableToJoin(Defaults.ARRAY_TABLENAME, actual.getAsName());
 		}

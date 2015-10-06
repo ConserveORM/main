@@ -153,9 +153,6 @@ public class DelayedInsertionBuffer
 			// get the object id
 			if (id != null)
 			{
-				// cast the id to the right reference type
-				id = persist.getCastId(i.getReferenceType(), i.getInsertionObject()
-						.getClass(), id, cw);
 				// update the referring table entry
 				StringBuilder sb = new StringBuilder("UPDATE ");
 				sb.append(i.getTableName());

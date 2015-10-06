@@ -61,7 +61,7 @@ import org.conserve.tools.uniqueid.UniqueIdTree;
  */
 public class TableManager
 {
-	private int schemaTypeVersion = 1;
+	private int schemaTypeVersion = 2;
 	private boolean createSchema;
 	private DataConnectionPool connectionPool;
 	private AdapterBase adapter;
@@ -219,7 +219,7 @@ public class TableManager
 									Defaults.COMPONENT_TABLE_COL,
 									Defaults.COMPONENT_CLASS_COL },
 							new String[] {
-									adapter.getIdentity() + " PRIMARY KEY",
+									adapter.getLongTypeKeyword(),
 									adapter.getVarCharIndexed(),
 									adapter.getVarCharIndexed() }, cw);
 				}
@@ -236,8 +236,7 @@ public class TableManager
 										Defaults.COMPONENT_TABLE_COL,
 										Defaults.COMPONENT_CLASS_COL },
 								new String[] {
-										adapter.getLongTypeKeyword()
-												+ " PRIMARY KEY",
+										adapter.getLongTypeKeyword(),
 										adapter.getVarCharIndexed(),
 										adapter.getVarCharIndexed() }, cw);
 						// create the trigger sequence
@@ -631,7 +630,7 @@ public class TableManager
 		ps.execute();
 		ps.close();
 
-		if (!adapter.isSupportsIdentity())
+		if (!adapter.isSupportsIdentity() && objRes.getRepresentedClass().equals(Object.class))
 		{
 			createTriggeredSequence(cw, objRes.getTableName());
 		}
@@ -1594,7 +1593,7 @@ public class TableManager
 				// check if the real superclass is correctly indicated by the
 				// database
 				if (!superClasses.contains(superClass))
-				{
+				{ 
 					// klass has been moved, it now has a new superclass.
 					SubclassMover sm = new SubclassMover(adapter);
 					sm.move(oldObjectStack, nuObjectStack,
@@ -1741,11 +1740,11 @@ public class TableManager
 
 				}
 
+				//check if fields have changed
 				ObjectRepresentation fromRep = new DatabaseObjectRepresentation(
 						adapter, klass, cw);
 				ObjectRepresentation toRep = nuObjectStack
 						.getActualRepresentation();
-
 				try
 				{
 					ChangeDescription change = fromRep.getDifference(toRep);
@@ -1865,14 +1864,13 @@ public class TableManager
 				cw);
 
 		IdStatementGenerator idGen = new IdStatementGenerator(adapter,
-				nuObjectStack, true);
-		int minLevel = Math.min(fromLevel, toLevel);
+				nuObjectStack,null, true);
 
 		// copy the values
 		StringBuilder sb = new StringBuilder();
 		if (adapter.isSupportsJoinInUpdate())
 		{
-			String idStatement = idGen.generate(minLevel);
+			String idStatement = idGen.generate();
 			sb.append("UPDATE ");
 			sb.append(toTable);
 			sb.append(" AS ");
@@ -2005,11 +2003,8 @@ public class TableManager
 			// check compatibility
 			if (ObjectTools.isA(sourceClass, nuType))
 			{
-				// cast the property id from currentType to nuType
-				Long castPropertyId = adapter.getPersist().getCastId(nuType,
-						sourceClass, propertyId, cw);
 				// update the reference id
-				setReferenceTo(tableName, ownerId, colName, castPropertyId, cw);
+				setReferenceTo(tableName, ownerId, colName, propertyId, cw);
 			}
 			else
 			{
@@ -2667,10 +2662,10 @@ public class TableManager
 		ps.execute();
 		ps.close();
 
-		// delete C__REALCLASS and C__REALID from superClassTable
+		// delete C__REALCLASS  from superClassTable
 		stmt = new StringBuilder("UPDATE ");
 		stmt.append(superClassTable);
-		stmt.append(" SET C__REALCLASS  = NULL, C__REALID = NULL WHERE C__REALCLASS=?");
+		stmt.append(" SET C__REALCLASS  = NULL WHERE C__REALCLASS=?");
 		ps = cw.prepareStatement(stmt.toString());
 		ps.setString(1, subClassName);
 		Tools.logFine(ps);

@@ -41,7 +41,6 @@ public class Defaults
 	 * Default columns.
 	 */
 	public static final String REAL_CLASS_COL = "C__REALCLASS";
-	public static final String REAL_ID_COL = "C__REALID";
 	public static final String ID_COL = "C__ID";
 	public static final String COLLECTION_PROPERTY_COL = "C__COLLECTION_CONTENTS";
 	public static final String MAP_PROPERTY_COL = "C__MAP_CONTENTS";

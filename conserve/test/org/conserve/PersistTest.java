@@ -335,7 +335,10 @@ public class PersistTest
 				login, password);
 		// remove all existing data
 		persist.dropTable(Object.class);
-
+		persist.close();
+		
+		persist = new PersistenceManager(driver, database,
+				login, password);
 		// create a test object
 		SimpleObject so = new SimpleObject();
 		so.setAge(1000L);
@@ -856,7 +859,6 @@ public class PersistTest
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database,
 				login, password);
-		persist.dropTable(Collection.class);
 		persist.dropTable(Object.class);
 		persist.close();
 		
@@ -2825,7 +2827,7 @@ public class PersistTest
 
 		// change the database schema, adding interface Serialized.
 		pm.updateSchema(ChangedInheritance.class);
-
+		
 		// search all Serializable, make sure both objects are returned
 		List<Serializable> res1 = pm.getObjects(Serializable.class, new All());
 		assertEquals(2, res1.size());
@@ -3586,7 +3588,7 @@ public class PersistTest
 						new Minimum("getSomeValue"),
 						new Average("getSomeValue"), });
 		assertEquals(4, tmp.length);
-		// sum of an int field are long...
+		// sum of an int field is long...
 		assertEquals(Long.class, tmp[0].getClass());
 		// max of an int field is int
 		assertEquals(Integer.class, tmp[1].getClass());
@@ -3833,7 +3835,7 @@ public class PersistTest
 		List<ContainerObject> coList = pm.getObjects(ContainerObject.class,
 				new All());
 		assertEquals(2, coList.size());
-		assertEquals("bar", coList.get(1).getFoo().getName());
+		assertEquals("bar", coList.get(0).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass
@@ -3846,7 +3848,7 @@ public class PersistTest
 		// check that the contents are preserved
 		coList = pm.getObjects(ContainerObject.class, new All());
 		assertEquals(2, coList.size());
-		assertEquals("bar", coList.get(1).getFoo().getName());
+		assertEquals("bar", coList.get(0).getFoo().getName());
 		assertEquals(0, pm.getCount(SubClass.class, new All()));
 		pm.deleteObjects(SubClass.class);
 		assertEquals(2, pm.getCount(OriginalObject.class, new All()));

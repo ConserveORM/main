@@ -754,7 +754,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	}
 
 	/**
-	 * Two object representations are equal if they represent the same class.
+	 * Two object representations are equal if they represent the same class
 	 * 
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */

@@ -544,5 +544,36 @@ public class ObjectTools
 
 		return res;
 	}
+	/**
+	 * Recursively look up the inheritance tree for an accessor that matches the
+	 * given name and the given argument type.
+	 * 
+	 * @param declaringClass
+	 * @param accessorname
+	 *            the method name.
+	 * @return the Method with the given name and single argument type.
+	 */
+	public static Method getAccessor(Class<?> declaringClass, String accessorname)
+	{
+		Method res = null;
+		if (declaringClass != null)
+		{
+			// check this class
+			try
+			{
+				res = declaringClass.getDeclaredMethod(accessorname);
+			}
+			catch (NoSuchMethodException e)
+			{
+				// do nothing, keep iterating up
+			}
+			if (res == null)
+			{
+				res = getAccessor(declaringClass.getSuperclass(), accessorname);
+			}
+		}
+
+		return res;
+	}
 
 }

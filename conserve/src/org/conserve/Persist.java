@@ -445,48 +445,42 @@ public class Persist
 		return res;
 	}
 
-	private boolean deleteObject(Class<?> clazz, String realClassName, Long realId, ConnectionWrapper cw)
+	private boolean deleteObject(Class<?> clazz, String realClassName, Long id, ConnectionWrapper cw)
 			throws SQLException
 	{
 		boolean res = false;
 		if (clazz != null)
 		{
 			String tableName = NameGenerator.getTableName(clazz, adapter);
-			// get the id of this instance at the current level (one above
-			// realClass)
-			Long currentId = getId(clazz, realClassName, realId, cw);
 			// delete the instance
 			StringBuilder statement = new StringBuilder("DELETE FROM ");
 			statement.append(tableName);
 			statement.append(" WHERE ");
-			statement.append(Defaults.REAL_ID_COL);
+			statement.append(Defaults.ID_COL);
 			statement.append(" = ? AND ");
 			statement.append(Defaults.REAL_CLASS_COL);
 			statement.append(" = ? ");
 			PreparedStatement ps = cw.prepareStatement(statement.toString());
-			ps.setLong(1, realId);
+			ps.setLong(1, id);
 			ps.setString(2, realClassName);
 			Tools.logFine(ps);
 			res = ps.executeUpdate() == 1;
 			ps.close();
 
-			if (currentId != null)
-			{
 				String className = NameGenerator.getSystemicName(clazz);
 				
 				//recurse superclass
-				deleteObject(clazz.getSuperclass(), className, currentId, cw);
+				deleteObject(clazz.getSuperclass(), className,id, cw);
 				
 				//recurse interfaces
 				Class<?>[] infs = clazz.getInterfaces();
 				for(Class<?>inf:infs)
 				{
-					deleteObject(inf, className,currentId,cw);
+					deleteObject(inf, className,id,cw);
 				}
 				
 				//delete properties
-				deletePropertiesOf(tableName, currentId, cw);
-			}
+				deletePropertiesOf(tableName,id, cw);
 		}
 		return res;
 	}
@@ -546,50 +540,6 @@ public class Persist
 		query.close();
 	}
 
-	/**
-	 * Get the id of the entry in the the table associated with clazz that has
-	 * the given realId and realClassName.
-	 * 
-	 * @param clazz
-	 * @param realClassName
-	 * @param realId
-	 * @return
-	 * @throws SQLException
-	 */
-	private Long getId(Class<?> clazz, String realClassName, Long realId, ConnectionWrapper ec) throws SQLException
-	{
-		String tableName = NameGenerator.getTableName(clazz, adapter);
-		StringBuilder statement = new StringBuilder("SELECT ");
-		statement.append(Defaults.ID_COL);
-		statement.append(" FROM ");
-		statement.append(tableName);
-		statement.append(" WHERE ");
-		statement.append(Defaults.REAL_ID_COL);
-		statement.append(" = ? AND ");
-		statement.append(Defaults.REAL_CLASS_COL);
-		statement.append(" = ? ");
-		PreparedStatement ps = ec.prepareStatement(statement.toString());
-		ps.setLong(1, realId);
-		ps.setString(2, realClassName);
-		Tools.logFine(ps);
-		try
-		{
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-			{
-				return rs.getLong(1);
-			}
-			else
-			{
-				// nothing found
-				return null;
-			}
-		}
-		finally
-		{
-			ps.close();
-		}
-	}
 
 	/**
 	 * Get a list of the classes and ids that satisfy the clause.
@@ -632,7 +582,7 @@ public class Persist
 
 		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		whereGenerator.setClauses(clause);
-		StatementPrototype sp = whereGenerator.generate(clazz, true);
+		StatementPrototype sp = whereGenerator.generate(clazz, clause != null);
 		// get the id of clazz
 		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
 
@@ -645,10 +595,6 @@ public class Persist
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.REAL_CLASS_COL);
-		statement.append(",");
-		statement.append(shortName);
-		statement.append(".");
-		statement.append(Defaults.REAL_ID_COL);
 		statement.append(" FROM ");
 		if (id != null)
 		{
@@ -668,9 +614,8 @@ public class Persist
 			{
 				// get the real class and id
 				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
-				Long realDbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, subClassName, null, realDbId, cw);
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, subClassName, null,id, cw);
 				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 				{
 					Class<?> c = en.getKey();
@@ -913,8 +858,7 @@ public class Persist
 				// If a row has a REALCLASS entry, load the subclass
 				if (map.get(Defaults.REAL_CLASS_COL) != null)
 				{
-					// get the real class and id
-					dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
+					// get the real class
 					String className = (String) map.get(Defaults.REAL_CLASS_COL);
 					if (className.equals(Defaults.ARRAY_TABLENAME))
 					{
@@ -936,9 +880,7 @@ public class Persist
 							getSubClassData(map, clazz, dbId, cw);
 							// load the real class info
 							className = (String) map.get(Defaults.REAL_CLASS_COL);
-							dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
 							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
-
 						}
 						else
 						{
@@ -1054,8 +996,7 @@ public class Persist
 					// If a row has a REALCLASS entry, load the subclass
 					if (map.get(Defaults.REAL_CLASS_COL) != null)
 					{
-						// get the real class and id
-						dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
+						// get the real class 
 						String className = (String) map.get(Defaults.REAL_CLASS_COL);
 						if (className.equals(Defaults.ARRAY_TABLENAME))
 						{
@@ -1077,7 +1018,6 @@ public class Persist
 								getSubClassData(map, clazz, dbId, cw);
 								// load the real class info
 								className = (String) map.get(Defaults.REAL_CLASS_COL);
-								dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
 								clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 							}
 							else
@@ -1313,7 +1253,6 @@ public class Persist
 			// If a row has a REALCLASS entry, load the subclass
 			if (map.get(Defaults.REAL_CLASS_COL) != null)
 			{
-				dbId = ((Number) map.get(Defaults.REAL_ID_COL)).longValue();
 				// get the real class and id
 				className = (String) map.get(Defaults.REAL_CLASS_COL);
 				if (!className.equals(Defaults.ARRAY_TABLENAME))
@@ -1324,7 +1263,6 @@ public class Persist
 					getSubClassData(map, clazz, dbId, cw);
 					// load the real class info
 					className = (String) map.get(Defaults.REAL_CLASS_COL);
-					dbId = ((Number) map.get(Defaults.ID_COL)).longValue();
 				}
 			}
 
@@ -1518,7 +1456,7 @@ public class Persist
 		if (subClassName != null)
 		{
 			Class<?> subClass = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
-			getSubClassData(map, subClass, ((Number) map.get(Defaults.REAL_ID_COL)).longValue(), cw);
+			getSubClassData(map, subClass, dbId, cw);
 		}
 		else
 		{
@@ -1650,57 +1588,6 @@ public class Persist
 		cache.stop();
 	}
 
-	/**
-	 * Get the db id of object of class realClass in the table of class c.
-	 * 
-	 * @param c
-	 *            the class to find the id in.
-	 * @param realClass
-	 *            the actual class of the object
-	 * @param id
-	 *            the id in the table of the actual class
-	 * @return the id for the object of class realClass with the given id, cast
-	 *         to class c.
-	 * @throws SQLException
-	 */
-	public Long getCastId(Class<?> c, Class<?> realClass, long id, ConnectionWrapper cw) throws SQLException
-	{
-		if (c.equals(realClass))
-		{
-			// no need to change it, as it's already cast to the correct class.
-			return id;
-		}
-		else
-		{
-			StatementPrototypeGenerator gen = new StatementPrototypeGenerator(adapter);
-
-			StatementPrototype sp = gen.generateCast(realClass,c);
-			sp.addEqualsClause(gen.getTypeStack().getRepresentation(realClass).getAsName()
-					+ "." + Defaults.ID_COL, id);
-			StringBuilder prepend = new StringBuilder("SELECT ");
-			prepend.append(gen.getTypeStack().getRepresentation(c).getAsName());
-			prepend.append(".");
-			prepend.append(Defaults.ID_COL);
-			prepend.append(" FROM ");
-			PreparedStatement ps = sp.toPreparedStatement(cw, prepend.toString());
-			try
-			{
-				ResultSet rs = ps.executeQuery();
-				if (rs.next())
-				{
-					return rs.getLong(1);
-				}
-				else
-				{
-					return null;
-				}
-			}
-			finally
-			{
-				ps.close();
-			}
-		}
-	}
 
 	public AdapterBase getAdapter()
 	{
@@ -1761,8 +1648,6 @@ public class Persist
 		String propertyTable = NameGenerator.getTableName(propertyClass, adapter);
 		StringBuilder query = new StringBuilder("SELECT ");
 		query.append(Defaults.REAL_CLASS_COL);
-		query.append(",");
-		query.append(Defaults.REAL_ID_COL);
 		query.append(" FROM ");
 		query.append(propertyTable);
 		query.append(" WHERE ");
@@ -1780,12 +1665,11 @@ public class Persist
 			}
 			else
 			{
-				Long realId = rs.getLong(2);
 				try
 				{
 					// convert to table name
 					Class<?> realClass = ObjectTools.lookUpClass(realName, adapter);
-					res = getRealTableNameAndId(cw, realClass, realId);
+					res = getRealTableNameAndId(cw, realClass, propertyId);
 				}
 				catch (ClassNotFoundException e)
 				{

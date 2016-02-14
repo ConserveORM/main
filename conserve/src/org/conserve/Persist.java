@@ -574,6 +574,7 @@ public class Persist
 		{
 			clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 		}
+		//check if the appropriate table exists
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		if (!tableManager.tableExists(tableName, cw))
 		{

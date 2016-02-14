@@ -7,13 +7,52 @@ package org.conserve.tools.metadata;
  * @author Erik Berglund
  *
  */
-public class ChangeDescription
+public class FieldChangeDescription
 {
+	//old name of a property
 	private String fromName;
+	//new name of a property
 	private String toName;
+	//old type of the property
 	private Class<?> fromClass;
+	//new type of the property
 	private Class<?> toClass;
+	//name of the table a property is moved from
+	private String fromTable;
+	//name of the table a property is moved to
+	private String toTable;
+	//true if at least one index has changed
 	private boolean isIndexChange = false;
+	
+	
+	/**
+	 * @return the fromTable
+	 */
+	public String getFromTable()
+	{
+		return fromTable;
+	}
+	/**
+	 * @param fromTable the fromTable to set
+	 */
+	public void setFromTable(String fromTable)
+	{
+		this.fromTable = fromTable;
+	}
+	/**
+	 * @return the toTable
+	 */
+	public String getToTable()
+	{
+		return toTable;
+	}
+	/**
+	 * @param toTable the toTable to set
+	 */
+	public void setToTable(String toTable)
+	{
+		this.toTable = toTable;
+	}
 	
 	/**
 	 * @return the fromName
@@ -87,9 +126,19 @@ public class ChangeDescription
 		return !isDeletion() && !isCreation() && toName != null && !toName.equals(fromName);
 	}
 	
+	/**
+	 * Returns true if this change is a field moved from one table to another.
+	 * 
+	 * @return
+	 */
+	public boolean isMove()
+	{
+		return (fromTable!=null && toTable!=null&& toName != null && fromName!= null && toName.equals(fromName));
+	}
+	
 	public boolean isTypeChange()
 	{
-		return !isDeletion() && !isCreation() && !isNameChange() && toClass!=null && !toClass.equals(fromClass);
+		return !isDeletion() && !isCreation() && !isNameChange() && !isMove() && toClass!=null && !toClass.equals(fromClass);
 	}
 	/**
 	 * 

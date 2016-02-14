@@ -468,6 +468,24 @@ public class ObjectStack
 		}
 		return res;
 	}
+	
+	/**
+	 * Get all property names in this object stack.
+	 * 
+	 */
+	List<String>getAllPropertyNames()
+	{
+		List<String>res = new ArrayList<>();
+		for(Node n:representations.allNodes())
+		{
+			ObjectRepresentation rep = n.getRepresentation();
+			for(int x = 0;x<rep.getPropertyCount();x++)
+			{
+				res.add(rep.getPropertyName(x));
+			}
+		}
+		return res;
+	}
 
 	/**
 	 * Get the level at which the given property is represented. If there is no
@@ -742,6 +760,29 @@ public class ObjectStack
 	{
 		return this.representations.getAllRepresentations();
 	}
+	
+	/**
+	 * Get all superclasses and interfaces of the actual representation, all the way to the top.
+	 * 
+	 * @return
+	 */
+	public List<Node> getAllSupers()
+	{
+		List<Node>res = new ArrayList<>();
+		Node n = getActual();
+		List<Node>tmp = n.getSupers();
+		while(!tmp.isEmpty())
+		{
+			List<Node>next = new ArrayList<>();
+			for(Node node:tmp)
+			{
+				res.add(node);
+				next.addAll(node.getSupers());
+			}
+			tmp = next;
+		}
+		return res;
+	}
 
 	/**
 	 * Check if this object stack contains a certain class.
@@ -759,6 +800,11 @@ public class ObjectStack
 			}
 		}
 		return false;
+	}
+	
+	public boolean contains(Node node)
+	{
+		return containsClass(node.getRepresentation().getRepresentedClass());
 	}
 
 	public class Node
@@ -826,6 +872,15 @@ public class ObjectStack
 		public void removeSuper(Node node)
 		{
 			superclasses.remove(node);
+		}
+		
+		/**
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString()
+		{
+			return representation.toString();
 		}
 	}
 
@@ -973,5 +1028,16 @@ public class ObjectStack
 			}
 		}
 	}
+
+	/**
+	 * Get a reference to the adapter used by this stack.
+	 * 
+	 * @return
+	 */
+	public AdapterBase getAdapter()
+	{
+		return adapter;
+	}
+	
 
 }

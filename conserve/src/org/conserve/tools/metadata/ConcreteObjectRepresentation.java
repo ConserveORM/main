@@ -232,9 +232,9 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 		}
 		else
 		{
-			// not the base class (java.lang.Object), so not primary key, not
+			// not the base class (java.lang.Object), so not
 			// auto-increment
-			columnDescriptions.add(Defaults.ID_COL + " " + adapter.getLongTypeKeyword());
+			columnDescriptions.add(Defaults.ID_COL + " " + adapter.getLongTypeKeyword() + " PRIMARY KEY");
 		}
 
 		if (this.clazz.isArray())

@@ -251,8 +251,11 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	}
 
 	/**
-	 * Get the change in the database model from this object to the
-	 * toRepresentation object. If no change is detected, null is returned.
+	 * Get the change in the database column model from this object to the
+	 * toRepresentation object. 
+	 * The types of change detected include added or removed columns, changed types, changed column names, and added or removed indices.
+	 * 
+	 * If no change is detected, null is returned.
 	 * 
 	 * @throws MetadataException
 	 *             if there is more than one change.
@@ -261,9 +264,9 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * 
 	 * @return a description of the change.
 	 */
-	public ChangeDescription getDifference(ObjectRepresentation toRepresentation) throws MetadataException
+	public FieldChangeDescription getFieldDifference(ObjectRepresentation toRepresentation) throws MetadataException
 	{
-		ChangeDescription res = null;
+		FieldChangeDescription res = null;
 		if (!hasSameProperties(toRepresentation))
 		{
 			// check for deletions
@@ -274,7 +277,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 				{
 					throw new MetadataException("Removing more than one column.");
 				}
-				res = new ChangeDescription();
+				res = new FieldChangeDescription();
 				// find the column not in toRepresentation
 				for (int x = 0; x < props.size(); x++)
 				{
@@ -292,7 +295,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 				{
 					throw new MetadataException("Adding more than one column.");
 				}
-				res = new ChangeDescription();
+				res = new FieldChangeDescription();
 				// find the column not in this representation
 				for (int x = 0; x < toRepresentation.props.size(); x++)
 				{
@@ -321,7 +324,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 						if (!fromClass.equals(toClass))
 						{
 							// found same name, different return types
-							res = new ChangeDescription();
+							res = new FieldChangeDescription();
 							// same to/from name
 							res.setFromName(fromNames.get(x));
 							res.setToName(res.getFromName());
@@ -345,7 +348,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 					if (fromClass.equals(toClass))
 					{
 
-						res = new ChangeDescription();
+						res = new FieldChangeDescription();
 						res.setFromName(fromNames.get(0));
 						res.setToName(toNames.get(0));
 						res.setFromClass(fromClass);
@@ -391,7 +394,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		}
 		else if(!hasSameIndices(toRepresentation))
 		{
-			res = new ChangeDescription();
+			res = new FieldChangeDescription();
 			res.setIsIndexChange();
 		}
 
@@ -477,6 +480,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		// all properties and return types match
 		return true;
 	}
+	
 
 	/**
 	 * @param x
@@ -772,5 +776,13 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return false;
 	}
 	
+	/**
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return getRepresentedClass().getCanonicalName();
+	}
 	
 }

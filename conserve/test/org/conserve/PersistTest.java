@@ -176,14 +176,15 @@ public class PersistTest
 	@After
 	public void tearDown() throws Exception
 	{
-		// deleteAll();
+		//deleteAll();
 	}
 
 	protected void deleteAll() throws SQLException
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database,
 				login, password);
-		persist.deleteObjects(new Object());// clear everything
+		persist.dropTable(Object.class);
+		//persist.deleteObjects(new Object());// clear everything
 		persist.close();
 	}
 
@@ -2593,7 +2594,7 @@ public class PersistTest
 		// search all NotSubClass, make sure both objects are returned
 		List<NotSubClass> res1 = pm.getObjects(NotSubClass.class, new All());
 		assertEquals(2, res1.size());
-		// search NotSubClass, make sure only matchign object is returned
+		// search NotSubClass, make sure only matching object is returned
 		NotSubClass searchObject2 = new NotSubClass();
 		searchObject2.setName("foo");
 		res1 = pm.getObjects(NotSubClass.class, new Equal(searchObject2));
@@ -3624,8 +3625,7 @@ public class PersistTest
 		// one.
 		// drop all tables
 		pm.dropTable(Object.class);
-		// create two OriginalObjects to give OriginalObject and SubClass
-		// different IDs
+		// create two OriginalObjects to make sure the are preserved
 		pm.saveObject(new OriginalObject());
 		pm.saveObject(new OriginalObject());
 		// create two SubClass, store them in ContainerObject
@@ -3633,6 +3633,7 @@ public class PersistTest
 		ns.setName("foo");
 		ContainerObject co = new ContainerObject();
 		co.setFoo(ns);
+		//protect both object and container
 		pm.saveObject(co);
 		pm.saveObject(ns);
 
@@ -3640,10 +3641,11 @@ public class PersistTest
 		ns.setName("bar");
 		co = new ContainerObject();
 		co.setFoo(ns);
-		pm.saveObject(co);
+		//protect both object and container
 		pm.saveObject(ns);
+		pm.saveObject(co);
 
-		// check that obejcts were saved correctly
+		// check that objects were saved correctly
 		assertEquals(2, pm.getCount(ContainerObject.class, new All()));
 		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SubClass.class, new All()));
@@ -3692,6 +3694,8 @@ public class PersistTest
 		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
 		// make sure there are still two NotSubClass
 		assertEquals(2, pm.getCount(NotSubClass.class, new All()));
+		//make sure there are only four objects
+		assertEquals(4,pm.getCount(Object.class,new All()));
 
 		// delete all ContainerObject
 		pm.deleteObjects(ContainerObject.class, new All());
@@ -3701,11 +3705,16 @@ public class PersistTest
 		assertEquals(0, pm.getCount(OriginalObject.class, new All()));
 		// make sure there are still two NotSubClass
 		assertEquals(2, pm.getCount(NotSubClass.class, new All()));
+		//make sure there are only two objects
+		assertEquals(2,pm.getCount(Object.class,new All()));
 
 		// delete all NotSubClass
 		pm.deleteObjects(NotSubClass.class, new All());
 		// make sure there are no NotSubClass
 		assertEquals(0, pm.getCount(NotSubClass.class, new All()));
+		
+		//make sure there are no objects at all
+		assertEquals(0,pm.getCount(Object.class,new All()));
 
 		pm.close();
 	}
@@ -3760,8 +3769,8 @@ public class PersistTest
 		List<ContainerObject> coList = pm.getObjects(ContainerObject.class,
 				new All());
 		assertEquals(2, coList.size());
-		assertEquals("foo", coList.get(0).getFoo().getName());
-		assertEquals("bar", coList.get(1).getFoo().getName());
+		assertEquals("bar", coList.get(0).getFoo().getName());
+		assertEquals("foo", coList.get(1).getFoo().getName());
 		// deleting all OriginalObject or SubClass should now result in no
 		// change, as they are protected by ContainerObject
 		// assert that there are still four OriginalObject and two SubClass
@@ -4101,6 +4110,7 @@ public class PersistTest
 		// make sure everything is saved
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
+		assertEquals(2, pm.getCount(FooContainer.class, new All()));
 		assertEquals(4, pm.getCount(Object.class, new All()));
 		// remove the interface from the contained objects
 		new TestTools(pm.getPersist()).changeName(MyFooContainer.class,
@@ -4111,6 +4121,7 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(0, pm.getCount(MyNonFooContainer.class, new All()));
+		assertEquals(0, pm.getCount(FooContainer.class, new All()));
 		assertEquals(2, pm.getCount(Object.class, new All()));
 		pm.close();
 
@@ -4133,6 +4144,7 @@ public class PersistTest
 		// make sure everything is saved
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(2, pm.getCount(MyFooContainer.class, new All()));
+		assertEquals(2, pm.getCount(FooContainer.class, new All()));
 		// remove the interface from the contained objects
 		new TestTools(pm.getPersist()).changeName(MyFooContainer.class,
 				MyNonFooContainer.class);
@@ -4142,6 +4154,7 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		assertEquals(2, pm.getCount(FooContainerOwner.class, new All()));
 		assertEquals(2, pm.getCount(MyNonFooContainer.class, new All()));
+		assertEquals(0, pm.getCount(FooContainer.class, new All()));
 
 		// delete the FooContainerOwner
 		pm.deleteObjects(FooContainerOwner.class, new All());

@@ -36,7 +36,7 @@ public class MySQLPersistTest extends PersistTest
 		database = "jdbc:mysql://localhost/test";
 		secondDatabase = "jdbc:mysql://localhost/test2";
 		login = "testuser";
-		password = "";
+		password = "test";
 		deleteAll();
 	}
 }

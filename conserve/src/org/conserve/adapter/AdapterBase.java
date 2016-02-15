@@ -699,13 +699,13 @@ public class AdapterBase
 	}
 
 	/**
-	 * Get the statement for dropping an index from a table.
+	 * Get the statements for dropping an index from a table.
 	 * 
 	 * @param table the table to drop the index from
 	 * @param indexName the index to drop.
 	 * @return
 	 */
-	public String getDropIndexStatement(String table, String indexName)
+	public String[] getDropIndexStatement(String table, String indexName)
 	{
 		StringBuilder sb = new StringBuilder("DROP INDEX ");
 		if(isSupportsExistsKeyword())
@@ -713,7 +713,7 @@ public class AdapterBase
 			sb.append("IF EXISTS ");
 		}
 		sb.append(indexName);
-		return sb.toString();
+		return new String[]{ sb.toString()};
 	}
 
 	/**
@@ -723,5 +723,23 @@ public class AdapterBase
 	public boolean isSupportsJoinInUpdate()
 	{
 		return true;
+	}
+
+	/**
+	 * Return true if the AVG() function requires integer types to be cast to floats, false otherwise.
+	 * @return
+	 */
+	public boolean averageRequiresCast()
+	{
+		return true;
+	}
+
+	/**
+	 * Get the keyword used to alter column definitions.
+	 * @return
+	 */
+	public Object getColumnModificationKeyword()
+	{
+		return "ALTER";
 	}
 }

@@ -391,13 +391,12 @@ public class Persist
 		//delete object itself
 		res = deleteObject(tableName, id, cw);
 		//delete superclass recursively
-		String className = NameGenerator.getSystemicName(clazz);
-		res &= deleteObject(clazz.getSuperclass(), className, id, cw);
+		res &= deleteObjectHelper(clazz.getSuperclass(), id, cw);
 		//delete interfaces recursively
 		Class<?>[] infs = clazz.getInterfaces();
 		for(Class<?>inf:infs)
 		{
-			res &= deleteObject(inf, className, id, cw);
+			res &= deleteObjectHelper(inf, id, cw);
 		}
 		return res;
 	}
@@ -422,9 +421,9 @@ public class Persist
 			deletePropertiesOf(tableName, id, cw);
 			// all arrays also have an entry in the Object, Serializable, and Cloneable tables, so
 			// we must delete those as well
-			deleteObject(Object.class, Defaults.ARRAY_TABLENAME, id, cw);
-			deleteObject(Serializable.class, Defaults.ARRAY_TABLENAME, id, cw);
-			deleteObject(Cloneable.class, Defaults.ARRAY_TABLENAME, id, cw);
+			deleteObjectHelper(Object.class,  id, cw);
+			deleteObjectHelper(Serializable.class, id, cw);
+			deleteObjectHelper(Cloneable.class,  id, cw);
 			isArray = true;
 		}
 		StringBuilder statement = new StringBuilder("DELETE FROM ");
@@ -445,7 +444,7 @@ public class Persist
 		return res;
 	}
 
-	private boolean deleteObject(Class<?> clazz, String realClassName, Long id, ConnectionWrapper cw)
+	private boolean deleteObjectHelper(Class<?> clazz,  Long id, ConnectionWrapper cw)
 			throws SQLException
 	{
 		boolean res = false;
@@ -457,30 +456,25 @@ public class Persist
 			statement.append(tableName);
 			statement.append(" WHERE ");
 			statement.append(Defaults.ID_COL);
-			statement.append(" = ? AND ");
-			statement.append(Defaults.REAL_CLASS_COL);
 			statement.append(" = ? ");
 			PreparedStatement ps = cw.prepareStatement(statement.toString());
 			ps.setLong(1, id);
-			ps.setString(2, realClassName);
 			Tools.logFine(ps);
 			res = ps.executeUpdate() == 1;
 			ps.close();
 
-				String className = NameGenerator.getSystemicName(clazz);
-				
-				//recurse superclass
-				deleteObject(clazz.getSuperclass(), className,id, cw);
-				
-				//recurse interfaces
-				Class<?>[] infs = clazz.getInterfaces();
-				for(Class<?>inf:infs)
-				{
-					deleteObject(inf, className,id,cw);
-				}
-				
-				//delete properties
-				deletePropertiesOf(tableName,id, cw);
+			// recurse superclass
+			deleteObjectHelper(clazz.getSuperclass(), id, cw);
+
+			// recurse interfaces
+			Class<?>[] infs = clazz.getInterfaces();
+			for (Class<?> inf : infs)
+			{
+				deleteObjectHelper(inf, id, cw);
+			}
+
+			// delete properties
+			deletePropertiesOf(tableName, id, cw);
 		}
 		return res;
 	}
@@ -540,6 +534,47 @@ public class Persist
 		query.close();
 	}
 
+	/**
+	 * Get the database IDs of all objects of clazz that satisfy clause.
+	 * 
+	 * @param clazz the class to look in.
+	 * @param clause the clause that must be satisfied.
+	 * @param cw
+	 * @return an un-sorted list of all database IDs.
+	 * @throws SQLException
+	 */
+	public <T> List<Long>getObjectIds(Class<T>clazz, Clause clause, ConnectionWrapper cw) throws SQLException
+	{
+		List<Long>res = new ArrayList<>();
+		//check if the appropriate table exists
+		String tableName = NameGenerator.getTableName(clazz, adapter);
+		if (!tableManager.tableExists(tableName, cw))
+		{
+			return res;
+		}
+
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+		whereGenerator.setClauses(clause);
+		StatementPrototype sp = whereGenerator.generate(clazz, true);
+		// get the id of clazz
+		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
+
+		StringBuilder statement = new StringBuilder("SELECT ");
+		statement.append("DISTINCT(");
+		statement.append(shortName);
+		statement.append(".");
+		statement.append(Defaults.ID_COL);
+		statement.append(") ");
+		statement.append(" FROM ");
+		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		ResultSet rs = ps.executeQuery();
+		while(rs.next())
+		{
+			res.add(rs.getLong(1));
+		}
+		ps.close();
+		return res;
+	}
 
 	/**
 	 * Get a list of the classes and ids that satisfy the clause.

@@ -514,6 +514,14 @@ public class TableManager
 			// get the list of all fields indexed by the named index
 			List<String> indexedFields = objRes.getFieldNamesInIndex(indexName);
 			String[] fieldArray = indexedFields.toArray(new String[0]);
+			// TODO: check index key length
+			for (int x = 0; x < fieldArray.length; x++)
+			{
+				if (objRes.getReturnType(fieldArray[x]).equals(String.class))
+				{
+					fieldArray[x] += adapter.getKeyLength();
+				}
+			}
 			// create the index
 			createIndex(objRes.getTableName(), fieldArray, indexName, cw);
 		}
@@ -547,7 +555,6 @@ public class TableManager
 			createClassRelations(infc, cw);
 		}
 	}
-
 
 	public void ensureColumnExists(String tableName, String columnName, Class<?> paramType, ConnectionWrapper cw) throws SQLException
 	{
@@ -614,8 +621,7 @@ public class TableManager
 	 * Load a list of all classes stored in the database from the IS_A table.
 	 * 
 	 * @param cw
-	 * @throws SQLException
-	 * 			@throws
+	 * 			@throws SQLException @throws
 	 */
 	private List<Class<?>> populateClassList(ConnectionWrapper cw) throws SQLException
 	{
@@ -745,6 +751,8 @@ public class TableManager
 	 * 
 	 * @param c
 	 * @param cw
+	 * @param classList
+	 *            the list of all classes known to the system
 	 * @throws SQLException
 	 */
 	private void dropTableHelper(Class<?> c, ConnectionWrapper cw, List<Class<?>> classList) throws SQLException
@@ -758,6 +766,7 @@ public class TableManager
 
 			// remove all protection entries
 			adapter.getPersist().getProtectionManager().unprotectObjects(cw, tableName);
+
 			// delete all instances of the class
 			adapter.getPersist().deleteObjects(cw, c, new All());
 			// drop table of subclasses
@@ -1135,7 +1144,9 @@ public class TableManager
 			{
 				StringBuilder sb = new StringBuilder("ALTER TABLE ");
 				sb.append(tableName);
-				sb.append(" ALTER COLUMN ");
+				sb.append(" ");
+				sb.append(adapter.getColumnModificationKeyword());
+				sb.append(" COLUMN ");
 				sb.append(column);
 				sb.append(" ");
 				sb.append(nuType);
@@ -1370,54 +1381,6 @@ public class TableManager
 					removeEntries(deletedClasses, cw);
 				}
 
-				// TODO: Code for altering superclasses and implemented
-				// interfaces should be unified,
-				// as there is no longer any difference between the two in how
-				// they are represented
-				/*
-				 * // get the superclasses according to the database
-				 * List<Class<?>> superClasses =
-				 * oldObjectStack.getSuperClasses(klass); // get // info // on
-				 * // the // superclass Class<?> superClass =
-				 * klass.getSuperclass();
-				 * 
-				 * // check if the real superclass is correctly indicated by the
-				 * // database if (!superClasses.contains(superClass)) { //
-				 * klass has been moved, it now has a new superclass.
-				 * SubclassMover sm = new SubclassMover(adapter);
-				 * sm.move(oldObjectStack, nuObjectStack,
-				 * nuObjectStack.getActualRepresentation(), cw); // update the
-				 * C_IS_A table to reflect new superclass
-				 * addClassRelation(NameGenerator.getSystemicName(klass),
-				 * NameGenerator.getSystemicName(superClass), cw); Class<?>
-				 * oldSuperClass =
-				 * oldObjectStack.getRepresentation(oldObjectStack.getLevel(
-				 * klass) - 1).getRepresentedClass();
-				 * deleteClassRelation(oldSuperClass, klass, cw); }
-				 * 
-				 * // make sure each entry in superClasses is still in the
-				 * current // list // get a list of implemented interfaces
-				 * Class<?>[] interfaces = klass.getInterfaces(); for (Class<?>
-				 * dbSuperClass : superClasses) { if
-				 * (dbSuperClass.isInterface()) { // check if the class is one
-				 * of the existing interfaces // as indicated by the database
-				 * boolean exists = false; for (Class<?> iface : interfaces) {
-				 * if (iface.equals(dbSuperClass)) { exists = true; break; } }
-				 * if (!exists) { // the superclass is no longer a superclass //
-				 * delete the entry deleteClassRelation(dbSuperClass, klass,
-				 * cw); // remove // the // instances // of // dbSuperClass //
-				 * that // are // superclasses of klass, recursively
-				 * deleteObsoleteSuperClassInstances(dbSuperClass, klass,
-				 * oldObjectStack, cw); } } }
-				 * 
-				 * // check that all implemented interfaces are correctly
-				 * indicated // by the database for (Class<?> iface :
-				 * interfaces) { if (!superClasses.contains(iface)) { // update
-				 * the C_IS_A table to reflect new interface
-				 * addClassRelation(NameGenerator.getSystemicName(klass),
-				 * NameGenerator.getSystemicName(iface), cw); } }
-				 */
-
 				// get info on direct subclasses from database
 				List<String> subClasses = getSubClassNames(klass, cw);
 				for (String subClass : subClasses)
@@ -1562,31 +1525,63 @@ public class TableManager
 			createColumn(movedField.getToTable(), movedField.getToName(), movedField.getToClass(), cw);
 		}
 		// copy all values
-		StringBuilder query = new StringBuilder();
-		query.append("UPDATE ");
-		query.append(movedField.getToTable());
-		query.append(" SET ");
-		query.append(movedField.getToTable());
-		query.append(".");
-		query.append(movedField.getToName());
-		query.append(" = (SELECT ");
-		query.append(movedField.getFromTable());
-		query.append(".");
-		query.append(movedField.getFromName());
-		query.append(" FROM ");
-		query.append(movedField.getFromTable());
-		query.append(" WHERE ");
-		query.append(movedField.getFromTable());
-		query.append(".");
-		query.append(Defaults.ID_COL);
-		query.append(" = ");
-		query.append(movedField.getToTable());
-		query.append(".");
-		query.append(Defaults.ID_COL);
-		query.append(")");
-		PreparedStatement ps = cw.prepareStatement(query.toString());
-		Tools.logFine(ps);
-		ps.executeUpdate();
+		if (adapter.isSupportsJoinInUpdate())
+		{
+			StringBuilder query = new StringBuilder();
+			query.append("UPDATE ");
+			query.append(movedField.getToTable());
+			query.append(" SET ");
+			query.append(movedField.getToTable());
+			query.append(".");
+			query.append(movedField.getToName());
+			query.append(" = (SELECT ");
+			query.append(movedField.getFromTable());
+			query.append(".");
+			query.append(movedField.getFromName());
+			query.append(" FROM ");
+			query.append(movedField.getFromTable());
+			query.append(" WHERE ");
+			query.append(movedField.getFromTable());
+			query.append(".");
+			query.append(Defaults.ID_COL);
+			query.append(" = ");
+			query.append(movedField.getToTable());
+			query.append(".");
+			query.append(Defaults.ID_COL);
+			query.append(")");
+			PreparedStatement ps = cw.prepareStatement(query.toString());
+			Tools.logFine(ps);
+			ps.executeUpdate();
+		}
+		else
+		{
+			// we'll have to join manually
+			// underlying database does not support joins in UPDATE statements,
+			// use alternate form
+			StringBuilder query = new StringBuilder();
+			query.append("REPLACE INTO ");
+			query.append(movedField.getToTable());
+			query.append("(");
+			query.append(movedField.getToName());
+			query.append(") SELECT A.");
+			query.append(movedField.getFromName());
+			query.append(" FROM ");
+			query.append(movedField.getFromTable());// replace with alias?
+			query.append(" A INNER JOIN ");
+			query.append(movedField.getToTable());
+			query.append(" B ON ");
+			query.append(" A");
+			query.append(".");
+			query.append(Defaults.ID_COL);
+			query.append(" = ");
+			query.append(" B");
+			query.append(".");
+			query.append(Defaults.ID_COL);
+			PreparedStatement ps = cw.prepareStatement(query.toString());
+			Tools.logFine(ps);
+			ps.executeUpdate();
+
+		}
 
 		if (movedField.getFromClass() == null)
 		{
@@ -1623,7 +1618,6 @@ public class TableManager
 				addClassRelation(n.getRepresentation().getSystemicName(), sup.getRepresentation().getSystemicName(), cw);
 			}
 		}
-		
 
 		// get the id of all entries in the fist class
 		String baseTable = nuClasses.get(0).getRepresentation().getTableName();
@@ -2666,17 +2660,20 @@ public class TableManager
 	 */
 	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
 	{
-		String statement = adapter.getDropIndexStatement(table, indexName);
-		PreparedStatement ps = cw.prepareStatement(statement);
-		Tools.logFine(ps);
-		ps.execute();
-		ps.close();
 
+		String[] statements = adapter.getDropIndexStatement(table, indexName);
+		for (String statement : statements)
+		{
+			PreparedStatement ps = cw.prepareStatement(statement);
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+		}
 		// remove the corresponding row(s) from the C__INDEX table
 		StringBuilder commandString = new StringBuilder("DELETE FROM ");
 		commandString.append(Defaults.INDEX_TABLENAME);
 		commandString.append(" WHERE TABLE_NAME = ? AND INDEX_NAME = ?");
-		ps = cw.prepareStatement(commandString.toString());
+		PreparedStatement ps = cw.prepareStatement(commandString.toString());
 		ps.setString(1, table);
 		ps.setString(2, indexName);
 		Tools.logFine(ps);

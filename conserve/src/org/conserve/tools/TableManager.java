@@ -185,7 +185,7 @@ public class TableManager
 					// create the table with an identity column
 					createTable(Defaults.ARRAY_TABLENAME,
 							new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL },
-							new String[] { adapter.getLongTypeKeyword(), adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+							new String[] { adapter.getIdentity() + " PRIMARY KEY", adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
 				}
 				else
 				{
@@ -195,8 +195,9 @@ public class TableManager
 					{
 						// create the table as usual
 						createTable(Defaults.ARRAY_TABLENAME,
-								new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL },
-								new String[] { adapter.getLongTypeKeyword(), adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+								new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL }, new String[] {
+										adapter.getLongTypeKeyword() + " PRIMARY KEY", adapter.getVarCharIndexed(), adapter.getVarCharIndexed() },
+								cw);
 						// create the trigger sequence
 						createTriggeredSequence(cw, Defaults.ARRAY_TABLENAME);
 
@@ -423,6 +424,7 @@ public class TableManager
 		if (adapter.tableNamesAreLowerCase())
 		{
 			tableName = tableName.toLowerCase();
+			columnName = columnName.toLowerCase();
 		}
 		Connection c = cw.getConnection();
 		DatabaseMetaData metaData = c.getMetaData();
@@ -621,7 +623,8 @@ public class TableManager
 	 * Load a list of all classes stored in the database from the IS_A table.
 	 * 
 	 * @param cw
-	 * 			@throws SQLException @throws
+	 * @throws SQLException
+	 * 			@throws
 	 */
 	private List<Class<?>> populateClassList(ConnectionWrapper cw) throws SQLException
 	{
@@ -1149,6 +1152,8 @@ public class TableManager
 				sb.append(" COLUMN ");
 				sb.append(column);
 				sb.append(" ");
+				sb.append(adapter.getColumnModificationTypeKeyword());
+				sb.append(" ");
 				sb.append(nuType);
 				PreparedStatement ps = cw.prepareStatement(sb.toString());
 				Tools.logFine(ps);
@@ -1365,7 +1370,6 @@ public class TableManager
 				{
 					// add entries
 					addEntries(nuClasses, cw);
-
 				}
 				// move moved fields
 				List<FieldChangeDescription> movedFields = inheritanceChanges.getMovedFields();
@@ -1431,75 +1435,83 @@ public class TableManager
 					}
 				}
 
-				// Check if any property has been moved up or down
-				for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
+				// only check for changed properties if the inheritance model
+				// hasn't changed
+				// it's not possible to change both at once
+				if (!inheritanceChanges.inheritanceModelChanged())
 				{
-					String tablename = nuObjectStack.getRepresentation(level).getTableName();
-					// find the list of name type pairs for the corresponding
-					// database table
-					Map<String, String> valueTypeMap = getDatabaseColumns(tablename, cw);
 
-					for (Entry<String, String> en : valueTypeMap.entrySet())
+					// Check if any property has been moved up or down
+					for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
 					{
-						String colName = en.getKey();
-						Integer correctLevel = nuObjectStack.getRepresentationLevel(colName);
-						if (correctLevel != null && correctLevel != level)
+						String tablename = nuObjectStack.getRepresentation(level).getTableName();
+						// find the list of name type pairs for the
+						// corresponding
+						// database table
+						Map<String, String> valueTypeMap = getDatabaseColumns(tablename, cw);
+
+						for (Entry<String, String> en : valueTypeMap.entrySet())
 						{
-							moveField(nuObjectStack, colName, level, correctLevel, cw);
+							String colName = en.getKey();
+							Integer correctLevel = nuObjectStack.getRepresentationLevel(colName);
+							if (correctLevel != null && correctLevel != level)
+							{
+								moveField(nuObjectStack, colName, level, correctLevel, cw);
+							}
 						}
+
 					}
 
-				}
-
-				// check if fields have changed
-				ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
-				ObjectRepresentation toRep = nuObjectStack.getActualRepresentation();
-				try
-				{
-					FieldChangeDescription change = fromRep.getFieldDifference(toRep);
-					if (change != null)
+					// check if fields have changed
+					ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
+					ObjectRepresentation toRep = nuObjectStack.getActualRepresentation();
+					try
 					{
-						if (change.isDeletion())
+						FieldChangeDescription change = fromRep.getFieldDifference(toRep);
+						if (change != null)
 						{
-							dropColumn(toRep.getTableName(), change.getFromName(), cw);
-						}
-						else if (change.isCreation())
-						{
-							createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
-						}
-						else if (change.isNameChange())
-						{
-							renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
-						}
-						else if (change.isTypeChange())
-						{
-							if (CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
+							if (change.isDeletion())
 							{
-								// there is a conversion available
-								// change the column type
-								changeColumnType(toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
-
-								// Update object references and remove
-								// incompatible entries
-								updateReferences(toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
-							}
-							else
-							{
-								// no conversion, drop and recreate.
 								dropColumn(toRep.getTableName(), change.getFromName(), cw);
+							}
+							else if (change.isCreation())
+							{
 								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 							}
-						}
-						else if (change.isIndexChange())
-						{
-							// indexes have changed
-							recreateIndices(toRep, cw);
+							else if (change.isNameChange())
+							{
+								renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
+							}
+							else if (change.isTypeChange())
+							{
+								if (CompabilityCalculator.calculate(change.getFromClass(), change.getToClass()))
+								{
+									// there is a conversion available
+									// change the column type
+									changeColumnType(toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
+
+									// Update object references and remove
+									// incompatible entries
+									updateReferences(toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
+								}
+								else
+								{
+									// no conversion, drop and recreate.
+									dropColumn(toRep.getTableName(), change.getFromName(), cw);
+									createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+								}
+							}
+							else if (change.isIndexChange())
+							{
+								// indexes have changed
+								recreateIndices(toRep, cw);
+							}
 						}
 					}
-				}
-				catch (MetadataException e)
-				{
-					throw new SQLException(e);
+					catch (MetadataException e)
+					{
+						throw new SQLException(e);
+					}
 				}
 			}
 		}
@@ -1531,8 +1543,8 @@ public class TableManager
 			query.append("UPDATE ");
 			query.append(movedField.getToTable());
 			query.append(" SET ");
-			query.append(movedField.getToTable());
-			query.append(".");
+			// query.append(movedField.getToTable());
+			// query.append(".");
 			query.append(movedField.getToName());
 			query.append(" = (SELECT ");
 			query.append(movedField.getFromTable());
@@ -2285,11 +2297,14 @@ public class TableManager
 			else
 			{
 				// new table does not exist, rename old table
-				String tableRenameStmt = adapter.getTableRenameStatement(oldName, newName);
-				PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName);
+				for (String tableRenameStmt : tableRenameStmts)
+				{
+					PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
+					Tools.logFine(ps);
+					ps.execute();
+					ps.close();
+				}
 			}
 		}
 	}

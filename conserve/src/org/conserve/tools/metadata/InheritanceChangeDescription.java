@@ -64,4 +64,15 @@ public class InheritanceChangeDescription
 	{
 		removedSuperClasses.add(realDeleted);		
 	}
+
+
+	/**
+	 * True if the inheritance model has changed so much that checking for changes in the actual object is pointless.
+	 * 
+	 * @return
+	 */
+	public boolean inheritanceModelChanged()
+	{
+		return false;
+	}
 }

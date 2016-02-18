@@ -665,13 +665,13 @@ public class AdapterBase
 	 * @param newTableName
 	 *            the new name of the table.
 	 */
-	public String getTableRenameStatement(String oldTableName, String newTableName)
+	public String[] getTableRenameStatements(String oldTableName, String newTableName)
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
 		sb.append(oldTableName);
 		sb.append(" RENAME TO ");
 		sb.append(newTableName);
-		return sb.toString();
+		return new String[]{sb.toString()};
 
 	}
 
@@ -742,4 +742,15 @@ public class AdapterBase
 	{
 		return "ALTER";
 	}
+
+	/**
+	 * Does the column modification statement require a special keyword between the column name and the type?
+	 * If so, return it here.
+	 * @return
+	 */
+	public Object getColumnModificationTypeKeyword()
+	{
+		return "";
+	}
+	
 }

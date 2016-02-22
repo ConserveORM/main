@@ -2676,7 +2676,7 @@ public class TableManager
 	public void dropIndex(String table, String indexName, ConnectionWrapper cw) throws SQLException
 	{
 
-		String[] statements = adapter.getDropIndexStatement(table, indexName);
+		String[] statements = adapter.getDropIndexStatements(table, indexName);
 		for (String statement : statements)
 		{
 			PreparedStatement ps = cw.prepareStatement(statement);

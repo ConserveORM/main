@@ -65,11 +65,11 @@ public class MySqlAdapter extends AdapterBase
 	 * MySQL and MariaDB don't have a way to check if an index exists before dropping it, and dropping a non-existing index causes an error.
 	 * Therefore we have this rather convoluted way of checking for the index before dropping it.
 	 * 
-	 * @see org.conserve.adapter.AdapterBase#getDropIndexStatement(java.lang.String,
+	 * @see org.conserve.adapter.AdapterBase#getDropIndexStatements(java.lang.String,
 	 *      java.lang.String)
 	 */
 	@Override
-	public String [] getDropIndexStatement(String table, String indexName)
+	public String [] getDropIndexStatements(String table, String indexName)
 	{
 		String [] res = new String[4];
 		

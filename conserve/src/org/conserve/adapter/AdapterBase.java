@@ -705,7 +705,7 @@ public class AdapterBase
 	 * @param indexName the index to drop.
 	 * @return
 	 */
-	public String[] getDropIndexStatement(String table, String indexName)
+	public String[] getDropIndexStatements(String table, String indexName)
 	{
 		StringBuilder sb = new StringBuilder("DROP INDEX ");
 		if(isSupportsExistsKeyword())

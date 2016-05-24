@@ -13,3 +13,5 @@ Conserve makes it very difficult to inadvertently write SQL injection bugs.
 Head over to the tutorial to begin using Conserve:  
 https://github.com/ConserveORM/main/wiki/Tutorial
 
+Conserve ORM is sponsored by:<br/>
+[![Internetfonden Logo](http://i.imgur.com/1rgwzHg.png)](https://www.internetfonden.se/)

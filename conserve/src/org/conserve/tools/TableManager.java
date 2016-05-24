@@ -785,14 +785,15 @@ public class TableManager
 
 			// drop the table
 			conditionalDelete(tableName, cw);
-			if (!adapter.isSupportsIdentity())
+			if (!adapter.isSupportsIdentity() && c.equals(Object.class))
 			{
 				// this adapter relies on sequences, so drop the corresponding
 				// sequence
 				String sequenceName = Tools.getSequenceName(tableName, adapter);
-				String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
-
-				PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
+				StringBuilder dropGeneratorQuery = new StringBuilder("DROP GENERATOR ");
+				dropGeneratorQuery.append(sequenceName);
+				
+				PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery.toString());
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
@@ -1571,28 +1572,24 @@ public class TableManager
 			// underlying database does not support joins in UPDATE statements,
 			// use alternate form
 			StringBuilder query = new StringBuilder();
-			query.append("REPLACE INTO ");
+			query.append("UPDATE ");
 			query.append(movedField.getToTable());
-			query.append("(");
+			query.append(" SET ");
 			query.append(movedField.getToName());
-			query.append(") SELECT A.");
+			query.append(" = (SELECT ");
 			query.append(movedField.getFromName());
-			query.append(" FROM ");
-			query.append(movedField.getFromTable());// replace with alias?
-			query.append(" A INNER JOIN ");
+			query.append(" FROM " );
+			query.append(movedField.getFromTable());
+			query.append(" WHERE ");
+			query.append(Defaults.ID_COL);
+			query.append(" = " );
 			query.append(movedField.getToTable());
-			query.append(" B ON ");
-			query.append(" A");
 			query.append(".");
 			query.append(Defaults.ID_COL);
-			query.append(" = ");
-			query.append(" B");
-			query.append(".");
-			query.append(Defaults.ID_COL);
+			query.append(")");
 			PreparedStatement ps = cw.prepareStatement(query.toString());
 			Tools.logFine(ps);
 			ps.executeUpdate();
-
 		}
 
 		if (movedField.getFromClass() == null)

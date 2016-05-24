@@ -73,6 +73,6 @@ public class InheritanceChangeDescription
 	 */
 	public boolean inheritanceModelChanged()
 	{
-		return false;
+		return !movedFields.isEmpty();
 	}
 }

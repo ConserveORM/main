@@ -14,5 +14,5 @@ Head over to the tutorial to begin using Conserve:
 https://github.com/ConserveORM/main/wiki/Tutorial
 
 Conserve ORM is sponsored by:<br/>
-[![HiQ logo](http://i.imgur.com/9CGsTv6.png)<br/>HiQ](http://hiq.se/)<br/>
+[![HiQ logo](http://i.imgur.com/9CGsTv6.png)](http://hiq.se/)<br/>
 [![Internetfonden logo](http://i.imgur.com/1rgwzHg.png)](https://www.internetfonden.se/)<br/>

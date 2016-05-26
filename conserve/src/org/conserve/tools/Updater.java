@@ -77,12 +77,7 @@ public class Updater
 			List<ObjectRepresentation>reps = oStack.getAllRepresentations();
 			for(ObjectRepresentation rep:reps)
 			{
-				//TODO: Check if rep has any properties before calculating cast
-				Long repId = adapter.getPersist().getCastId(
-						rep.getRepresentedClass(),
-						oStack.getActualRepresentation().getRepresentedClass(),
-						databaseId, cw);
-				rep.setId(repId);
+				rep.setId(databaseId);
 				// get all existing reference values
 				HashMap<String, Long> refValues = getReferenceValues(cw, rep);
 				ArrayList<Object> values = new ArrayList<Object>();
@@ -109,9 +104,6 @@ public class Updater
 						// save the new value
 						Long propertyId = adapter.getPersist()
 								.saveObjectUnprotected(cw, value, delayBuffer);
-						propertyId = adapter.getPersist()
-								.getCastId(referenceType, value.getClass(),
-										propertyId, cw);
 						if (propertyId == null)
 						{
 							break;
@@ -359,8 +351,7 @@ public class Updater
 			ObjectRepresentation rep) throws SQLException
 	{
 		ObjectRepresentation actual = oStack.getActualRepresentation();
-		rep.setId(adapter.getPersist().getCastId(rep.getRepresentedClass(),
-				actual.getRepresentedClass(), actual.getId(), cw));
+		rep.setId( actual.getId());
 
 		// set all the values to NULL
 		PreparedStatement ps = null;

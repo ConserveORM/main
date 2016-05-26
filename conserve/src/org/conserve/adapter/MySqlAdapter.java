@@ -58,7 +58,42 @@ public class MySqlAdapter extends AdapterBase
 	public String getKeyLength()
 	{
 		// maximum allowed key length.
-		return "(900)";
+		return "(255)";
+	}
+
+	/**
+	 * MySQL and MariaDB don't have a way to check if an index exists before dropping it, and dropping a non-existing index causes an error.
+	 * Therefore we have this rather convoluted way of checking for the index before dropping it.
+	 * 
+	 * @see org.conserve.adapter.AdapterBase#getDropIndexStatements(java.lang.String,
+	 *      java.lang.String)
+	 */
+	@Override
+	public String [] getDropIndexStatements(String table, String indexName)
+	{
+		String [] res = new String[4];
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append(
+				"set @exist := (select count(*) from information_schema.statistics where table_name = '");
+		sb.append(table);
+		sb.append("' and index_name = '");
+		sb.append(indexName);
+		sb.append("' and table_schema = database())");
+		res[0]=sb.toString();
+		
+		sb = new StringBuilder();
+		sb.append("set @sqlstmt := if( @exist > 0, 'DROP INDEX ");
+		sb.append(indexName);
+		sb.append(" ON ");
+		sb.append(table);
+		sb.append("', 'select 0')");
+		res[1]=sb.toString();
+		
+		res[2]="PREPARE stmt FROM @sqlstmt";
+		res[3]= "EXECUTE stmt";
+
+		return res;
 	}
 
 	/**
@@ -119,5 +154,32 @@ public class MySqlAdapter extends AdapterBase
 		statement.append(" ");
 		statement.append(Defaults.NEW_COLUMN_DESCRIPTION_PLACEHOLDER);
 		return statement.toString();
+	}
+
+	/**
+	 * @see org.conserve.adapter.AdapterBase#averageRequiresCast()
+	 */
+	@Override
+	public boolean averageRequiresCast()
+	{
+		return false;
+	}
+
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getColumnModificationKeyword()
+	 */
+	@Override
+	public Object getColumnModificationKeyword()
+	{
+		return "MODIFY";
+	}
+
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getMaximumNameLength()
+	 */
+	@Override
+	public int getMaximumNameLength()
+	{
+		return 64;
 	}
 }

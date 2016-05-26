@@ -21,7 +21,6 @@ package org.conserve.select.discriminators;
 import java.lang.reflect.Constructor;
 
 import org.conserve.select.ConditionalClause;
-import org.conserve.tools.ObjectTools;
 
 /**
  * @author Erik Berglund
@@ -125,6 +124,12 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 	{
 		setSelectionClass(queryClass);
 		super.setQueryClass(queryClass);
+	}
+	
+	@Override 
+	public Class<?> getQueryClass()
+	{
+		return getSelectionClass();
 	}
 
 	/**

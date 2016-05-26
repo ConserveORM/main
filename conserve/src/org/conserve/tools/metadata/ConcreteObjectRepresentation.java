@@ -24,29 +24,33 @@ import org.conserve.tools.protection.ProtectionEntry;
 import org.conserve.tools.protection.ProtectionStack;
 
 /**
- * An object representation loaded by direct examination of the actual, in-memory object graph.
+ * An object representation loaded by direct examination of the actual,
+ * in-memory object graph.
+ * 
  * @author Erik Berglund
  *
  */
 public class ConcreteObjectRepresentation extends ObjectRepresentation
 {
 
-	public ConcreteObjectRepresentation(AdapterBase adapter, Class<?> c, Object o,
-			DelayedInsertionBuffer delayBuffer)
+	public ConcreteObjectRepresentation(AdapterBase adapter, Class<?> c, Object o, DelayedInsertionBuffer delayBuffer)
 	{
-		this.protectionStack = new ProtectionStack(adapter.getPersist()
-				.getProtectionManager());
+		this.protectionStack = new ProtectionStack(adapter.getPersist().getProtectionManager());
 		this.delayBuffer = delayBuffer;
 		this.adapter = adapter;
 		this.object = o;
 		this.clazz = c;
+		Class<?> actualClass = c;
+		if (o != null)
+		{
+			actualClass = o.getClass();
+		}
 		Method[] methods = c.getDeclaredMethods();
 		if (c.isArray())
 		{
-			tableName = NameGenerator.getArrayMemberTableName(
-					c.getComponentType(), adapter);
+			tableName = NameGenerator.getArrayMemberTableName(c.getComponentType(), adapter);
 		}
-		else 
+		else
 		{
 			tableName = NameGenerator.getTableName(c, adapter);
 		}
@@ -63,55 +67,45 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				try
 				{
 					props.add(name);
-					Method mutator = ObjectTools.getMutator(c,
-							getMutatorName(m), m.getReturnType());
+					// note that we need to use the actual class, to prevent an
+					// exception
+					Method mutator = ObjectTools.getMutator(actualClass, getMutatorName(m), m.getReturnType());
+					Method getter = ObjectTools.getAccessor(actualClass, m.getName());
 					setters.add(mutator);
-					getters.add(m);
-					if (o != null)
+					getters.add(getter);
+					if (o != null && getter != null)
 					{
-						boolean oldAccessValue = m.isAccessible();
-						m.setAccessible(true);
-						Object value = m.invoke(o);
+						boolean oldAccessValue = getter.isAccessible();
+						getter.setAccessible(true);
+						Object value = getter.invoke(o);
 						values.add(value);
-						m.setAccessible(oldAccessValue);
+						getter.setAccessible(oldAccessValue);
 					}
 					else
 					{
 						values.add(null);
 					}
 
-					//handle BLOB/CLOB annotations
-					if (m.isAnnotationPresent(AsClob.class)
-							&& m.getReturnType().equals(char[].class)
-							&& adapter.isSupportsClob())
+					// handle BLOB/CLOB annotations
+					if (m.isAnnotationPresent(AsClob.class) && m.getReturnType().equals(char[].class) && adapter.isSupportsClob())
 					{
 						returnTypes.add(Clob.class);
 					}
-					else if (m.isAnnotationPresent(AsBlob.class)
-							&& m.getReturnType().equals(byte[].class)
-							&& adapter.isSupportsBlob())
+					else if (m.isAnnotationPresent(AsBlob.class) && m.getReturnType().equals(byte[].class) && adapter.isSupportsBlob())
 					{
 						returnTypes.add(Blob.class);
 					}
 					else
 					{
 						returnTypes.add(m.getReturnType());
-						if (adapter.isSupportsClob()
-								&& m.isAnnotationPresent(AsClob.class))
+						if (adapter.isSupportsClob() && m.isAnnotationPresent(AsClob.class))
 						{
-							LOGGER.warning("AsClob annotation is present on property "
-									+ name
-									+ " of class "
-									+ NameGenerator.getSystemicName(clazz)
+							LOGGER.warning("AsClob annotation is present on property " + name + " of class " + NameGenerator.getSystemicName(clazz)
 									+ ", but it does not have char[] return type.");
 						}
-						if (adapter.isSupportsBlob()
-								&& m.isAnnotationPresent(AsBlob.class))
+						if (adapter.isSupportsBlob() && m.isAnnotationPresent(AsBlob.class))
 						{
-							LOGGER.warning("AsBlob annotation is present on property "
-									+ name
-									+ " of class "
-									+ NameGenerator.getSystemicName(clazz)
+							LOGGER.warning("AsBlob annotation is present on property " + name + " of class " + NameGenerator.getSystemicName(clazz)
 									+ ", but it does not have byte[] return type.");
 						}
 					}
@@ -124,20 +118,20 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 					}
 					if (m.isAnnotationPresent(MultiIndexed.class))
 					{
-						String [] indices = m.getAnnotation(MultiIndexed.class).values();
-						for(String i:indices)
+						String[] indices = m.getAnnotation(MultiIndexed.class).values();
+						for (String i : indices)
 						{
 							indexNames.add(i);
 						}
 					}
-					if(indexNames.size()>0)
+					if (indexNames.size() > 0)
 					{
-						indices.put(name,indexNames);
+						indices.put(name, indexNames);
 					}
 				}
 				catch (Exception e)
 				{
-					//can't recover, use generic catch
+					// can't recover, use generic catch
 					e.printStackTrace();
 				}
 			}
@@ -150,11 +144,10 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			// are final
 			values.add(o);
 		}
-		
-		//sort out the indices
+
+		// sort out the indices
 		buildIndexMap();
 	}
-	
 
 	/**
 	 * Save this object to the database. All properties will be saved. After
@@ -166,16 +159,18 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	 *            the connection wrapper to use for the database operations.
 	 * @param subClassName
 	 *            the name of the direct subclass, if any. May be null.
-	 * @param subClassId
-	 *            the id of the subclass table row, if any. May be null.
+	 * @param realId
+	 *            the id of the table row, if any. May be null.
 	 * @throws SQLException
 	 */
-	public void save(ConnectionWrapper cw, String subClassName, Long subClassId)
-			throws SQLException
+	public void save(ConnectionWrapper cw, String subClassName, Long realId) throws SQLException
 	{
 		// store a reference to the subclass table entry
-		addValueTrio(Defaults.REAL_CLASS_COL, subClassName,String.class);
-		addValueTrio(Defaults.REAL_ID_COL, subClassId,Long.class);
+		addValueTrio(Defaults.REAL_CLASS_COL, subClassName, String.class);
+		if (realId != null)
+		{
+			id = realId;
+		}
 		String stmt = getRowInsertionStatement();
 		PreparedStatement ps = cw.prepareStatement(stmt);
 		fillRowInsertionStatement(ps, cw);
@@ -185,21 +180,26 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 		if (!isArray())
 		{
 			// store the id of the inserted row
-			id = adapter.getPersist().getLastId(cw, getTableName());
+			if (realId == null)
+			{
+				id = adapter.getPersist().getLastId(cw, getTableName());
+			}
 			// save the protection entries
 			protectionStack.save(this.getTableName(), id, cw);
 		}
 		else
 		{
 			// add the entries of the array
-			id = adapter.getPersist().getLastId(cw, Defaults.ARRAY_TABLENAME);
+			if (realId == null)
+			{
+				id = adapter.getPersist().getLastId(cw, Defaults.ARRAY_TABLENAME);
+			}
 			protectionStack.save(Defaults.ARRAY_TABLENAME, id, cw);
-			adapter.getPersist().getArrayEntryWriter()
-					.addArrayEntries(cw, id, object, delayBuffer);
+			adapter.getPersist().getArrayEntryWriter().addArrayEntries(cw, id, object, delayBuffer);
 		}
-		if(delayBuffer!=null && object!=null)
+		if (delayBuffer != null && object != null)
 		{
-			delayBuffer.setUndefinedIds(id,System.identityHashCode(object));
+			delayBuffer.setUndefinedIds(id, System.identityHashCode(object));
 		}
 	}
 
@@ -210,41 +210,43 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	 *         object.
 	 * @throws SQLException
 	 */
-	public String getTableCreationStatement(ConnectionWrapper cw)
-			throws SQLException
+	public String getTableCreationStatement(ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder("CREATE TABLE ");
 		statement.append(getTableName());
 		statement.append(" (");
 		ArrayList<String> columnDescriptions = new ArrayList<String>();
-		// add the identifier, set it to a primary key
-		if (adapter.isSupportsIdentity())
+		// add the identifier, set it to a primary key if this is the
+		// java.lang.Object class or an array
+		if (this.getRepresentedClass().equals(Object.class) || this.getRepresentedClass().isArray())
 		{
-			columnDescriptions.add(Defaults.ID_COL + " "
-					+ adapter.getIdentity() + " PRIMARY KEY");
+			if (adapter.isSupportsIdentity())
+			{
+				columnDescriptions.add(Defaults.ID_COL + " " + adapter.getIdentity() + " PRIMARY KEY");
+			}
+			else
+			{
+				columnDescriptions.add(Defaults.ID_COL + " " + adapter.getLongTypeKeyword() + " PRIMARY KEY");
+
+			}
 		}
 		else
 		{
-			columnDescriptions.add(Defaults.ID_COL + " "
-					+ adapter.getLongTypeKeyword() + " PRIMARY KEY");
-
+			// not the base class (java.lang.Object), so not
+			// auto-increment
+			columnDescriptions.add(Defaults.ID_COL + " " + adapter.getLongTypeKeyword() + " PRIMARY KEY");
 		}
 
 		if (this.clazz.isArray())
 		{
-			columnDescriptions.add(Defaults.ARRAY_MEMBER_ID + " "
-					+ adapter.getReferenceType(Defaults.ARRAY_TABLENAME));
+			columnDescriptions.add(Defaults.ARRAY_MEMBER_ID + " " + adapter.getReferenceType(Defaults.ARRAY_TABLENAME));
 			columnDescriptions.add(Defaults.ARRAY_POSITION + " int ");
-			columnDescriptions.add(Defaults.COMPONENT_CLASS_COL +" "
-					+ adapter.getVarCharIndexed());
-			columnDescriptions.add(Defaults.VALUE_COL + " "
-					+ adapter.getColumnType(clazz.getComponentType(), null));
+			columnDescriptions.add(Defaults.COMPONENT_CLASS_COL + " " + adapter.getVarCharIndexed());
+			columnDescriptions.add(Defaults.VALUE_COL + " " + adapter.getColumnType(clazz.getComponentType(), null));
 		}
 		else
 		{
-			columnDescriptions.add(Defaults.REAL_CLASS_COL + " "
-					+ adapter.getVarCharIndexed());
-			columnDescriptions.add(Defaults.REAL_ID_COL + " bigint");
+			columnDescriptions.add(Defaults.REAL_CLASS_COL + " " + adapter.getVarCharIndexed());
 			for (int x = 0; x < this.getPropertyCount(); x++)
 			{
 				String mName = this.getPropertyName(x) + " ";
@@ -255,12 +257,11 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				}
 				else
 				{
-					mName += adapter.getColumnType(getReturnType(x),
-							getAccessor(x));
+					mName += adapter.getColumnType(getReturnType(x), getAccessor(x));
 				}
 				columnDescriptions.add(mName);
-				//add info to type table
-				adapter.getPersist().getTableManager().addTypeInfo(getTableName(),getPropertyName(x),getReturnType(x),cw);
+				// add info to type table
+				adapter.getPersist().getTableManager().addTypeInfo(getTableName(), getPropertyName(x), getReturnType(x), cw);
 			}
 		}
 		for (int x = 0; x < columnDescriptions.size(); x++)
@@ -275,8 +276,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 		return statement.toString();
 	}
 
-	public void ensureContainedTablesExist(ConnectionWrapper cw)
-			throws SQLException, SchemaPermissionException
+	public void ensureContainedTablesExist(ConnectionWrapper cw) throws SQLException, SchemaPermissionException
 	{
 
 		// a list of contained classes that must be added
@@ -322,10 +322,16 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			statement.append(Defaults.COMPONENT_TABLE_COL);
 			statement.append(",");
 			statement.append(Defaults.COMPONENT_CLASS_COL);
-			statement.append(")VALUES(?,?)");
+			statement.append(",");
+			statement.append(Defaults.ID_COL);
+			statement.append(")VALUES(?,?,?)");
 		}
 		else
 		{
+			if (id != null)
+			{
+				addValueTrio(Defaults.ID_COL, id, Long.class);
+			}
 			statement.append(getTableName());
 			int nonNullCount = this.getNonNullPropertyCount();
 			statement.append(" (");
@@ -381,19 +387,18 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	 * @param ps
 	 * @throws SQLException
 	 */
-	public void fillRowInsertionStatement(PreparedStatement ps,
-			ConnectionWrapper cw) throws SQLException
+	public void fillRowInsertionStatement(PreparedStatement ps, ConnectionWrapper cw) throws SQLException
 	{
 		if (this.isArray())
 		{
-			ps.setString(1, NameGenerator.getTableName(
-					clazz.getComponentType(), adapter));
+			ps.setString(1, NameGenerator.getTableName(clazz.getComponentType(), adapter));
 			if (clazz.getComponentType().isArray())
 			{
 				ps.setString(1, Defaults.ARRAY_TABLENAME);
 			}
 			// the table also contains the actual name of the class
 			ps.setString(2, NameGenerator.getSystemicName(clazz));
+			ps.setLong(3, id);
 
 		}
 		else
@@ -414,46 +419,28 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 					}
 					else
 					{
-						Long id = adapter.getPersist().saveObjectUnprotected(
-								cw, value, delayBuffer);
+						Long id = adapter.getPersist().saveObjectUnprotected(cw, value, delayBuffer);
 						if (id == null)
 						{
 							ps.setNull(index, java.sql.Types.BIGINT);
 							// this is a circularly referenced object
 							// mark it for later insertion
-							delayBuffer.add(getTableName(), getPropertyName(x),
-									value, getReturnType(x),System.identityHashCode(this.object));
+							delayBuffer.add(getTableName(), getPropertyName(x), value, getReturnType(x), System.identityHashCode(this.object));
 						}
 						else
 						{
 							// get the correct id for the representative class
-							if (!c.equals(value.getClass()))
-							{
-								Class<?> tempClass = c;
-								Long nuId = adapter.getPersist().getCastId(
-										tempClass, value.getClass(), id, cw);
-								if(nuId == null)
-								{
-									System.out.println("Could not cast from " + value.getClass()+" to "+ tempClass);
-								}
-								ps.setLong(index, nuId);
-							}
-							else
-							{
-								ps.setLong(index, id);
-							}
+							ps.setLong(index, id);
+
 							// arrays are given as references to the
 							// ARRAY_TABLE_NAME row that represents them
 							if (value.getClass().isArray())
 							{
-								protectionStack.addEntry(new ProtectionEntry(
-										Defaults.ARRAY_TABLENAME,null, id, props.get(x)));
+								protectionStack.addEntry(new ProtectionEntry(Defaults.ARRAY_TABLENAME, null, id, props.get(x)));
 							}
 							else
 							{
-								protectionStack.addEntry(new ProtectionEntry(
-										value.getClass(), id, props.get(x),
-										adapter));
+								protectionStack.addEntry(new ProtectionEntry(value.getClass(), id, props.get(x), adapter));
 							}
 						}
 					}
@@ -461,5 +448,5 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			}
 		}
 	}
-	
+
 }

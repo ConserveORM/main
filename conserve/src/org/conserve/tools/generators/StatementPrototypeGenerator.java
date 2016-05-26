@@ -73,59 +73,6 @@ public class StatementPrototypeGenerator
 		parameterTypeIds = new HashMap<String, UniqueIdTree>();
 	}
 
-	public StatementPrototype generateCast(Class<?> from, Class<?> to)
-	{
-		Class<?> klass = from;
-		Class<?> target = to;
-		// check order of things
-		if (ObjectTools.isA(to, from))
-		{
-			klass = to;
-			target = from;
-		}
-		typeStack = new ObjectStack(adapter, klass);
-		typeIds = new UniqueIdTree(uidGenerator);
-		typeIds.nameStack(typeStack);
-
-		StatementPrototype res = new StatementPrototype(adapter, typeStack,
-				typeStack.getActualRepresentation().getRepresentedClass(),
-				false);
-
-		// get all the direct supers
-		Node current = typeStack.getNode(klass);
-		List<Node> supers = typeStack.getSupers(current);
-		while (supers.size() > 0)
-		{
-			Node next = null;
-			// find the super that is an instance of target
-			for (Node candidate : supers)
-			{
-				if (ObjectTools.isA(candidate.getRepresentation()
-						.getRepresentedClass(), target))
-				{
-					next = candidate;
-					break;
-				}
-			}
-			if (next == null)
-			{
-				// we're done
-				break;
-			}
-			else
-			{
-				// connect current and next with a link
-				res.getIdStatementGenerator().addLinkStatement(
-						next.getRepresentation(), current.getRepresentation());
-				// move up one level
-				current = next;
-				supers = typeStack.getSupers(current);
-			}
-		}
-		return res;
-
-	}
-
 	/**
 	 * Generate a statement prototype that looks in Class klass for objects. If
 	 * addJoins is true, it will also satisfy all superclasses.
@@ -137,15 +84,13 @@ public class StatementPrototypeGenerator
 	 * @return a prototype that can be used to generate PreparedStatements.
 	 * @throws SQLException
 	 */
-	public StatementPrototype generate(Class<?> klass, boolean addJoins)
-			throws SQLException
+	public StatementPrototype generate(Class<?> klass, boolean addJoins) throws SQLException
 	{
 		typeStack = new ObjectStack(adapter, klass);
 		typeIds = new UniqueIdTree(uidGenerator);
 		typeIds.nameStack(typeStack);
 
-		StatementPrototype res = new StatementPrototype(adapter, typeStack,
-				typeStack.getActualRepresentation().getRepresentedClass(),
+		StatementPrototype res = new StatementPrototype(adapter, typeStack, typeStack.getActualRepresentation().getRepresentedClass(), clauses,
 				addJoins);
 
 		generateRecursively(res, null, clauses);
@@ -153,8 +98,7 @@ public class StatementPrototypeGenerator
 		return res;
 	}
 
-	private void generateRecursively(StatementPrototype sp, Boolean sorted,
-			Clause... clauses) throws SQLException
+	private void generateRecursively(StatementPrototype sp, Boolean sorted, Clause... clauses) throws SQLException
 	{
 		if (clauses != null)
 		{
@@ -185,15 +129,13 @@ public class StatementPrototypeGenerator
 									}
 									else
 									{
-										throw new IllegalArgumentException(
-												"Multiple offsets defined.");
+										throw new IllegalArgumentException("Multiple offsets defined.");
 									}
 								}
 							}
 							else
 							{
-								throw new IllegalArgumentException(
-										"Multiple limits defined.");
+								throw new IllegalArgumentException("Multiple limits defined.");
 							}
 						}
 						if (subClauses != null)
@@ -210,10 +152,7 @@ public class StatementPrototypeGenerator
 					{
 						Selector sel = (Selector) clause;
 
-						ObjectStack oStack = new ObjectStack(
-								adapter,
-								sel.getSelectionClass(),
-								sel.getSelectionObject(),
+						ObjectStack oStack = new ObjectStack(adapter, sel.getSelectionClass(), sel.getSelectionObject(),
 								new DelayedInsertionBuffer(adapter.getPersist()));
 						typeIds.nameStack(oStack);
 						generateClause(oStack, sel, sp, sorted);
@@ -233,11 +172,8 @@ public class StatementPrototypeGenerator
 							{
 								Selector sel = (Selector) subClauses[x];
 
-								ObjectStack oStack = new ObjectStack(adapter,
-										sel.getSelectionClass(),
-										sel.getSelectionObject(),
-										new DelayedInsertionBuffer(adapter
-												.getPersist()));
+								ObjectStack oStack = new ObjectStack(adapter, sel.getSelectionClass(), sel.getSelectionObject(),
+										new DelayedInsertionBuffer(adapter.getPersist()));
 								typeIds.nameStack(oStack);
 								generateClause(oStack, sel, sp, sorted);
 							}
@@ -265,8 +201,7 @@ public class StatementPrototypeGenerator
 	private void generateOrder(Sorter sorter, StatementPrototype mainStatement)
 	{
 		// add order statements for all non-null values
-		ObjectStack oStack = new ObjectStack(adapter, sorter.getSortClass(),
-				sorter.getSortObject());
+		ObjectStack oStack = new ObjectStack(adapter, sorter.getSortClass(), sorter.getSortObject());
 		this.typeIds.nameStack(oStack);
 		mainStatement.getIdStatementGenerator().addPropertyTablesToJoin(oStack);
 		for (ObjectRepresentation rep : oStack.getAllRepresentations())
@@ -295,8 +230,7 @@ public class StatementPrototypeGenerator
 		}
 	}
 
-	private void generateClause(ObjectStack oStack, Selector sel,
-			StatementPrototype sp, Boolean sorted) throws SQLException
+	private void generateClause(ObjectStack oStack, Selector sel, StatementPrototype sp, Boolean sorted) throws SQLException
 	{
 		if (oStack.getActualRepresentation().isArray())
 		{
@@ -326,11 +260,9 @@ public class StatementPrototypeGenerator
 	 *            true if this query is part of a sorted query
 	 * @throws SQLException
 	 */
-	private void generateNonArrayQuery(Selector sel, StatementPrototype sp,
-			ObjectStack oStack, Boolean sorted) throws SQLException
+	private void generateNonArrayQuery(Selector sel, StatementPrototype sp, ObjectStack oStack, Boolean sorted) throws SQLException
 	{
-		if (sorted == null
-				|| isCollectionsObject(sel.getSelectionObject().getClass()))
+		if (sorted == null || isCollectionsObject(sel.getSelectionObject().getClass()))
 		{
 			sorted = isSorted(sel.getSelectionObject().getClass());
 		}
@@ -340,9 +272,9 @@ public class StatementPrototypeGenerator
 		TreePathLister tpl = new TreePathLister();
 		List<List<ObjectRepresentation>> allPaths = tpl.generateLists(oStack);
 		tpl.prunePaths(allPaths);
-		if(!sel.isStrictInheritance())
+		if (!sel.isStrictInheritance())
 		{
-			tpl.pruneInheritance(allPaths,sel.getSelectionClass());
+			tpl.pruneInheritance(allPaths, sel.getSelectionClass());
 		}
 
 		// go through the list of paths and add all relevant query parts
@@ -352,28 +284,23 @@ public class StatementPrototypeGenerator
 			for (int t = 0; t < path.size(); t++)
 			{
 				ObjectRepresentation rep = path.get(t);
-				//don't add link on first object, obviously
+				// don't add link on first object, obviously
 				if (subRep != null)
 				{
 					sp.getIdStatementGenerator().addLinkStatement(rep, subRep);
 				}
-				else
-				{
-					//make sure the class is in the link table		
-					sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
-					
-				}
+				// make sure the class is in the link table
+				sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
 				// prepare for next step
 				subRep = rep;
-				//store parameters
+				// store parameters
 
 				// iterate over the non-null values
 				for (Integer x : rep)
 				{
 					Object property = rep.getPropertyValue(x);
 					String propertyName = rep.getPropertyName(x);
-					StringBuilder conditional = new StringBuilder(
-							rep.getAsName());
+					StringBuilder conditional = new StringBuilder(rep.getAsName());
 					conditional.append(".");
 					conditional.append(propertyName);
 					if (rep.isPrimitive(x))
@@ -383,8 +310,7 @@ public class StatementPrototypeGenerator
 						if (sel.takesPlaceholder())
 						{
 							conditional.append("?");
-							sp.addConditionalStatement(conditional.toString(),
-									property);
+							sp.addConditionalStatement(conditional.toString(), property);
 						}
 						else
 						{
@@ -395,21 +321,16 @@ public class StatementPrototypeGenerator
 					{
 						// the value is complex, insert a reference
 						Long id = (long) System.identityHashCode(property);
-						if (rep.getDelayedInsertionBuffer().isKnown(id,
-								property))
+						if (rep.getDelayedInsertionBuffer().isKnown(id, property))
 						{
 							break;
 						}
 						rep.getDelayedInsertionBuffer().addId(id, property);
-						ObjectStack propertyStack = new ObjectStack(adapter,
-								property.getClass(), property,
-								rep.getDelayedInsertionBuffer());
-						nameStack(rep.getAsName() + "." + propertyName,
-								propertyStack);
+						ObjectStack propertyStack = new ObjectStack(adapter, property.getClass(), property, rep.getDelayedInsertionBuffer());
+						nameStack(rep.getAsName() + "." + propertyName, propertyStack);
 						Class<?> propertyClass = rep.getReturnType(x);
 
-						ObjectRepresentation propertyRep = propertyStack
-								.getRepresentation(propertyClass);
+						ObjectRepresentation propertyRep = propertyStack.getRepresentation(propertyClass);
 
 						conditional.append(" = ");
 						conditional.append(propertyRep.getAsName());
@@ -418,9 +339,7 @@ public class StatementPrototypeGenerator
 						sp.addConditionalStatement(conditional.toString());
 						// is this query using strict inheritance?
 						// is the property and the property class different?
-						if ((sel.isStrictInheritance() || (!propertyClass
-								.isInterface() && !Modifier
-								.isAbstract(propertyClass.getModifiers())))
+						if ((sel.isStrictInheritance() || (!propertyClass.isInterface() && !Modifier.isAbstract(propertyClass.getModifiers())))
 								&& !propertyClass.equals(property.getClass()))
 						{
 							// Then add linking statement
@@ -444,8 +363,7 @@ public class StatementPrototypeGenerator
 	 * @param propertyStack
 	 * @param propertyClass
 	 */
-	private void addLinkStatement(StatementPrototype sp,
-			ObjectStack propertyStack, Class<?> propertyClass)
+	private void addLinkStatement(StatementPrototype sp, ObjectStack propertyStack, Class<?> propertyClass)
 	{
 		Node objRep = propertyStack.getNode(propertyClass);
 		Node current = propertyStack.getActual();
@@ -457,9 +375,7 @@ public class StatementPrototypeGenerator
 			Node next = null;
 			for (Node s : supers)
 			{
-				if (ObjectTools.isA(current.getRepresentation()
-						.getRepresentedClass(), s.getRepresentation()
-						.getRepresentedClass()))
+				if (ObjectTools.isA(current.getRepresentation().getRepresentedClass(), s.getRepresentation().getRepresentedClass()))
 				{
 					next = s;
 					break;
@@ -473,23 +389,18 @@ public class StatementPrototypeGenerator
 			else
 			{
 				// link the two representations, go up a level
-				sp.getIdStatementGenerator().addLinkStatement(
-						next.getRepresentation(), current.getRepresentation());
+				sp.getIdStatementGenerator().addLinkStatement(next.getRepresentation(), current.getRepresentation());
 				current = next;
 				supers = propertyStack.getSupers(current);
 			}
 		}
 		if (objRep.getRepresentation().isArray())
 		{
-			sp.getIdStatementGenerator().addPropertyTableToJoin(
-					Defaults.ARRAY_TABLENAME,
-					objRep.getRepresentation().getAsName());
+			sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, objRep.getRepresentation().getAsName());
 		}
 		else
 		{
-			sp.getIdStatementGenerator().addPropertyTableToJoin(
-					objRep.getRepresentation().getTableName(),
-					objRep.getRepresentation().getAsName());
+			sp.getIdStatementGenerator().addPropertyTableToJoin(objRep.getRepresentation().getTableName(), objRep.getRepresentation().getAsName());
 		}
 	}
 
@@ -539,8 +450,7 @@ public class StatementPrototypeGenerator
 			{
 				res = false;
 				// sorted maps are sorted
-				if (ObjectTools.implementsInterfaceIncludingSuper(c,
-						SortedMap.class))
+				if (ObjectTools.implementsInterfaceIncludingSuper(c, SortedMap.class))
 				{
 					res = true;
 				}
@@ -554,8 +464,7 @@ public class StatementPrototypeGenerator
 					res = true;
 				}
 			}
-			else if (ObjectTools.implementsInterfaceIncludingSuper(c,
-					Collection.class))
+			else if (ObjectTools.implementsInterfaceIncludingSuper(c, Collection.class))
 			{
 				// by default, collections are not sorted
 				res = false;
@@ -563,8 +472,7 @@ public class StatementPrototypeGenerator
 				if (ObjectTools.implementsInterfaceIncludingSuper(c, Set.class))
 				{
 					// check if c implements any of Sets sorted sub-interfaces
-					if (ObjectTools.implementsInterfaceIncludingSuper(c,
-							SortedSet.class))
+					if (ObjectTools.implementsInterfaceIncludingSuper(c, SortedSet.class))
 					{
 						res = true;
 					}
@@ -575,15 +483,13 @@ public class StatementPrototypeGenerator
 					}
 				}
 				// check if c is a Queue
-				if (ObjectTools.implementsInterfaceIncludingSuper(c,
-						Queue.class))
+				if (ObjectTools.implementsInterfaceIncludingSuper(c, Queue.class))
 				{
 					res = true;
 				}
 
 				// check if c is a List
-				if (ObjectTools
-						.implementsInterfaceIncludingSuper(c, List.class))
+				if (ObjectTools.implementsInterfaceIncludingSuper(c, List.class))
 				{
 					res = true;
 				}
@@ -615,8 +521,7 @@ public class StatementPrototypeGenerator
 			{
 				res = true;
 			}
-			else if (ObjectTools.implementsInterfaceIncludingSuper(c,
-					Collection.class))
+			else if (ObjectTools.implementsInterfaceIncludingSuper(c, Collection.class))
 			{
 				res = true;
 			}
@@ -635,12 +540,10 @@ public class StatementPrototypeGenerator
 	 *            true if outcome depends on ordering of elements.
 	 * @throws SQLException
 	 */
-	private void generateArrayQuery(Selector sel, StatementPrototype sp,
-			ObjectStack oStack, Boolean sorted) throws SQLException
+	private void generateArrayQuery(Selector sel, StatementPrototype sp, ObjectStack oStack, Boolean sorted) throws SQLException
 	{
 		ObjectRepresentation rep = oStack.getActualRepresentation();
-		sp.getIdStatementGenerator().addPropertyTableToJoin(
-				Defaults.ARRAY_TABLENAME, rep.getAsName());
+		sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
 		// iterate over all non-null array entries
 		// satisfy all the non-null members of the array
 		int length = Array.getLength(sel.getSelectionObject());
@@ -663,8 +566,7 @@ public class StatementPrototypeGenerator
 				Object o = Array.get(sel.getSelectionObject(), x);
 				if (o != null)
 				{
-					Class<?> propertyClass = sel.getSelectionObject()
-							.getClass().getComponentType();
+					Class<?> propertyClass = sel.getSelectionObject().getClass().getComponentType();
 					ArrayList<Object> conditionalValues = new ArrayList<Object>();
 					StringBuilder sb = new StringBuilder(rep.getAsName());
 					sb.append(".");
@@ -673,8 +575,7 @@ public class StatementPrototypeGenerator
 					// add an as statement for the relation
 					String relationTable = rep.getTableName();
 					String relationAsName = this.uidGenerator.next();
-					sp.getIdStatementGenerator().addPropertyTableToJoin(
-							relationTable, relationAsName);
+					sp.getIdStatementGenerator().addPropertyTableToJoin(relationTable, relationAsName);
 
 					sb.append(relationAsName);
 					sb.append(".");
@@ -695,8 +596,7 @@ public class StatementPrototypeGenerator
 					sb.append(".");
 					sb.append(Defaults.VALUE_COL);
 					sb.append(" ");
-					if (ObjectTools.isDatabasePrimitive(o.getClass())
-							&& ObjectTools.isDatabasePrimitive(propertyClass))
+					if (ObjectTools.isDatabasePrimitive(o.getClass()) && ObjectTools.isDatabasePrimitive(propertyClass))
 					{
 						sb.append(sel.getRelationalRepresentation());
 						if (sel.takesPlaceholder())
@@ -718,13 +618,9 @@ public class StatementPrototypeGenerator
 						}
 						rep.getDelayedInsertionBuffer().addId(id, o);
 						// name the property
-						ObjectStack propertyStack = new ObjectStack(adapter,
-								o.getClass(), o,
-								rep.getDelayedInsertionBuffer());
-						nameStack(relationAsName + "." + Defaults.VALUE_COL,
-								propertyStack);
-						ObjectRepresentation propertyRep = propertyStack
-								.getRepresentation(propertyClass);
+						ObjectStack propertyStack = new ObjectStack(adapter, o.getClass(), o, rep.getDelayedInsertionBuffer());
+						nameStack(relationAsName + "." + Defaults.VALUE_COL, propertyStack);
+						ObjectRepresentation propertyRep = propertyStack.getRepresentation(propertyClass);
 						sb.append(" = ");
 						sb.append(propertyRep.getAsName());
 						sb.append(".");

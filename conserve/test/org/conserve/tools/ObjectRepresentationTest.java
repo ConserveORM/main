@@ -5,7 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import org.conserve.tools.metadata.ChangeDescription;
+import org.conserve.tools.metadata.FieldChangeDescription;
 import org.conserve.tools.metadata.MetadataException;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.junit.Test;
@@ -24,43 +24,43 @@ public class ObjectRepresentationTest
 		ObjectRepresentation a = getStandard();
 		ObjectRepresentation b = getStandard();
 
-		assertNull(a.getDifference(b));
-		assertNull(b.getDifference(a));
-		assertNull(a.getDifference(a));
-		assertNull(b.getDifference(b));
+		assertNull(a.getFieldDifference(b));
+		assertNull(b.getFieldDifference(a));
+		assertNull(a.getFieldDifference(a));
+		assertNull(b.getFieldDifference(b));
 
 		// generate deletion rep
 		b.removeProperty("bar");
-		ChangeDescription cd = a.getDifference(b);
+		FieldChangeDescription cd = a.getFieldDifference(b);
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
 		assertTrue(cd.isDeletion());
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 
 		// generate addition rep
-		cd = b.getDifference(a);
+		cd = b.getFieldDifference(a);
 		assertNotNull(cd);
 		assertEquals("bar", cd.getToName());
 		assertTrue(cd.isCreation());
 
 		// generate rename rep
 		b.addNamedType("barz",  String.class);
-		cd = a.getDifference(b);
+		cd = a.getFieldDifference(b);
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
 		assertEquals("barz", cd.getToName());
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 
 		// generate change type rep
 		b.removeProperty("barz");
 		b.addNamedType("bar",  Long.class);
-		cd = a.getDifference(b);
+		cd = a.getFieldDifference(b);
 		assertNotNull(cd);
 		assertEquals("bar", cd.getFromName());
 		assertEquals("bar", cd.getToName());
 		assertEquals(String.class, cd.getFromClass());
 		assertEquals(Long.class, cd.getToClass());
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 
 		// generate two deletion reps
 		b.removeProperty("bar");
@@ -68,14 +68,14 @@ public class ObjectRepresentationTest
 		expectMetdataException(a, b);
 		// generate two addition reps
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 		
 		// generate deletion rep and addition rep
 		b.addNamedType("baz",  Double.class);
 		b.addNamedType("bat",  Double.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 		
 		// generate deletion rep and change name rep
 		b = getStandard();
@@ -85,7 +85,7 @@ public class ObjectRepresentationTest
 		expectMetdataException(a, b);
 		// generate addition rep and change name rep
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 		
 		// generate deletion rep and change type rep
 		b = getStandard();
@@ -95,7 +95,7 @@ public class ObjectRepresentationTest
 		expectMetdataException(a, b);
 		// generate addition rep and change type rep
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 				
 		// generate two rename reps
 		b = getStandard();
@@ -105,7 +105,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("bra", String.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 		
 		// generate rename rep and change type rep
 		b = getStandard();
@@ -115,7 +115,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("bar", Short.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 		
 		// generate two change type reps
 		b = getStandard();
@@ -125,7 +125,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("bar", Integer.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 		
 		
 		// generate rep that changes both type and name of one prop
@@ -134,7 +134,7 @@ public class ObjectRepresentationTest
 		b.addNamedType("faa", String.class);
 		expectMetdataException(a, b);
 		expectMetdataException(b, a);
-		assertNull(b.getDifference(b));
+		assertNull(b.getFieldDifference(b));
 	}
 	
 	//helper method to get a standard testing object
@@ -155,7 +155,7 @@ public class ObjectRepresentationTest
 		boolean thrown = false;
 		try
 		{
-			a.getDifference(b);
+			a.getFieldDifference(b);
 		}
 		catch (MetadataException e)
 		{

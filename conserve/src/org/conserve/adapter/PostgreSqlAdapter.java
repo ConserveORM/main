@@ -109,5 +109,22 @@ public class PostgreSqlAdapter extends AdapterBase
 		return "BYTEA";
 	}
 
+	/**
+	 * @see org.conserve.adapter.AdapterBase#averageRequiresCast()
+	 */
+	@Override
+	public boolean averageRequiresCast()
+	{
+		return false;
+	}
+	
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getColumnModificationTypeKeyword()
+	 */
+	@Override
+	public Object getColumnModificationTypeKeyword()
+	{
+		return "TYPE";
+	}
 	
 }

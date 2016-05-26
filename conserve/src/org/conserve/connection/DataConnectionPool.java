@@ -34,12 +34,13 @@ public class DataConnectionPool
 {
 	// database vars
 	private String dataBase;// the database to connect to
-	private String userName;// the user name to give when connecting to the database
+	private String userName;// the user name to give when connecting to the
+							// database
 	private String password;// the password to give to the database
 
 	private ArrayList<ConnectionWrapper> pool;
 	private int lastConnection = 0;
-	
+
 	private Object mutex = new Object();
 
 	private static final Logger LOGGER = Logger.getLogger("org.conserve");
@@ -68,7 +69,8 @@ public class DataConnectionPool
 	 * @param poolsize
 	 *            the initial size of the pool
 	 * @param driver
-	 *            the JDBC driver class name to use for the pool connections, can be null if JDBC version is 4 or greater.
+	 *            the JDBC driver class name to use for the pool connections,
+	 *            can be null if JDBC version is 4 or greater.
 	 * @param db
 	 *            The name of the database
 	 * @param uname
@@ -82,15 +84,19 @@ public class DataConnectionPool
 		this.userName = uname;
 		this.password = pw;
 		this.pool = new ArrayList<ConnectionWrapper>();
-		
-		try
+
+		if (driver != null)
 		{
-			//this is here for compatibility with drivers that are not JDBC 4.0 compliant or better.
-			Class.forName(driver).newInstance();
-		}
-		catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1)
-		{
-			e1.printStackTrace();
+			try
+			{
+				// this is here for compatibility with drivers that are not JDBC
+				// 4.0 compliant or better.
+				Class.forName(driver).newInstance();
+			}
+			catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1)
+			{
+				e1.printStackTrace();
+			}
 		}
 
 		// set up the connections
@@ -99,15 +105,13 @@ public class DataConnectionPool
 			if ((this.userName == null) || (this.dataBase == null) || (this.password == null))
 			{
 
-				throw new SQLException(
-						"Connection string, user name and password must be given. User name and password may be empty strings.");
+				throw new SQLException("Connection string, user name and password must be given. User name and password may be empty strings.");
 			}
 			else
 			{
 				try
 				{
-					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName,
-							this.password)));
+					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName, this.password)));
 				}
 				catch (Exception e)
 				{
@@ -120,8 +124,8 @@ public class DataConnectionPool
 	}
 
 	/**
-	 * gets a new database connection allocates more connections if necessary use commit() or rollback() methods when
-	 * you are done with it
+	 * gets a new database connection allocates more connections if necessary
+	 * use commit() or rollback() methods when you are done with it
 	 * 
 	 * @return an new ConnectionWrapper to the database
 	 * @throws SQLException
@@ -144,11 +148,13 @@ public class DataConnectionPool
 					break loop1;
 				}
 			}
-			if (res == null)// try increasing the pool size if no connection was available
+			if (res == null)// try increasing the pool size if no connection was
+							// available
 			{
 				try
 				{
-					this.increasePoolSizePercent(10);// increase poolsize with 10%
+					this.increasePoolSizePercent(10);// increase poolsize with
+														// 10%
 					x = this.lastConnection;
 					loop2: for (int y = 0; y < pool.size(); y++)
 					{
@@ -202,8 +208,7 @@ public class DataConnectionPool
 				LOGGER.fine("Increasing pool size from " + pool.size() + " to " + newsize + " entries.");
 				while (pool.size() < newsize)
 				{
-					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName,
-							this.password)));
+					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName, this.password)));
 				}
 			}
 			else if (this.pool.size() > newsize)// decrease the pool size
@@ -227,7 +232,8 @@ public class DataConnectionPool
 					}
 					if (!found)
 					{
-						// we have removed as many connections as we can, we won't remove taken connections
+						// we have removed as many connections as we can, we
+						// won't remove taken connections
 						break;
 					}
 				}

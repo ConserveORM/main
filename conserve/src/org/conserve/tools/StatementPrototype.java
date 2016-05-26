@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.select.Clause;
 import org.conserve.tools.generators.IdStatementGenerator;
 import org.conserve.tools.generators.RelationDescriptor;
 import org.conserve.tools.metadata.ObjectRepresentation;
@@ -54,12 +55,12 @@ public class StatementPrototype
 
 	private IdStatementGenerator idGen;
 
-	public StatementPrototype(AdapterBase adapter, ObjectStack oStack, Class<?> resultClass, boolean addJoins)
+	public StatementPrototype(AdapterBase adapter, ObjectStack oStack, Class<?> resultClass, Clause[]clauses, boolean addJoins)
 	{
 		this.adapter = adapter;
 		this.queryClass = resultClass;
 
-		idGen = new IdStatementGenerator(adapter,oStack,addJoins);
+		idGen = new IdStatementGenerator(adapter,oStack,clauses,addJoins);
 		// initialise the statement stack
 		push("AND");
 		statementStack = statementStackPointer;
@@ -130,7 +131,7 @@ public class StatementPrototype
 
 		// create the statement
 		StringBuilder sb = new StringBuilder(prePend);
-		String idStatement = idGen.generate(0);
+		String idStatement = idGen.generate();
 		sb.append(idGen.generateAsStatement());
 
 		boolean whereAdded = false;
@@ -333,10 +334,6 @@ public class StatementPrototype
 			statement.append(firstAsName);
 			statement.append(".");
 			statement.append(Defaults.REAL_CLASS_COL);
-			statement.append(",");
-			statement.append(firstAsName);
-			statement.append(".");
-			statement.append(Defaults.REAL_ID_COL);
 		}
 		for (int x = 0; x < idGen.getJoinTables().size(); x++)
 		{

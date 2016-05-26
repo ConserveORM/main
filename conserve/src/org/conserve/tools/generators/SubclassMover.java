@@ -36,8 +36,6 @@ import org.conserve.tools.Tools;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
-import org.conserve.tools.uniqueid.UniqueIdGenerator;
-import org.conserve.tools.uniqueid.UniqueIdTree;
 
 /**
  * Generates statements that copies all values in one column from one table to
@@ -68,8 +66,7 @@ public class SubclassMover
 	 * 
 	 * @throws SQLException
 	 */
-	public void move(ObjectStack fromStack, ObjectStack toStack, ObjectRepresentation subClass, ConnectionWrapper cw)
-			throws SQLException
+	public void move(ObjectStack fromStack, ObjectStack toStack, ObjectRepresentation subClass, ConnectionWrapper cw) throws SQLException
 	{
 		// make sure the new table has all the right columns
 		for (int prop = 0; prop < subClass.getPropertyCount(); prop++)
@@ -95,10 +92,9 @@ public class SubclassMover
 				break;
 			}
 		}
-		
-		
+
 		// get the ID of all objects of the from class table
-		List<Long>idsToChange = new ArrayList<Long>();
+		List<Long> idsToChange = new ArrayList<Long>();
 		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(Defaults.ID_COL);
 		statement.append(" FROM ");
@@ -112,24 +108,20 @@ public class SubclassMover
 			idsToChange.add(fromId);
 		}
 		ps.close();
-		
-		//get a protection manager instance
+
+		// get a protection manager instance
 		ProtectionManager pm = new ProtectionManager();
-		//iterate over the C__ID values of all entries to change
-		for(Long fromId: idsToChange)
+		// iterate over the C__ID values of all entries to change
+		for (Long fromId : idsToChange)
 		{
 			int currentLevel = fromStack.getSize() - 1;
 			// create a new entry in the to-tables
 			ObjectStack nuStack = new ObjectStack(adapter, subClass.getRepresentedClass());
 			nuStack.saveNoCache(cw, lowestCommonSubClassLevel + 1);
-			// get the to-id of the highest non-common subclass
-			long nuId = nuStack.getRepresentation(lowestCommonSubClassLevel + 1).getId();
-			// cast the id to the correct level
-			Long oldId = getCastIdDatabase(fromStack, lowestCommonSubClassLevel + 1, subClass, fromId, cw);
 
-			// rewrite the pointers C__ID and C__REALCLASS in the lowest common
+			// rewrite the pointers  C__REALCLASS in the lowest common
 			// subclass
-			updateSubClassRef(nuStack, fromStack, oldId, nuStack, nuId, lowestCommonSubClassLevel, cw);
+			updateSubClassRef(nuStack, fromStack, nuStack, lowestCommonSubClassLevel, cw);
 
 			// get the id of the newly inserted object
 			long toId = nuStack.getActualRepresentation().getId();
@@ -138,23 +130,19 @@ public class SubclassMover
 				// rewrite protection entries from lowestFromId to toId
 				pm.changeObjectId(subClass.getTableName(), fromId, toId, cw);
 			}
-			
+
 			// get the id at the current level
 			// iterate over the from tables
 			while (currentLevel > lowestCommonSubClassLevel)
 			{
 				// pick up properties, move to target
 				String fromTableName = fromStack.getRepresentation(currentLevel).getTableName();
-				String fromClassName = fromStack.getRepresentation(currentLevel).getSystemicName();
 				moveFields(fromTableName, fromId, nuStack, cw);
 
 				// drop row from fromtable
 				dropRow(fromTableName, fromId, cw);
 				// go up a level
 				currentLevel--;
-				// get the next id
-				fromId = getParentId(fromStack.getRepresentation(currentLevel).getTableName(), fromClassName, fromId,
-						cw);
 			}
 		}
 		// remove columns from subclass table where they are no longer in the
@@ -179,75 +167,6 @@ public class SubclassMover
 		}
 	}
 
-	/**
-	 * Get the id of the object represented by id fromId at level subClass, as
-	 * it appears at level.
-	 * 
-	 * @param fromStack
-	 * @param level
-	 *            the output level.
-	 * @param subClass
-	 * @param fromId
-	 * @param cw
-	 * @return
-	 * @throws SQLException
-	 */
-	private Long getCastIdDatabase(ObjectStack fromStack, int level, ObjectRepresentation subClass, Long fromId,
-			ConnectionWrapper cw) throws SQLException
-	{
-		int targetLevel = fromStack.getLevel(subClass.getRepresentedClass());
-		if (level == targetLevel)
-		{
-			// no need to change it, as it's already cast to the correct class.
-			return fromId;
-		}
-		else
-		{
-			UniqueIdGenerator generator = new UniqueIdGenerator();
-			UniqueIdTree tree = new UniqueIdTree(generator);
-			tree.nameStack(fromStack);
-			IdStatementGenerator idGen = new IdStatementGenerator(adapter, fromStack, true);
-			String idStatement = idGen.generate(targetLevel);
-			StringBuilder sb = new StringBuilder("SELECT ");
-			sb.append(fromStack.getRepresentation(level).getAsName());
-			sb.append(".");
-			sb.append(Defaults.ID_COL);
-			sb.append(" FROM ");
-			sb.append(idGen.generateAsStatement());
-			sb.append(" WHERE ");
-			sb.append(idStatement);
-			PreparedStatement ps = cw.prepareStatement(sb.toString());
-
-			int index = 0;
-			for (RelationDescriptor o : idGen.getRelationDescriptors())
-			{
-				if (o.isRequiresvalue())
-				{
-					index++;
-					Object val = o.getValue();
-
-					Tools.setParameter(ps, val.getClass(), index, val);
-				}
-			}
-			Tools.logFine(ps);
-			try
-			{
-				ResultSet rs = ps.executeQuery();
-				if (rs.next())
-				{
-					return rs.getLong(1);
-				}
-				else
-				{
-					return null;
-				}
-			}
-			finally
-			{
-				ps.close();
-			}
-		}
-	}
 
 	/**
 	 * Get all the fields in the table, move the fields to corresponding class
@@ -259,8 +178,7 @@ public class SubclassMover
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void moveFields(String fromTableName, long fromId, ObjectStack nuStack, ConnectionWrapper cw)
-			throws SQLException
+	private void moveFields(String fromTableName, long fromId, ObjectStack nuStack, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("SELECT * FROM ");
 		sb.append(fromTableName);
@@ -283,8 +201,7 @@ public class SubclassMover
 					if (targetLevel != null)
 					{
 						String toTable = targetLevel.getTableName();
-						copyProperty(fromTableName, rs, x, mdata.getColumnType(x), colName, toTable,
-								targetLevel.getId(), cw);
+						copyProperty(fromTableName, rs, x, mdata.getColumnType(x), colName, toTable, targetLevel.getId(), cw);
 					}
 				}
 			}
@@ -301,8 +218,8 @@ public class SubclassMover
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void copyProperty(String fromTableName, ResultSet rs, int x, int columnType, String colName,
-			String toTable, long toId, ConnectionWrapper cw) throws SQLException
+	private void copyProperty(String fromTableName, ResultSet rs, int x, int columnType, String colName, String toTable, long toId,
+			ConnectionWrapper cw) throws SQLException
 	{
 
 		if (!fromTableName.equals(toTable))
@@ -379,8 +296,7 @@ public class SubclassMover
 	 */
 	private boolean isSystemColumn(String colName)
 	{
-		if (colName.equals(Defaults.ID_COL) || colName.equals(Defaults.REAL_ID_COL)
-				|| colName.equals(Defaults.REAL_CLASS_COL) )
+		if (colName.equals(Defaults.ID_COL) || colName.equals(Defaults.REAL_CLASS_COL))
 		{
 			return true;
 		}
@@ -409,42 +325,6 @@ public class SubclassMover
 	}
 
 	/**
-	 * Get the C__ID field of tableMame that has real class = fromClassName and
-	 * real id = fromId
-	 * 
-	 * @param tableName
-	 * @param fromClassName
-	 * @param fromId
-	 * @return
-	 * @throws SQLException
-	 */
-	private Long getParentId(String tableName, String fromClassName, long fromId, ConnectionWrapper cw)
-			throws SQLException
-	{
-		Long res = null;
-		StringBuilder sb = new StringBuilder("SELECT ");
-		sb.append(Defaults.ID_COL);
-		sb.append(" FROM ");
-		sb.append(tableName);
-		sb.append(" WHERE ");
-		sb.append(Defaults.REAL_ID_COL);
-		sb.append("=? AND ");
-		sb.append(Defaults.REAL_CLASS_COL);
-		sb.append("=?");
-		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		ps.setLong(1, fromId);
-		ps.setString(2, fromClassName);
-		Tools.logFine(ps);
-		ResultSet rs = ps.executeQuery();
-		if (rs.next())
-		{
-			res = rs.getLong(Defaults.ID_COL);
-		}
-		ps.close();
-		return res;
-	}
-
-	/**
 	 * @param nuStack
 	 *            The stack of the owner class
 	 * @param fromClass
@@ -459,25 +339,19 @@ public class SubclassMover
 	 *            the level the update is happening at.
 	 * @throws SQLException
 	 */
-	private void updateSubClassRef(ObjectStack nuStack, ObjectStack fromClass, long oldId, ObjectStack toClass,
-			long nuId, int lowestCommonSubclass, ConnectionWrapper cw) throws SQLException
+	private void updateSubClassRef(ObjectStack nuStack, ObjectStack fromClass, ObjectStack toClass, int lowestCommonSubclass,
+			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder sb = new StringBuilder("UPDATE ");
 		sb.append(nuStack.getRepresentation(lowestCommonSubclass).getTableName());
 		sb.append(" SET ");
-		sb.append(Defaults.REAL_ID_COL);
-		sb.append("=?, ");
 		sb.append(Defaults.REAL_CLASS_COL);
 		sb.append("=? WHERE ");
-		sb.append(Defaults.REAL_ID_COL);
-		sb.append("=? AND ");
 		sb.append(Defaults.REAL_CLASS_COL);
 		sb.append("=?");
 		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		ps.setLong(1, nuId);
-		ps.setString(2, toClass.getRepresentation(lowestCommonSubclass + 1).getSystemicName());
-		ps.setLong(3, oldId);
-		ps.setString(4, fromClass.getRepresentation(lowestCommonSubclass + 1).getSystemicName());
+		ps.setString(1, toClass.getRepresentation(lowestCommonSubclass + 1).getSystemicName());
+		ps.setString(2, fromClass.getRepresentation(lowestCommonSubclass + 1).getSystemicName());
 		Tools.logFine(ps);
 		ps.executeUpdate();
 		ps.close();

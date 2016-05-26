@@ -62,5 +62,11 @@ public abstract class Sorter extends Order
 		this.sortClass = clazz;
 	}
 	
+	@Override 
+	public Class<?> getQueryClass()
+	{
+		return getSortClass();
+	}
+	
 	public abstract String getKeyWord();
 }

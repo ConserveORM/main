@@ -116,16 +116,6 @@ public class HsqldbAdapter extends AdapterBase
 	{
 		return false;
 	}
-
-	/**
-	 * @see org.conserve.adapter.AdapterBase#isSupportsExistsKeyword()
-	 */
-	@Override
-	public boolean isSupportsExistsKeyword()
-	{
-		return false;
-	}
-
 	
 		
 }

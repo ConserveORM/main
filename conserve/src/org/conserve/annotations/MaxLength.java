@@ -24,7 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Determines that a String 
+ * Determines that a String may not be longer than the specified lenght.
  * @author Erik Berglund
  *
  */

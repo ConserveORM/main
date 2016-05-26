@@ -665,13 +665,13 @@ public class AdapterBase
 	 * @param newTableName
 	 *            the new name of the table.
 	 */
-	public String getTableRenameStatement(String oldTableName, String newTableName)
+	public String[] getTableRenameStatements(String oldTableName, String newTableName)
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
 		sb.append(oldTableName);
 		sb.append(" RENAME TO ");
 		sb.append(newTableName);
-		return sb.toString();
+		return new String[]{sb.toString()};
 
 	}
 
@@ -699,13 +699,13 @@ public class AdapterBase
 	}
 
 	/**
-	 * Get the statement for dropping an index from a table.
+	 * Get the statements for dropping an index from a table.
 	 * 
 	 * @param table the table to drop the index from
 	 * @param indexName the index to drop.
 	 * @return
 	 */
-	public String getDropIndexStatement(String table, String indexName)
+	public String[] getDropIndexStatements(String table, String indexName)
 	{
 		StringBuilder sb = new StringBuilder("DROP INDEX ");
 		if(isSupportsExistsKeyword())
@@ -713,7 +713,7 @@ public class AdapterBase
 			sb.append("IF EXISTS ");
 		}
 		sb.append(indexName);
-		return sb.toString();
+		return new String[]{ sb.toString()};
 	}
 
 	/**
@@ -724,4 +724,33 @@ public class AdapterBase
 	{
 		return true;
 	}
+
+	/**
+	 * Return true if the AVG() function requires integer types to be cast to floats, false otherwise.
+	 * @return
+	 */
+	public boolean averageRequiresCast()
+	{
+		return true;
+	}
+
+	/**
+	 * Get the keyword used to alter column definitions.
+	 * @return
+	 */
+	public Object getColumnModificationKeyword()
+	{
+		return "ALTER";
+	}
+
+	/**
+	 * Does the column modification statement require a special keyword between the column name and the type?
+	 * If so, return it here.
+	 * @return
+	 */
+	public Object getColumnModificationTypeKeyword()
+	{
+		return "";
+	}
+	
 }

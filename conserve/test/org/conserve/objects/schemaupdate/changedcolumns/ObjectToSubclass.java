@@ -1,5 +1,6 @@
 package org.conserve.objects.schemaupdate.changedcolumns;
 
+import org.conserve.annotations.TableName;
 import org.conserve.objects.SimplestObject;
 
 /**
@@ -8,6 +9,7 @@ import org.conserve.objects.SimplestObject;
  * @author Erik Berglund
  *
  */
+@TableName("OBJECT_TO_SUBCLASS")
 public class ObjectToSubclass
 {
 	private String name;

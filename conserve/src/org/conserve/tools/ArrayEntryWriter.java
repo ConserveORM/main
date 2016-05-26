@@ -130,10 +130,7 @@ public class ArrayEntryWriter
 				}
 				else
 				{
-					ps.setLong(
-							3,
-							adapter.getPersist().getCastId(compType,
-									value.getClass(), valueId, cw));
+					ps.setLong(3, valueId);
 					Tools.logFine(ps);
 
 					// save the object

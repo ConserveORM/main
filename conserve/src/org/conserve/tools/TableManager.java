@@ -783,6 +783,8 @@ public class TableManager
 			removeTypeInfo(tableName, cw);
 			removeTableNameForClass(NameGenerator.getSystemicName(c), tableName, cw);
 
+			//drop indices from table
+			dropAllIndicesForTable(tableName, cw);
 			// drop the table
 			conditionalDelete(tableName, cw);
 			if (!adapter.isSupportsIdentity() && c.equals(Object.class))
@@ -804,7 +806,6 @@ public class TableManager
 			{
 				dropTableHelper(ref, cw, classList);
 			}
-			dropAllIndicesForTable(tableName, cw);
 		}
 	}
 
@@ -881,7 +882,11 @@ public class TableManager
 		List<String> indices = new ArrayList<String>();
 		while (rs.next())
 		{
-			indices.add(rs.getString(1));
+			String indexName = rs.getString(1);
+			if(!indices.contains(indexName))
+			{
+				indices.add(indexName);
+			}
 		}
 		ps.close();
 

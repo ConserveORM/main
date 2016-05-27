@@ -1587,7 +1587,10 @@ public class TableManager
 		ps.close();
 
 		// old class doesn't need this field anymore
-		dropColumn(movedField.getFromTable(), movedField.getFromName(), cw);
+		if(movedField.getFromClass()==null)
+		{
+			dropColumn(movedField.getFromTable(), movedField.getFromName(), cw);
+		}
 
 	}
 

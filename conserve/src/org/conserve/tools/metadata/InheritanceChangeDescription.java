@@ -91,6 +91,26 @@ public class InheritanceChangeDescription
 	 */
 	public boolean inheritanceModelChanged()
 	{
+		if(size(removedSuperClasses)>1 || size(addedSuperClasses)>1)
+		{
+			return true;
+		}
 		return false;
+	}
+
+
+	/**
+	 * Get the size of a list of lists
+	 * @param listoflists
+	 * @return
+	 */
+	private int size(List<List<Node>> listoflists)
+	{
+		int res = 0;
+		for(List<Node>list:listoflists)
+		{
+			res+=list.size();
+		}
+		return res;
 	}
 }

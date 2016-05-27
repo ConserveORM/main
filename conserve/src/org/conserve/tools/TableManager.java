@@ -961,40 +961,6 @@ public class TableManager
 		ps.close();
 	}
 
-	/**
-	 * Delete all instances of superclass that are actually instances of
-	 * subClass.
-	 * 
-	 * @param superClass
-	 * @param subClass
-	 * @param cw
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
-	 */
-	private void deleteObsoleteSuperClassInstances(Class<?> superClass, Class<?> subClass, ObjectStack oldStack, ConnectionWrapper cw)
-			throws SQLException, ClassNotFoundException
-	{
-		String tableName = NameGenerator.getTableName(superClass, adapter);
-		StringBuilder query = new StringBuilder("SELECT ");
-		query.append(Defaults.ID_COL);
-		query.append(" FROM ");
-		query.append(tableName);
-		query.append(" WHERE ");
-		query.append(Defaults.REAL_CLASS_COL);
-		query.append(" = ?");
-		PreparedStatement ps = cw.prepareStatement(query.toString());
-		ps.setString(1, NameGenerator.getSystemicName(subClass));
-		Tools.logFine(ps);
-		ResultSet rs = ps.executeQuery();
-		while (rs.next())
-		{
-			// get the database id of an entry that should be deleted
-			long id = rs.getLong(1);
-			adapter.getPersist().deleteObject(superClass, id, cw);
-		}
-		ps.close();
-
-	}
 
 	/**
 	 * Delete the superclass-subclass relation for a pair of classes. Also
@@ -1446,14 +1412,13 @@ public class TableManager
 				// it's not possible to change both at once
 				if (!inheritanceChanges.inheritanceModelChanged())
 				{
-
+					//TODO: This should be handled already, can this code be removed?
 					// Check if any property has been moved up or down
 					for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
 					{
 						String tablename = nuObjectStack.getRepresentation(level).getTableName();
 						// find the list of name type pairs for the
-						// corresponding
-						// database table
+						// corresponding database table
 						Map<String, String> valueTypeMap = getDatabaseColumns(tablename, cw);
 
 						for (Entry<String, String> en : valueTypeMap.entrySet())
@@ -1597,12 +1562,32 @@ public class TableManager
 			ps.executeUpdate();
 
 		}
+		
+		//move protection entries
+		//move table names
+		StringBuilder sb = new StringBuilder("UPDATE ");
+		sb.append(Defaults.HAS_A_TABLENAME);
+		sb.append(" SET OWNER_TABLE = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
+		PreparedStatement ps = cw.prepareStatement(sb.toString());
+		ps.setString(1, movedField.getToTable());
+		ps.setString(2, movedField.getFromTable());
+		ps.setString(3, movedField.getFromName());
+		ps.executeUpdate();
+		ps.close();
+		
+		//move field names
+		sb = new StringBuilder("UPDATE ");
+		sb.append(Defaults.HAS_A_TABLENAME);
+		sb.append(" SET RELATION_NAME = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
+		ps = cw.prepareStatement(sb.toString());
+		ps.setString(1, movedField.getToName());
+		ps.setString(2, movedField.getToTable());
+		ps.setString(3, movedField.getFromName());
+		ps.executeUpdate();
+		ps.close();
 
-		if (movedField.getFromClass() == null)
-		{
-			// old class doesn't need this field anymore
-			dropColumn(movedField.getFromTable(), movedField.getFromName(), cw);
-		}
+		// old class doesn't need this field anymore
+		dropColumn(movedField.getFromTable(), movedField.getFromName(), cw);
 
 	}
 

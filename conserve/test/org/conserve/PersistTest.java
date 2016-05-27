@@ -148,7 +148,7 @@ public class PersistTest
 	{
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.FINE;
+		Level level = Level.WARNING;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}
@@ -3717,10 +3717,27 @@ public class PersistTest
 		if (rs.next())
 		{
 			assertEquals(2, rs.getInt(1));
-		} else
+		} 
+		else
 		{
 			fail("No results returned");
 		}
+		ps.close();
+		
+		//check that the old protection entries are gone
+		ps = cw.prepareStatement(query.toString());
+		ps.setString(1, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_COPYDOWN_AFTERBOTTOM");
+		ps.setString(2, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_ORIGINALOBJECT");
+		rs = ps.executeQuery();
+		if (rs.next())
+		{
+			assertEquals(0, rs.getInt(1));
+		} 
+		else
+		{
+			fail("No results returned");
+		}
+		ps.close();
 		pm.close();
 	}
 
@@ -3748,9 +3765,6 @@ public class PersistTest
 		assertEquals(2, pm.getCount(SimpleObject.class, new All()));
 		// then drop that row from the containing object class
 		new TestTools(pm.getPersist()).changeName(OriginalObject.class, RemovedColumn.class);
-		pm.close();
-
-		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(RemovedColumn.class);
 		pm.close();

@@ -127,4 +127,22 @@ public class PostgreSqlAdapter extends AdapterBase
 		return "TYPE";
 	}
 	
+
+	/**
+	 * Create an SQL statement that will rename a column. The table name, old
+	 * column name, and new column name are placeholders.
+	 * 
+	 * @return the SQL statement used to rename a column.
+	 */
+	public String getRenameColumnStatement()
+	{
+		StringBuilder statement = new StringBuilder("ALTER TABLE ");
+		statement.append(Defaults.TABLENAME_PLACEHOLDER);
+		statement.append(" RENAME ");
+		statement.append(Defaults.OLD_COLUMN_NAME_PLACEHOLDER);
+		statement.append(" TO ");
+		statement.append(Defaults.NEW_COLUMN_NAME_PLACEHOLDER);
+		return statement.toString();
+	}
+	
 }

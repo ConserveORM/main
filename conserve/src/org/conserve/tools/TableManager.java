@@ -2251,7 +2251,7 @@ public class TableManager
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
 		// TODO: Use metadata table instead
-		Map<String, String> res = new HashMap<String, String>();
+		Map<String, String> res = new CaseInsensitiveStringMap();
 
 		Connection c = cw.getConnection();
 

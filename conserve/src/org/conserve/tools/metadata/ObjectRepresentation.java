@@ -533,6 +533,17 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	}
 
 	/**
+	 * Override the generated/configured tablename.
+	 * This also overrides tablenames set by annotations.
+	 * 
+	 * @param newTableName
+	 */
+	public void setTableName(String newTableName)
+	{
+		this.tableName = newTableName;		
+	}
+
+	/**
 	 * Get the mutator that is associated with a given accessor.
 	 * 
 	 * @param m
@@ -783,6 +794,22 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	public String toString()
 	{
 		return getRepresentedClass().getCanonicalName();
+	}
+
+	/**
+	 * Rename a field/column. This will override column names set by annotations.
+	 * @param oldName
+	 * @param nuName
+	 */
+	public void changeFieldName(String oldName, String nuName)
+	{
+		int index = props.indexOf(oldName);
+		if(index>=0)
+		{
+			props.remove(index);
+			props.add(index,nuName);	
+		}
+		
 	}
 	
 }

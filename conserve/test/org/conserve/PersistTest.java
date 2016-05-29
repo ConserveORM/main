@@ -2250,8 +2250,6 @@ public class PersistTest
 		// change int to long
 		pm = new PersistenceManager(driver, database, login, password);
 		new TestTools(pm.getPersist()).changeName(OriginalObject.class, IntToLong.class);
-		pm.close();
-		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(IntToLong.class);
 		pm.close();
 		// check that the integer has been changed into a long

@@ -146,5 +146,22 @@ public class MonetDbAdapter extends AdapterBase
 		//therefore indices must be recreated.
 		return true;
 	}
+	
+	/**
+	 * @see org.conserve.adapter.AdapterBase#canChangeColumnType()
+	 */
+	@Override
+	public boolean canChangeColumnType()
+	{
+		return false;
+	}
 
+	/**
+	 * @see org.conserve.adapter.AdapterBase#canRenameColumn()
+	 */
+	@Override
+	public boolean canRenameColumn()
+	{
+		return false;
+	}
 }

@@ -1094,6 +1094,7 @@ public class TableManager
 
 	/**
 	 * Change the type of a named column. Also changes associated metadata.
+	 * @param klass 
 	 * 
 	 * @param tableName
 	 *            the name of the column to change the type for.
@@ -1107,7 +1108,7 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void changeColumnType(String tableName, String column, Class<?> oldClass, Class<?> nuClass, ConnectionWrapper cw)
+	private void changeColumnType(Class<?> klass, String tableName, String column, Class<?> oldClass, Class<?> nuClass, ConnectionWrapper cw)
 			throws SQLException, ClassNotFoundException
 	{
 		String oldType = adapter.getColumnType(oldClass, null);
@@ -1138,7 +1139,7 @@ public class TableManager
 				// do a 4-step workaround
 				// 1. rename the old column to a temporary name
 				String nuName = "C__TEMP_NAME_" + column;
-				renameColumn(tableName, column, nuName, cw);
+				renameColumn(klass,tableName, column, nuName, cw);
 				// 2. create a new column with the desired properties
 				createColumn(tableName, column, nuClass, cw);
 				// 3. copy all values from the old to the new column
@@ -1188,7 +1189,7 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void renameColumn(String tableName, String oldName, String nuName, ConnectionWrapper cw) throws SQLException
+	private void renameColumn(Class<?>clazz,String tableName, String oldName, String nuName, ConnectionWrapper cw) throws SQLException
 	{
 		// check that the old column exists
 		if (adapter.tableNamesAreLowerCase())
@@ -1217,10 +1218,12 @@ public class TableManager
 				// get the old colums
 				Map<String, String> oldCols = this.getDatabaseColumns(tableName, cw);
 				Map<String, String> nuCols = new HashMap<String, String>();
+				List<String> sameColums = new ArrayList<String>();
 				nuCols.putAll(oldCols);
 				// rename the column in nuCols
 				String type = oldCols.get(oldName);
 				nuCols.remove(oldName);
+				sameColums.addAll(nuCols.keySet());
 				// create new table, temporary name
 				String temporaryName = "T__" + tableName;
 				if (adapter.tableNamesAreLowerCase())
@@ -1231,36 +1234,22 @@ public class TableManager
 				{
 					temporaryName = temporaryName.substring(0, temporaryName.length() - 1);
 				}
-				StringBuilder stmt = new StringBuilder("CREATE TABLE ");
-				stmt.append(temporaryName);
-				stmt.append(" (");
-				List<String> sameColums = new ArrayList<String>();
-				for (Entry<String, String> en : nuCols.entrySet())
-				{
-					String key = en.getKey();
-					sameColums.add(key);
-					stmt.append(key);
-					stmt.append(" ");
-					stmt.append(en.getValue());
-					if (key.equalsIgnoreCase(Defaults.ID_COL))
-					{
-						stmt.append(" PRIMARY KEY");
-					}
-					stmt.append(",");
-				}
-				stmt.append(nuName);
-				stmt.append(" ");
-				stmt.append(type);
-				stmt.append(")");
-				PreparedStatement ps = cw.prepareStatement(stmt.toString());
+				
+				ConcreteObjectRepresentation objRep=new ConcreteObjectRepresentation(adapter, clazz, null, null);
+				objRep.setTableName(temporaryName);
+				objRep.changeFieldName(oldName,nuName);
+				String createStmt = objRep.getTableCreationStatement(cw);
+				PreparedStatement ps = cw.prepareStatement(createStmt);
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
 
 				// copy from old table
-				stmt = new StringBuilder("INSERT INTO ");
+				StringBuilder stmt = new StringBuilder("INSERT INTO ");
 				stmt.append(temporaryName);
 				stmt.append(" (");
+				stmt.append(Defaults.ID_COL);
+				stmt.append(",");
 				for (String colName : sameColums)
 				{
 					stmt.append(colName);
@@ -1268,7 +1257,8 @@ public class TableManager
 				}
 				stmt.append(nuName);
 				stmt.append(") SELECT ");
-				;
+				stmt.append(Defaults.ID_COL);
+				stmt.append(",");
 				for (String colName : sameColums)
 				{
 					stmt.append(colName);
@@ -1286,6 +1276,8 @@ public class TableManager
 				conditionalDelete(tableName, cw);
 				// rename new table
 				this.setTableName(temporaryName, tableName, cw);
+				objRep.setTableName(tableName);
+				createIndicesForTable(objRep, cw);
 			}
 
 			// Change name in C__TYPE_TABLE
@@ -1451,7 +1443,7 @@ public class TableManager
 							}
 							else if (change.isNameChange())
 							{
-								renameColumn(toRep.getTableName(), change.getFromName(), change.getToName(), cw);
+								renameColumn(klass,toRep.getTableName(), change.getFromName(), change.getToName(), cw);
 							}
 							else if (change.isTypeChange())
 							{
@@ -1459,7 +1451,7 @@ public class TableManager
 								{
 									// there is a conversion available
 									// change the column type
-									changeColumnType(toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
+									changeColumnType(klass,toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
 
 									// Update object references and remove
 									// incompatible entries
@@ -2335,6 +2327,7 @@ public class TableManager
 						}
 					}
 					ps.close();
+					//add the indices to the table
 					for(Map.Entry<String,String>e:map.entrySet())
 					{
 						StringBuilder commandString = new StringBuilder("CREATE INDEX ");

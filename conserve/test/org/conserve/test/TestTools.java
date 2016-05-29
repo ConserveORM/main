@@ -29,6 +29,8 @@ import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.Tools;
+import org.conserve.tools.metadata.ConcreteObjectRepresentation;
+import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
 /**
@@ -221,6 +223,9 @@ public class TestTools
 
 			// update tablename table
 			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "TABLENAME", oldTableName, newTableName, cw);
+			
+			//update index list
+			updateAllRelations(Defaults.INDEX_TABLENAME,"TABLE_NAME",oldTableName,newTableName,cw);
 		}
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))

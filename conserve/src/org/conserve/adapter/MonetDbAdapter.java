@@ -135,5 +135,16 @@ public class MonetDbAdapter extends AdapterBase
 		res[1]="DROP TABLE " + oldTableName;
 		return res;
 	}
+	
+	/**
+	 * @see org.conserve.adapter.AdapterBase#indicesMustBeRecreatedAfterRename()
+	 */
+	@Override
+	public boolean indicesMustBeRecreatedAfterRename()
+	{
+		//MonetDB renames a table by copying the data into a new table and dropping the old one.
+		//therefore indices must be recreated.
+		return true;
+	}
 
 }

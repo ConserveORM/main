@@ -2276,7 +2276,7 @@ public class TableManager
 	 * @param newName
 	 * @throws SQLException
 	 */
-	public void setTableName(String oldName, String newName, ConnectionWrapper cw) throws SQLException
+	public void setTableName( String oldName, String newName, ConnectionWrapper cw) throws SQLException
 	{
 		if (tableExists(oldName, cw))
 		{
@@ -2309,6 +2309,46 @@ public class TableManager
 					Tools.logFine(ps);
 					ps.execute();
 					ps.close();
+				}
+				if(adapter.indicesMustBeRecreatedAfterRename())
+				{
+					//find the indices of the old table in the metadata table, apply them to new table
+					CaseInsensitiveStringMap map = new CaseInsensitiveStringMap();
+					StringBuilder sb = new StringBuilder("SELECT COLUMN_NAME,INDEX_NAME FROM ");
+					sb.append(Defaults.INDEX_TABLENAME);
+					sb.append(" WHERE TABLE_NAME = ?");
+					PreparedStatement ps = cw.prepareStatement(sb.toString());
+					ps.setString(1, oldName);
+					ResultSet rs = ps.executeQuery();
+					while(rs.next())
+					{
+						String col = rs.getString(1);
+						String idx = rs.getString(2);
+						String existing = map.get(idx);
+						if(existing == null)
+						{
+							map.put(idx, col);
+						}
+						else
+						{
+							map.put(idx, existing+","+col);
+						}
+					}
+					ps.close();
+					for(Map.Entry<String,String>e:map.entrySet())
+					{
+						StringBuilder commandString = new StringBuilder("CREATE INDEX ");
+						commandString.append(e.getKey());
+						commandString.append(" on ");
+						commandString.append(newName);
+						commandString.append("(");
+						commandString.append(e.getValue());
+						commandString.append(")");
+						PreparedStatement createIndexStmt = cw.prepareStatement(commandString.toString());
+						Tools.logFine(createIndexStmt);
+						createIndexStmt.execute();
+						createIndexStmt.close();
+					}
 				}
 			}
 		}

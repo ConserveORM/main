@@ -146,6 +146,7 @@ public class CaseInsensitiveStringMap implements Map<String, String>
 	@Override
 	public String put(String key, String value)
 	{
+		remove(key);
 		entries.add(new AbstractMap.SimpleEntry<>(key, value));
 		return value;
 	}

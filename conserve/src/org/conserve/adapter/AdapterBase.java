@@ -752,5 +752,15 @@ public class AdapterBase
 	{
 		return "";
 	}
+
+	/**
+	 * For most databases renaming a table preserves indices. 
+	 * If this is not the case, the indices must be recreated and this method returns true.
+	 * @return
+	 */
+	public boolean indicesMustBeRecreatedAfterRename()
+	{
+		return false;
+	}
 	
 }

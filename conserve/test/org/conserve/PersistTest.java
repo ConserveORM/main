@@ -43,6 +43,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.conserve.adapter.AdapterBase;
 import org.conserve.aggregate.AggregateFunction;
 import org.conserve.aggregate.Average;
 import org.conserve.aggregate.Maximum;
@@ -126,6 +127,8 @@ import org.conserve.tools.NameGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.sun.corba.se.spi.copyobject.CopyobjectDefaults;
 
 /**
  * Integration test of various functionality.
@@ -3710,8 +3713,10 @@ public class PersistTest
 		query.append(Defaults.HAS_A_TABLENAME);
 		query.append(" WHERE OWNER_TABLE = ? AND PROPERTY_TABLE = ?");
 		PreparedStatement ps = cw.prepareStatement(query.toString());
-		ps.setString(1, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_COPYDOWN_AFTERTOP");
-		ps.setString(2, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_ORIGINALOBJECT");
+		AdapterBase adapter = pm.getPersist().getAdapter();
+		NameGenerator.getTableName(AfterTop.class, adapter);
+		ps.setString(1, NameGenerator.getTableName(AfterTop.class, adapter));
+		ps.setString(2, NameGenerator.getTableName(OriginalObject.class, adapter));
 
 		ResultSet rs = ps.executeQuery();
 		if (rs.next())
@@ -3726,8 +3731,8 @@ public class PersistTest
 		
 		//check that the old protection entries are gone
 		ps = cw.prepareStatement(query.toString());
-		ps.setString(1, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_COPYDOWN_AFTERBOTTOM");
-		ps.setString(2, "ORG_CONSERVE_OBJECTS_SCHEMAUPDATE_ORIGINALOBJECT");
+		ps.setString(1, NameGenerator.getTableName(AfterBottom.class, adapter));
+		ps.setString(2, NameGenerator.getTableName(OriginalObject.class, adapter));
 		rs = ps.executeQuery();
 		if (rs.next())
 		{

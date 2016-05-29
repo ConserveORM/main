@@ -143,6 +143,10 @@ public class NameGenerator
 		{
 			res = res.substring(1);
 		}
+		if(adapter.tableNamesAreLowerCase())
+		{
+			res = res.toLowerCase();
+		}
 		return res;
 	}
 
@@ -166,6 +170,10 @@ public class NameGenerator
 						+ tableName.substring(count);
 				count++;
 			}
+		}
+		if(adapter.tableNamesAreLowerCase())
+		{
+			res = res.toLowerCase();
 		}
 		return res;
 	}

@@ -512,8 +512,8 @@ public class Persist
 				// delete the property itself
 				try
 				{
-					if (propertyTable.equals(Defaults.ARRAY_TABLENAME)
-							|| propertyTable.startsWith(Defaults.ARRAY_MEMBER_TABLENAME)
+					if (propertyTable.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
+							|| propertyTable.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME)
 							|| propertyClassName.contains("["))
 					{
 						deleteObject(propertyTable, propertyId, cw);
@@ -2049,5 +2049,6 @@ public class Persist
 		}
 		return res;
 	}
+	
 
 }

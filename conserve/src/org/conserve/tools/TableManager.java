@@ -1414,7 +1414,7 @@ public class TableManager
 				{
 					//TODO: This should be handled already, can this code be removed?
 					// Check if any property has been moved up or down
-					for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
+					/*for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
 					{
 						String tablename = nuObjectStack.getRepresentation(level).getTableName();
 						// find the list of name type pairs for the
@@ -1431,7 +1431,7 @@ public class TableManager
 							}
 						}
 
-					}
+					}*/
 
 					// check if fields have changed
 					ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
@@ -2250,17 +2250,21 @@ public class TableManager
 	 */
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
-		// TODO: Use metadata table instead
 		Map<String, String> res = new CaseInsensitiveStringMap();
-
-		Connection c = cw.getConnection();
-
-		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, null);
-		while (rs.next())
+		StringBuilder stmt = new StringBuilder("SELECT COLUMN_NAME,COLUMN_CLASS FROM ");
+		stmt.append(Defaults.TYPE_TABLENAME);
+		stmt.append(" WHERE OWNER_TABLE = ?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setString(1, tableName);
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		while(rs.next())
 		{
-			res.put(rs.getString(4), rs.getString(6));
+			String name = rs.getString(1);
+			String classDesc = rs.getString(2);
+			res.put(name, classDesc);
 		}
+		ps.close();
 		return res;
 	}
 

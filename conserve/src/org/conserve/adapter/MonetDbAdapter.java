@@ -106,14 +106,6 @@ public class MonetDbAdapter extends AdapterBase
 		return false;
 	}
 
-	/**
-	 * @see org.conserve.adapter.AdapterBase#isSupportsBlob()
-	 */
-	@Override
-	public boolean isSupportsBlob()
-	{
-		return false;
-	}
 
 	/**
 	 * @see org.conserve.adapter.AdapterBase#isSupportsExistsKeyword()

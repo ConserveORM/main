@@ -113,8 +113,9 @@ public class Tools
 				ps.setTimestamp(i, (java.sql.Timestamp) value);
 			} else if (clazz.equals(Clob.class))
 			{
-				CharArrayReader reader = new CharArrayReader((char[]) value);
-				ps.setCharacterStream(i, reader);
+				char [] array = (char[])value;
+				CharArrayReader reader = new CharArrayReader(array);
+				ps.setCharacterStream(i, reader,array.length);
 			} else if (clazz.equals(Blob.class))
 			{
 				ps.setBytes(i, (byte[]) value);

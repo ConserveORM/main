@@ -2242,21 +2242,19 @@ public class TableManager
 	 */
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
-		Map<String, String> res = new CaseInsensitiveStringMap();
-		StringBuilder stmt = new StringBuilder("SELECT COLUMN_NAME,COLUMN_CLASS FROM ");
-		stmt.append(Defaults.TYPE_TABLENAME);
-		stmt.append(" WHERE OWNER_TABLE = ?");
-		PreparedStatement ps = cw.prepareStatement(stmt.toString());
-		ps.setString(1, tableName);
-		Tools.logFine(ps);
-		ResultSet rs = ps.executeQuery();
-		while(rs.next())
+		Map<String, String> res = new HashMap<String, String>();
+
+		Connection c = cw.getConnection();
+
+		DatabaseMetaData metaData = c.getMetaData();
+		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, null);
+		while (rs.next())
 		{
-			String name = rs.getString(1);
-			String classDesc = rs.getString(2);
-			res.put(name, classDesc);
+			String columnName = rs.getString(4);
+			//columns are always uppercase internally
+			columnName = columnName.toUpperCase();
+			res.put(columnName, rs.getString(6));
 		}
-		ps.close();
 		return res;
 	}
 

@@ -14,7 +14,9 @@ import java.util.Set;
  * CaseInsensitiveStringMap map = new... 
  * 
  * map.put("foo","bar");
- * if(map.containsKey("FOO")) { //this will be executed }
+ * if(map.containsKey("FOO")) { //this will be executed 
+ * 
+ * }
  * 
  * @author Erik Berglund
  *

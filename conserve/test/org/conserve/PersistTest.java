@@ -128,7 +128,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.sun.corba.se.spi.copyobject.CopyobjectDefaults;
 
 /**
  * Integration test of various functionality.

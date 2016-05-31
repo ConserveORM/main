@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * An implementation of Map that only stores Strings and only uses Strings as
@@ -137,7 +136,7 @@ public class CaseInsensitiveStringMap implements Map<String, String>
 	@Override
 	public Set<String> keySet()
 	{
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 
 	/**
@@ -212,6 +211,6 @@ public class CaseInsensitiveStringMap implements Map<String, String>
 	@Override
 	public Collection<String> values()
 	{
-		throw new NotImplementedException();
+		throw new UnsupportedOperationException();
 	}
 }

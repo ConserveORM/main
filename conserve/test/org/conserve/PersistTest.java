@@ -795,6 +795,7 @@ public class PersistTest
 	 * Saves an instance of Map and loads it, verifying that the contents are
 	 * still the same.
 	 */
+	@SuppressWarnings("rawtypes")
 	@Test
 	public void testMapLoad() throws Exception
 	{

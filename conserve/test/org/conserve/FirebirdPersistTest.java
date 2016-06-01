@@ -36,7 +36,7 @@ public class FirebirdPersistTest extends PersistTest
 	public void setUp() throws Exception
 	{
 		driver = "org.firebirdsql.jdbc.FBDriver";
-		database = "jdbc:firebirdsql://localhost/c:\\users\\erikbe\\workspace\\conserve\\conserve\\TEST.FDB";
+		database = "jdbc:firebirdsql://localhost//home/erikjber/workspace/conserve/conserve/firebird/test.fdb";
 		secondDatabase = "jdbc:firebirdsql:localhost:C:\\Users\\erikbe\\workspace\\conserve\\conserve\\test2.fdb";
 		login = "test";
 		password = "test";

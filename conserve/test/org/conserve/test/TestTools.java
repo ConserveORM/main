@@ -29,8 +29,6 @@ import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 import org.conserve.tools.Tools;
-import org.conserve.tools.metadata.ConcreteObjectRepresentation;
-import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
 /**

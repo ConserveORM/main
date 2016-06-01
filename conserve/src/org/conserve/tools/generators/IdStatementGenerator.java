@@ -56,7 +56,7 @@ public class IdStatementGenerator
 	{
 		this.adapter = adapter;
 		this.addJoins = addJoins;
-		this.asGenerator = new AsStatementGenerator(adapter);
+		this.asGenerator = new AsStatementGenerator(this.adapter);
 		this.addTablesToJoin(oStack);
 		if (addJoins)
 		{

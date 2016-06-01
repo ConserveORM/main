@@ -40,21 +40,16 @@ import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.select.All;
-import org.conserve.tools.generators.IdStatementGenerator;
-import org.conserve.tools.generators.RelationDescriptor;
-import org.conserve.tools.generators.SubclassMover;
+import org.conserve.tools.metadata.ConcreteObjectRepresentation;
+import org.conserve.tools.metadata.DatabaseObjectRepresentation;
 import org.conserve.tools.metadata.FieldChangeDescription;
 import org.conserve.tools.metadata.InheritanceChangeCalculator;
 import org.conserve.tools.metadata.InheritanceChangeDescription;
-import org.conserve.tools.metadata.ConcreteObjectRepresentation;
-import org.conserve.tools.metadata.DatabaseObjectRepresentation;
 import org.conserve.tools.metadata.MetadataException;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.metadata.ObjectStack.Node;
 import org.conserve.tools.protection.ProtectionManager;
-import org.conserve.tools.uniqueid.UniqueIdGenerator;
-import org.conserve.tools.uniqueid.UniqueIdTree;
 
 /**
  * This object is responsible for creating tables and checking if tables exist.
@@ -1221,7 +1216,6 @@ public class TableManager
 				List<String> sameColums = new ArrayList<String>();
 				nuCols.putAll(oldCols);
 				// rename the column in nuCols
-				String type = oldCols.get(oldName);
 				nuCols.remove(oldName);
 				sameColums.addAll(nuCols.keySet());
 				// create new table, temporary name
@@ -1404,26 +1398,6 @@ public class TableManager
 				// it's not possible to change both at once
 				if (!inheritanceChanges.inheritanceModelChanged())
 				{
-					//TODO: This should be handled already, can this code be removed?
-					// Check if any property has been moved up or down
-					/*for (int level = nuObjectStack.getSize() - 1; level > 0; level--)
-					{
-						String tablename = nuObjectStack.getRepresentation(level).getTableName();
-						// find the list of name type pairs for the
-						// corresponding database table
-						Map<String, String> valueTypeMap = getDatabaseColumns(tablename, cw);
-
-						for (Entry<String, String> en : valueTypeMap.entrySet())
-						{
-							String colName = en.getKey();
-							Integer correctLevel = nuObjectStack.getRepresentationLevel(colName);
-							if (correctLevel != null && correctLevel != level)
-							{
-								moveField(nuObjectStack, colName, level, correctLevel, cw);
-							}
-						}
-
-					}*/
 
 					// check if fields have changed
 					ObjectRepresentation fromRep = new DatabaseObjectRepresentation(adapter, klass, cw);
@@ -1743,125 +1717,6 @@ public class TableManager
 		createIndicesForTable(objRep, cw);
 	}
 
-	/**
-	 * Move the field colName from the table at level fromLevel to the table at
-	 * level toLevel
-	 * 
-	 * @param nuObjectStack
-	 * @param colName
-	 * @param fromLevel
-	 * @param toLevel
-	 * @param cw
-	 * @throws SQLException
-	 */
-	private void moveField(ObjectStack nuObjectStack, String colName, int fromLevel, int toLevel, ConnectionWrapper cw) throws SQLException
-	{
-		// generate aliases
-		UniqueIdTree idTree = new UniqueIdTree(new UniqueIdGenerator());
-		idTree.nameStack(nuObjectStack);
-
-		String fromTable = nuObjectStack.getRepresentation(fromLevel).getTableName();
-		String fromTableAs = nuObjectStack.getRepresentation(fromLevel).getAsName();
-		String toTable = nuObjectStack.getRepresentation(toLevel).getTableName();
-		String toTableAs = nuObjectStack.getRepresentation(toLevel).getAsName();
-
-		// create a new field of the right type in toTable
-		ensureColumnExists(toTable, colName, nuObjectStack.getRepresentation(toLevel).getReturnType(colName), cw);
-
-		if (adapter.isSupportsJoinInUpdate())
-		{
-			IdStatementGenerator idGen = new IdStatementGenerator(adapter, nuObjectStack, null, true);
-
-			// copy the values
-			StringBuilder sb = new StringBuilder();
-			String idStatement = idGen.generate();
-			sb.append("UPDATE ");
-			sb.append(toTable);
-			sb.append(" AS ");
-			sb.append(toTableAs);
-			sb.append(" SET ");
-			sb.append(toTableAs);
-			sb.append(".");
-			sb.append(colName);
-			sb.append("= ( SELECT ");
-			sb.append(fromTableAs);
-			sb.append(".");
-			sb.append(colName);
-			sb.append(" FROM ");
-			sb.append(idGen.generateAsStatement(new String[] { toTable }));
-			sb.append(" WHERE ");
-			sb.append(idStatement);
-			sb.append(")");
-			PreparedStatement ps = cw.prepareStatement(sb.toString());
-			int index = 0;
-			for (RelationDescriptor o : idGen.getRelationDescriptors())
-			{
-				if (o.isRequiresvalue())
-				{
-					index++;
-					Tools.setParameter(ps, o.getValue().getClass(), index, o.getValue());
-				}
-			}
-			Tools.logFine(ps);
-			ps.executeUpdate();
-			ps.close();
-		}
-		else
-		{
-			// underlying database does not support joins in UPDATE statements,
-			// use alternate form
-			//select all C__ID+values
-			StringBuilder select = new StringBuilder("SELECT ");
-			select.append(Defaults.ID_COL);
-			select.append(",");
-			select.append(colName);
-			select.append(" FROM ");
-			select.append(fromTable);
-			PreparedStatement selectStatement = cw.prepareStatement(select.toString());
-			ResultSet selected = selectStatement.executeQuery();
-			//create the update statement
-			StringBuilder update = new StringBuilder("UPDATE ");
-			update.append(toTable);
-			update.append(" SET ");
-			update.append(colName);
-			update.append(" = ? WHERE ");
-			update.append(Defaults.ID_COL);
-			update.append(" = ?");
-			PreparedStatement updateStatement = cw.prepareStatement(update.toString());
-			while(selected.next())
-			{
-				//update these values in toTable
-				updateStatement.setLong(2, selected.getLong(1));
-				Tools.copyValue(selected,2,updateStatement,1);
-				int updated = updateStatement.executeUpdate();
-				if(updated != 1)
-				{
-					throw new SQLException("Wrong number of updated rows, should be 1 but was " + updated);
-				}
-			}
-		}
-
-		// create new protection entry
-		StringBuilder sb = new StringBuilder("UPDATE ");
-		sb.append(Defaults.HAS_A_TABLENAME);
-		sb.append(" SET OWNER_TABLE = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
-		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		ps.setString(1, toTable);
-		ps.setString(2, fromTable);
-		ps.setString(3, colName);
-		ps.executeUpdate();
-		ps.close();
-
-		// drop the field in fromTable
-		try
-		{
-			dropColumn(fromTable, colName, cw);
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new SQLException(e);
-		}
-	}
 
 	/**
 	 * Check that all objects referenced from tableName via colName are of type

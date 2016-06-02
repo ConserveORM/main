@@ -24,6 +24,8 @@ import org.conserve.tools.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
+import com.sun.xml.internal.bind.v2.model.core.Adapter;
+
 /**
  * Subclass of AggregateFunction that represents the SQL AVG(...) function.
  * 
@@ -70,7 +72,9 @@ public class Average extends AggregateFunction
 			res.append(rep.getAsName());
 			res.append(".");
 			res.append(colname);
-			res.append(" AS DOUBLE))");
+			res.append(" AS ");
+			res.append(stack.getAdapter().getDoubleTypeKeyword());
+			res.append("))");
 		}
 		else
 		{

@@ -230,6 +230,10 @@ public class PersistTest
 		persist.saveObject(lso);
 		// insert the same object again
 		persist.saveObject(lso);
+		
+		//make sure only one object exists
+		List<LessSimpleObject>objects = persist.getObjects(LessSimpleObject.class, new All());
+		assertEquals(1,objects.size());
 		persist.close();
 	}
 

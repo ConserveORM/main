@@ -478,9 +478,13 @@ public class TableManager
 		ps.execute();
 		ps.close();
 
-		if (!adapter.isSupportsIdentity() && objRes.getRepresentedClass().equals(Object.class))
+		if (!adapter.isSupportsIdentity())
 		{
-			createTriggeredSequence(cw, objRes.getTableName());
+			if (objRes.getRepresentedClass().equals(Object.class)
+					||objRes.getRepresentedClass().isArray())
+			{
+				createTriggeredSequence(cw, objRes.getTableName());
+			}
 		}
 
 		if (adapter.isRequiresCommitAfterTableCreation())
@@ -613,6 +617,7 @@ public class TableManager
 			}
 		}
 	}
+	
 
 	/**
 	 * Load a list of all classes stored in the database from the IS_A table.
@@ -1269,7 +1274,7 @@ public class TableManager
 				// drop old table
 				conditionalDelete(tableName, cw);
 				// rename new table
-				this.setTableName(temporaryName, tableName, cw);
+				this.setTableName(temporaryName, tableName,clazz, cw);
 				objRep.setTableName(tableName);
 				createIndicesForTable(objRep, cw);
 			}
@@ -1925,7 +1930,7 @@ public class TableManager
 			{
 				tempTableName = tempTableName.substring(0, tempTableName.length() - 1);
 			}
-			setTableName(tableName, tempTableName, cw);
+			setTableName(tableName, tempTableName,null, cw);
 
 			// 2. create a new table with same columns minus the one we want to
 			// remove and
@@ -2121,7 +2126,7 @@ public class TableManager
 	 * @param newName
 	 * @throws SQLException
 	 */
-	public void setTableName( String oldName, String newName, ConnectionWrapper cw) throws SQLException
+	public void setTableName( String oldName, String newName, Class<?>oldClass, ConnectionWrapper cw) throws SQLException
 	{
 		if (tableExists(oldName, cw))
 		{
@@ -2133,8 +2138,7 @@ public class TableManager
 				if (!adapter.isSupportsIdentity())
 				{
 					// this adapter relies on sequences, so drop the
-					// corresponding
-					// sequence
+					// corresponding sequence
 					String sequenceName = Tools.getSequenceName(oldName, adapter);
 					String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
 
@@ -2146,6 +2150,14 @@ public class TableManager
 			}
 			else
 			{
+				if(!adapter.canRenameTable())
+				{
+					//we can't rename the table. We have to create a new, identical table. 
+					//The rename-statements will handle copying values.
+					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, oldClass,null,null);
+					objRep.setTableName(newName);
+					this.ensureTableExists(objRep, cw);
+				}
 				// new table does not exist, rename old table
 				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName);
 				for (String tableRenameStmt : tableRenameStmts)

@@ -762,5 +762,19 @@ public class AdapterBase
 	{
 		return false;
 	}
+
+	/**
+	 * Indicate whether the underlying engine can change the name of an existing table.
+	 * 
+	 * This may return true for database engines that can create a new table and copy values across 
+	 * via a few static commands, but will return false if dynamic or complex commands are needed.
+	 * 
+	 * 
+	 * @return
+	 */
+	public boolean canRenameTable()
+	{
+		return true;
+	}
 	
 }

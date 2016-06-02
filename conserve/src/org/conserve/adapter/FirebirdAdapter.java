@@ -115,6 +115,36 @@ public class FirebirdAdapter extends AdapterBase
 				"suspend;\n" +
 				"end";
 	}
+	
+	
+	/**
+	 * Firebird can't even rename tables.
+	 * 
+	 * @see org.conserve.adapter.AdapterBase#canRenameTable()
+	 */
+	@Override
+	public boolean canRenameTable()
+	{
+		return false;
+	}
+
+	@Override
+	public boolean indicesMustBeRecreatedAfterRename()
+	{
+		return true;
+	}
+	
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public String[] getTableRenameStatements(String oldTableName, String newTableName)
+	{
+		String [] res = new String[2];
+		res[0]= "INSERT INTO "+newTableName+" SELECT * FROM " +oldTableName + " ORDER BY " + Defaults.ID_COL;
+		res[1]="DROP TABLE " + oldTableName;
+		return res;
+	}
 
 	/**
 	 * @see org.conserve.adapter.AdapterBase#getMaximumNameLength()

@@ -150,7 +150,7 @@ public class PersistTest
 	{
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.FINE;
+		Level level = Level.WARNING;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}

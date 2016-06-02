@@ -40,8 +40,8 @@ public class FirebirdPersistTest extends PersistTest
 		database = "jdbc:firebirdsql://localhost//home/erikjber/workspace/conserve/conserve/firebird/test.fdb";
 		secondDatabase = "jdbc:firebirdsql://localhost//home/erikjber/workspace/conserve/conserve/firebird/test2.fdb";
 		//windows - comment out the next two lines to run on linux
-		database = "jdbc:firebirdsql://localhost/C:\\Users\\erikbe\\workspace\\conserve\\conserve\\test.fdb";
-		secondDatabase = "jdbc:firebirdsql//localhost/C:\\Users\\erikbe\\workspace\\conserve\\conserve\\test2.fdb";
+		database = "jdbc:firebirdsql://localhost/test";
+		secondDatabase = "jdbc:firebirdsql//localhost/test2";
 
 		driver = "org.firebirdsql.jdbc.FBDriver";
 		login = "test";

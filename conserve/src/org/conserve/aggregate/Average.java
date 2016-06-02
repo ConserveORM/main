@@ -24,7 +24,6 @@ import org.conserve.tools.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
-import com.sun.xml.internal.bind.v2.model.core.Adapter;
 
 /**
  * Subclass of AggregateFunction that represents the SQL AVG(...) function.

@@ -2117,19 +2117,26 @@ public class PersistTest
 		pm.dropTable(Object.class);
 
 		// create original objects
+		Object o = new Object();
+		pm.saveObject(o);
 		OriginalObject oo = new OriginalObject();
 		oo.setName(name);
 		oo.setValue(value);
 		oo.setOtherObject(otherObject);
 		oo.setRedundantObject(redundantObject);
 		pm.saveObject(oo);
+		//remove the first object
+		pm.deleteObject(o);
+		
 		pm.close();
 
 		// change object to long
 		pm = new PersistenceManager(driver, database, login, password);
+		assertEquals(1,pm.getCount(SimplestObject.class,new All()));
 		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToLong.class);
 		pm.updateSchema(ObjectToLong.class);
 		pm.close();
+		
 		// check that objects exist/not exist
 		pm = new PersistenceManager(driver, database, login, password);
 		List<ObjectToLong> res = pm.getObjects(ObjectToLong.class, new All());
@@ -2137,24 +2144,34 @@ public class PersistTest
 		ObjectToLong tmp = res.get(0);
 		assertTrue(tmp.getName().equals(name));
 		assertNull(tmp.getOtherObject());
-		tmp.setOtherObject(42L);
-		pm.saveObject(tmp);
+		assertNotNull(tmp.getRedundantObject());
+		assertEquals(1,pm.getCount(SimplestObject.class,new All()));
 		// check that the dependent object has been dropped
 		List<SimpleObject> dependents = pm.getObjects(SimpleObject.class, new All());
 		assertEquals(0, dependents.size());
-		pm.close();
+		//re-save the object with a long value
+		tmp.setOtherObject(42L);
+		pm.saveObject(tmp);
+		//make sure redundantobject still exists
+		res = pm.getObjects(ObjectToLong.class, new All());
+		assertNotNull(res.get(0).getRedundantObject());
+		
 		// change long to object
-		pm = new PersistenceManager(driver, database, login, password);
 		new TestTools(pm.getPersist()).changeName(ObjectToLong.class, OriginalObject.class);
-		pm.close();
-		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(OriginalObject.class);
 		pm.close();
+		
+		//check that everything is like we want it
 		pm = new PersistenceManager(driver, database, login, password);
 		List<OriginalObject> res1 = pm.getObjects(OriginalObject.class, new All());
 		assertEquals(1, res1.size());
 		OriginalObject tmp1 = res1.get(0);
+		assertNotNull(tmp1.getRedundantObject());
+		//this should be null because there is no way to convert from long to Object.
 		assertNull(tmp1.getOtherObject());
+		assertEquals(0,pm.getCount(ObjectToLong.class, new All()));
+		assertEquals(1,pm.getCount(SimplestObject.class,new All()));
+		//re-save the object with an object value
 		tmp1.setOtherObject(new SimpleObject());
 		pm.saveObject(tmp1);
 		pm.close();

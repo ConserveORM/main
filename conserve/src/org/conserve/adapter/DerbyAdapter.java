@@ -168,10 +168,10 @@ public class DerbyAdapter extends AdapterBase
 	
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String)
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String,java.lang.Class)
 	 */
 	@Override
-	public String [] getTableRenameStatements(String oldTableName, String newTableName)
+	public String [] getTableRenameStatements(String oldTableName, String newTableName,Class<?>oldClass)
 	{
 		StringBuilder sb = new StringBuilder("RENAME TABLE ");
 		sb.append(oldTableName);

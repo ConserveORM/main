@@ -1421,7 +1421,7 @@ public class TableManager
 								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
 							}
 							else if (change.isNameChange())
-							{
+							{	
 								renameColumn(klass,toRep.getTableName(), change.getFromName(), change.getToName(), cw);
 							}
 							else if (change.isTypeChange())
@@ -2157,18 +2157,9 @@ public class TableManager
 					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, oldClass,null,null);
 					objRep.setTableName(newName);
 					this.ensureTableExists(objRep, cw);
-					//remove old entries in TYPE_TABLENAME
-					StringBuilder sb = new StringBuilder("DELETE FROM ");
-					sb.append(Defaults.TYPE_TABLENAME);
-					sb.append(" WHERE OWNER_TABLE = ?");
-					PreparedStatement ps = cw.prepareStatement(sb.toString());
-					ps.setString(1, oldName);
-					Tools.logFine(ps);
-					ps.execute();
-					ps.close();
 				}
 				// new table does not exist, rename old table
-				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName);
+				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName,oldClass);
 				for (String tableRenameStmt : tableRenameStmts)
 				{
 					PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
@@ -2176,6 +2167,7 @@ public class TableManager
 					ps.execute();
 					ps.close();
 				}
+				
 				if(adapter.indicesMustBeRecreatedAfterRename())
 				{
 					//find the indices of the old table in the metadata table, apply them to new table

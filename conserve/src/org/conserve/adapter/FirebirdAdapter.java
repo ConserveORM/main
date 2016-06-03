@@ -18,8 +18,12 @@
  *******************************************************************************/
 package org.conserve.adapter;
 
+import java.sql.PreparedStatement;
+
 import org.conserve.Persist;
 import org.conserve.tools.Defaults;
+import org.conserve.tools.Tools;
+import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 
 /**
  * @author Erik Berglund
@@ -138,11 +142,28 @@ public class FirebirdAdapter extends AdapterBase
 	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public String[] getTableRenameStatements(String oldTableName, String newTableName)
+	public String[] getTableRenameStatements(String oldTableName, String newTableName,Class<?>oldClass)
 	{
-		String [] res = new String[2];
-		res[0]= "INSERT INTO "+newTableName+" SELECT * FROM " +oldTableName + " ORDER BY " + Defaults.ID_COL;
+		//get a comma-separated list of fields
+		ConcreteObjectRepresentation rep = new ConcreteObjectRepresentation(this, oldClass, null, null);
+		StringBuilder paramList = new StringBuilder(Defaults.ID_COL);
+		paramList.append(",").append(Defaults.REAL_CLASS_COL);
+		for(int x = 0; x<rep.getPropertyCount();x++)
+		{
+			paramList.append(",");
+			paramList.append(rep.getPropertyName(x));
+		}
+		String params  = paramList.toString();
+		
+		String [] res = new String[3];
+		res[0]= "INSERT INTO "+newTableName+"("+params+") SELECT "+params+" FROM " +oldTableName ;
+		
+		
+		
 		res[1]="DROP TABLE " + oldTableName;
+		//remove old entries in TYPE_TABLENAME
+		res[2]="DELETE FROM "+Defaults.TYPE_TABLENAME+" WHERE OWNER_TABLE = '"+oldTableName+"'";
+		
 		return res;
 	}
 

@@ -664,8 +664,9 @@ public class AdapterBase
 	 *            the name of the table to rename.
 	 * @param newTableName
 	 *            the new name of the table.
+	 * @param oldClass the old class description
 	 */
-	public String[] getTableRenameStatements(String oldTableName, String newTableName)
+	public String[] getTableRenameStatements(String oldTableName, String newTableName, Class<?>oldClass)
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
 		sb.append(oldTableName);

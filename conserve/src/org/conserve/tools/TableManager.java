@@ -2153,10 +2153,19 @@ public class TableManager
 				if(!adapter.canRenameTable())
 				{
 					//we can't rename the table. We have to create a new, identical table. 
-					//The rename-statements will handle copying values.
+					//The call to getTableRenameStatements() below will handle copying values.
 					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, oldClass,null,null);
 					objRep.setTableName(newName);
 					this.ensureTableExists(objRep, cw);
+					//remove old entries in TYPE_TABLENAME
+					StringBuilder sb = new StringBuilder("DELETE FROM ");
+					sb.append(Defaults.TYPE_TABLENAME);
+					sb.append(" WHERE OWNER_TABLE = ?");
+					PreparedStatement ps = cw.prepareStatement(sb.toString());
+					ps.setString(1, oldName);
+					Tools.logFine(ps);
+					ps.execute();
+					ps.close();
 				}
 				// new table does not exist, rename old table
 				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName);

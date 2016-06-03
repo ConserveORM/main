@@ -2128,8 +2128,6 @@ public class PersistTest
 		// change object to long
 		pm = new PersistenceManager(driver, database, login, password);
 		new TestTools(pm.getPersist()).changeName(OriginalObject.class, ObjectToLong.class);
-		pm.close();
-		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ObjectToLong.class);
 		pm.close();
 		// check that objects exist/not exist

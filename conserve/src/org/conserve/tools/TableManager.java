@@ -1369,19 +1369,11 @@ public class TableManager
 						if (!adapter.isSupportsIdentity())
 						{
 							// this adapter relies on sequences, so drop the
-							// corresponding
-							// sequence
-							String sequenceName = Tools.getSequenceName(tableName, adapter);
-							String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
-
-							PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
-							Tools.logFine(ps);
-							ps.execute();
-							ps.close();
+							// corresponding sequence
+							dropSequenceIfExists(tableName,cw);
 						}
-						// updating references not necessary, no class should
-						// have reference to the removed class prior to removing
-						// it
+						// updating references not necessary, no class should have 
+						// reference to the removed class prior to removing it
 
 						// update subclass entries
 						dropAllSubclassEntries(NameGenerator.getTableName(klass, adapter), subClass, cw);
@@ -1461,6 +1453,31 @@ public class TableManager
 		{
 			throw new SchemaPermissionException("We do not have permission to change the database schema.");
 		}
+	}
+
+	/**
+	 * Check if the sequence for a table exists, drop it if it does.
+	 * @param tableName
+	 * @throws SQLException 
+	 */
+	private void dropSequenceIfExists(String tableName,ConnectionWrapper cw) throws SQLException
+	{
+		String sequenceName = Tools.getSequenceName(tableName, adapter);
+		
+		//get the  statement to find out if the sequence exists
+		String sequenceExistsQuery = adapter.getSequenceExistsStatement(sequenceName);
+		PreparedStatement existStmt = cw.prepareStatement(sequenceExistsQuery);
+		Tools.logFine(existStmt);
+		ResultSet rs = existStmt.executeQuery();
+		if(rs.next() && rs.getInt(1)>=1)
+		{
+			String dropGeneratorQuery = "DROP GENERATOR " + sequenceName;
+			PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery);
+			Tools.logFine(ps);
+			ps.execute();
+			ps.close();
+		}
+		existStmt.close();
 	}
 
 	/**

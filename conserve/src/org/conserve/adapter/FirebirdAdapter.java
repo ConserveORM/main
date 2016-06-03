@@ -272,5 +272,10 @@ public class FirebirdAdapter extends AdapterBase
 		return "SMALLINT";
 	}	
 
+	@Override
+	public String getSequenceExistsStatement(String sequenceName)
+	{
+		return "SELECT COUNT(*)  FROM RDB$GENERATORS WHERE RDB$GENERATOR_NAME='"+sequenceName+"'";
+	}
 	
 }

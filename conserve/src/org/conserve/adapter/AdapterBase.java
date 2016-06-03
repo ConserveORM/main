@@ -22,6 +22,8 @@ import java.lang.reflect.Method;
 import java.sql.Blob;
 import java.sql.Clob;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.conserve.Persist;
 import org.conserve.annotations.MaxLength;
 import org.conserve.tools.Defaults;
@@ -776,6 +778,22 @@ public class AdapterBase
 	public boolean canRenameTable()
 	{
 		return true;
+	}
+
+	/**
+	 * Returns the statement to check if a sequence (generator) exists.
+	 * On most database engines sequences are not used because they support incrementing columns,
+	 * in which case the default implementation will just return null.
+	 * 
+	 * @see AdapterBase#isSupportsIdentity()
+	 * 
+	 * @param sequenceName
+	 * @return
+	 */
+	public String getSequenceExistsStatement(String sequenceName)
+	{
+		//the default implementation is to return null.
+		return null;
 	}
 	
 }

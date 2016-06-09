@@ -4182,7 +4182,7 @@ public class PersistTest
 	 * 
 	 */
 	@Test
-	public void testNullValuePreservatio() throws Exception
+	public void testNullValuePreservation() throws Exception
 	{
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
 		// drop all tables

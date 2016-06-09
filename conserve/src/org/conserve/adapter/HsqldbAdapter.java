@@ -44,7 +44,7 @@ public class HsqldbAdapter extends AdapterBase
 	}
 
 	@Override
-	public String getVarCharKeyword(int length)
+	public String getVarCharKeyword(long length)
 	{
 		return getVarCharKeyword();
 	}

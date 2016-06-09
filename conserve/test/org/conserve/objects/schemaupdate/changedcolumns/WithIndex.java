@@ -19,6 +19,7 @@
 package org.conserve.objects.schemaupdate.changedcolumns;
 
 import org.conserve.annotations.Indexed;
+import org.conserve.annotations.MaxLength;
 import org.conserve.annotations.MultiIndexed;
 
 /**
@@ -36,6 +37,7 @@ public class WithIndex
 	 * @return the value
 	 */
 	@Indexed("fooidx")
+	@MaxLength(125)
 	public String getValue()
 	{
 		return value;
@@ -53,6 +55,7 @@ public class WithIndex
 	 * @return the otherValue
 	 */
 	@MultiIndexed(values={"fooidx","baridx"})
+	@MaxLength(125)
 	public String getOtherValue()
 	{
 		return otherValue;

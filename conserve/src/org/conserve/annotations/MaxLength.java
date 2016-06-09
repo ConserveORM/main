@@ -24,7 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Determines that a String may not be longer than the specified lenght.
+ * Determines that a String may not be longer than the specified length.
  * @author Erik Berglund
  *
  */
@@ -32,5 +32,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface MaxLength
 {
-	int value();
+	long value();
 }

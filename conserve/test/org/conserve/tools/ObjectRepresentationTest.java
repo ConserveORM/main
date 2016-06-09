@@ -160,6 +160,12 @@ public class ObjectRepresentationTest
 	{
 		ObjectRepresentation a = new ObjectRepresentation()
 		{
+
+			@Override
+			public String getColumnType(String prop)
+			{
+				return "VARCHAR(256)";
+			}
 		};
 		a.addNamedType("foo",  Integer.class);
 		a.addNamedType("bar",  String.class);

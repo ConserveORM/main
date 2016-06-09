@@ -18,6 +18,8 @@
  *******************************************************************************/
 package org.conserve.objects.schemaupdate.changedcolumns;
 
+import org.conserve.annotations.MaxLength;
+
 /**
  * Same as WithIndex, but without index.
  * @author Erik Berglund
@@ -31,6 +33,7 @@ public class WithoutIndex
 	/**
 	 * @return the value
 	 */
+	@MaxLength(125)
 	public String getValue()
 	{
 		return value;
@@ -47,6 +50,7 @@ public class WithoutIndex
 	/**
 	 * @return the otherValue
 	 */
+	@MaxLength(125)
 	public String getOtherValue()
 	{
 		return otherValue;

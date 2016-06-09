@@ -64,7 +64,7 @@ public class DatabaseObjectRepresentation extends ObjectRepresentation
 	private void doLoad(ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
 		//get the column names and types from the database
-		StringBuilder stmt = new StringBuilder("SELECT COLUMN_NAME,COLUMN_CLASS FROM ");
+		StringBuilder stmt = new StringBuilder("SELECT COLUMN_NAME,COLUMN_CLASS,COLUMN_SIZE FROM ");
 		stmt.append(Defaults.TYPE_TABLENAME);
 		stmt.append(" WHERE OWNER_TABLE = ?");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
@@ -75,9 +75,15 @@ public class DatabaseObjectRepresentation extends ObjectRepresentation
 		{
 			String name = rs.getString(1);
 			String classDesc = rs.getString(2);
+			Long columnSize = rs.getLong(3);
+			if(rs.wasNull())
+			{
+				columnSize = null;
+			}
 			Class<?> c = ObjectTools.lookUpClass(classDesc,adapter);
 			this.returnTypes.add(c);
 			this.props.add(name);
+			this.setColumnSize(name,columnSize);
 		}
 		ps.close();
 		
@@ -106,6 +112,22 @@ public class DatabaseObjectRepresentation extends ObjectRepresentation
 		}
 		ps.close();
 		buildIndexMap();
+	}
+
+	@Override
+	public String getColumnType(String prop)
+	{
+		String res = adapter.getColumnType(this.getReturnType(prop), null);
+		Long size = getColumnSize(prop);
+		if(size != null && res.contains("("))
+		{
+			//overwrite the size we got from the default column type
+			String start = res.substring(0, res.indexOf("(")+1);
+			String end = res.substring(res.indexOf(")"));
+			res = start+Long.toString(size)+end;
+		}
+		
+		return res;
 	}
 	
 }

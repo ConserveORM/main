@@ -18,11 +18,8 @@
  *******************************************************************************/
 package org.conserve.adapter;
 
-import java.sql.PreparedStatement;
-
 import org.conserve.Persist;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.Tools;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 
 /**
@@ -43,7 +40,7 @@ public class FirebirdAdapter extends AdapterBase
 	@Override
 	public String getVarCharKeyword()
 	{
-		return getVarCharKeyword(8000);
+		return getVarCharKeyword(8191);//32765 bytes, 4 byte chars
 	}
 
 	/**
@@ -52,7 +49,7 @@ public class FirebirdAdapter extends AdapterBase
 	@Override
 	public String getVarCharIndexed()
 	{
-		return  getVarCharKeyword(256);
+		return  getVarCharKeyword(253);
 	}
 
 	/**
@@ -132,20 +129,14 @@ public class FirebirdAdapter extends AdapterBase
 		return false;
 	}
 
-	@Override
-	public boolean indicesMustBeRecreatedAfterRename()
-	{
-		return true;
-	}
-	
 	/**
 	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public String[] getTableRenameStatements(String oldTableName, String newTableName,Class<?>oldClass)
+	public String[] getTableRenameStatements(String oldTableName, String newTableName,Class<?>clazz)
 	{
 		//get a comma-separated list of fields
-		ConcreteObjectRepresentation rep = new ConcreteObjectRepresentation(this, oldClass, null, null);
+		ConcreteObjectRepresentation rep = new ConcreteObjectRepresentation(this, clazz, null, null);
 		StringBuilder paramList = new StringBuilder(Defaults.ID_COL);
 		paramList.append(",").append(Defaults.REAL_CLASS_COL);
 		for(int x = 0; x<rep.getPropertyCount();x++)
@@ -157,8 +148,6 @@ public class FirebirdAdapter extends AdapterBase
 		
 		String [] res = new String[3];
 		res[0]= "INSERT INTO "+newTableName+"("+params+") SELECT "+params+" FROM " +oldTableName ;
-		
-		
 		
 		res[1]="DROP TABLE " + oldTableName;
 		//remove old entries in TYPE_TABLENAME
@@ -277,5 +266,25 @@ public class FirebirdAdapter extends AdapterBase
 	{
 		return "SELECT COUNT(*)  FROM RDB$GENERATORS WHERE RDB$GENERATOR_NAME='"+sequenceName+"'";
 	}
+
+	/**
+	 * Firebird won't automatically drop indices when a table is dropped.
+	 */
+	@Override
+	public boolean indicesMustBeManuallyDropped()
+	{
+		return true;
+	}
 	
+	@Override
+	public Object getColumnModificationKeyword()
+	{
+		return "ALTER";
+	}
+	
+	@Override
+	public Object getColumnModificationTypeKeyword()
+	{
+		return "TYPE";
+	}
 }

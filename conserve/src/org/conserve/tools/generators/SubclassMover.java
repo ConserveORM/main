@@ -73,7 +73,7 @@ public class SubclassMover
 		{
 			String colName = subClass.getPropertyName(prop);
 			Class<?> propClass = subClass.getReturnType(prop);
-			adapter.getPersist().getTableManager().ensureColumnExists(subClass.getTableName(), colName, propClass, cw);
+			adapter.getPersist().getTableManager().ensureColumnExists(subClass.getTableName(), colName, propClass,subClass.getColumnSize(colName), cw);
 		}
 
 		// find the lowest common superclass

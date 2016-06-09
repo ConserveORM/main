@@ -4176,4 +4176,27 @@ public class PersistTest
 
 		pm.close();
 	}
+	
+	/**
+	 * Test whether null values are preserved on save and load.
+	 * 
+	 */
+	@Test
+	public void testNullValuePreservatio() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		// drop all tables
+		pm.dropTable(Object.class);
+		SimpleObject so = new SimpleObject();
+		pm.saveObject(so);
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
+		List<SimpleObject> sos = pm.getObjects(SimpleObject.class, new All());
+		assertEquals(1,sos.size());
+		SimpleObject first = sos.get(0);
+		assertNull(first.getName());
+		assertNull(first.getScale());
+		assertNull(first.getAge());
+	}
 }

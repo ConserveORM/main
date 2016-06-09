@@ -30,6 +30,7 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.annotations.AsBlob;
 import org.conserve.annotations.AsClob;
 import org.conserve.annotations.Indexed;
+import org.conserve.annotations.MaxLength;
 import org.conserve.annotations.MultiIndexed;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.exceptions.SchemaPermissionException;
@@ -145,6 +146,13 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 					if (indexNames.size() > 0)
 					{
 						indices.put(name, indexNames);
+					}
+					
+					//handle MaxLength annotations
+					if(m.isAnnotationPresent(MaxLength.class))
+					{
+						Long size = m.getAnnotation(MaxLength.class).value();
+						setColumnSize(name, size);
 					}
 				}
 				catch (Exception e)
@@ -275,11 +283,18 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				}
 				else
 				{
-					mName += adapter.getColumnType(getReturnType(x), getAccessor(x));
+					mName += getColumnType(x);
+					//special case: Get size of varchars
+					Method accessor = getAccessor(x);
+					if(accessor !=null && accessor.isAnnotationPresent(MaxLength.class))
+					{
+						Long size = accessor.getAnnotation(MaxLength.class).value();
+						setColumnSize(getPropertyName(x), size);
+					}
 				}
 				columnDescriptions.add(mName);
 				// add info to type table
-				adapter.getPersist().getTableManager().addTypeInfo(getTableName(), getPropertyName(x), getReturnType(x), cw);
+				adapter.getPersist().getTableManager().addTypeInfo(getTableName(), getPropertyName(x), getReturnType(x),getColumnSize(getPropertyName(x)), cw);
 			}
 		}
 		for (int x = 0; x < columnDescriptions.size(); x++)
@@ -465,6 +480,22 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				}
 			}
 		}
+	}
+
+	@Override
+	public String getColumnType(String prop)
+	{
+		int index = props.indexOf(prop);
+		return getColumnType(index);
+	}
+	
+	public String getColumnType(int index)
+	{
+		if (index >= 0)
+		{
+			return adapter.getColumnType(getReturnType(index), getAccessor(index));
+		}
+		return null;
 	}
 
 }

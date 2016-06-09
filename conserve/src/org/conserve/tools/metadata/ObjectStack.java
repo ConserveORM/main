@@ -66,7 +66,7 @@ public class ObjectStack
 	{
 		this.adapter = adapter;
 		// fill in the root node
-		DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, klass, cw);
+		ObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, klass, cw);
 		representations.setActual(dor);
 		loadRecursively(cw, representations.root);
 		// calculate lowest level
@@ -234,7 +234,7 @@ public class ObjectStack
 		List<Class<?>> supers = getSuperClassesFromDatabase(n.getRepresentation().getRepresentedClass(), cw);
 		for (Class<?> s : supers)
 		{
-			DatabaseObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, s, cw);
+			ObjectRepresentation dor = new DatabaseObjectRepresentation(adapter, s, cw);
 			Node nu = n.addSuper(dor);
 			// recurse
 			loadRecursively(cw, nu);

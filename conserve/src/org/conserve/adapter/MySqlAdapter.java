@@ -46,7 +46,7 @@ public class MySqlAdapter extends AdapterBase
 	}
 
 	@Override
-	public String getVarCharKeyword(int length)
+	public String getVarCharKeyword(long length)
 	{
 		return getVarCharKeyword();
 	}
@@ -171,7 +171,7 @@ public class MySqlAdapter extends AdapterBase
 	@Override
 	public Object getColumnModificationKeyword()
 	{
-		return "MODIFY";
+		return "MODIFY COLUMN";
 	}
 
 	/**

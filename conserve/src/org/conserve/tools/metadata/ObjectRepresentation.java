@@ -65,6 +65,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	protected Map<String,List<String>>indexMap = new HashMap<String, List<String>>();
 
 	protected DelayedInsertionBuffer delayBuffer;
+	private Map<String, Long> columnSizes = new HashMap<>();
 
 	/**
 	 * Default constructor for subclassing.
@@ -249,6 +250,8 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	{
 		return this.setters.get(index);
 	}
+	
+
 
 	/**
 	 * Get the change in the database column model from this object to the
@@ -337,7 +340,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 						x--;
 					}
 				}
-				// there are only two unmatched names, one in each list, and
+				// if there are only two unmatched names, one in each list, and
 				// there is no type change
 				if (res == null && fromNames.size() == 1 && toNames.size() == 1)
 				{
@@ -356,8 +359,33 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 					}
 					else
 					{
-						throw new MetadataException("Chaning both name and type.");
+						throw new MetadataException("Changing both name and type.");
 					}
+				}
+				if(res == null)
+				{
+					//check if any field has changed size
+					for (String name:props)
+					{
+						Long from = this.getColumnSize(name);
+						Long to = toRepresentation.getColumnSize(name);
+						if((from == null && to!=null)
+								|| (from != null && to == null)
+								|| (from != to))
+						{
+							if(res != null)
+							{
+								throw new MetadataException("Can only resize one column at a time.");
+							}
+							res = new FieldChangeDescription();
+							res.setFromClass(this.getReturnType(name));
+							res.setToClass(this.getReturnType(name));
+							res.setFromName(name);
+							res.setToName(name);
+							res.setFromSize(from);
+							res.setToSize(to);
+						}
+					}					
 				}
 			}
 
@@ -392,14 +420,18 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 				throw new MetadataException("Changes detected but not identified.");
 			}
 		}
-		else if(!hasSameIndices(toRepresentation))
+		if(!hasSameIndices(toRepresentation))
 		{
-			res = new FieldChangeDescription();
+			if(res == null)
+			{
+				res = new FieldChangeDescription();
+			}
 			res.setIsIndexChange();
 		}
 
 		return res;
 	}
+	
 	
 	/**
 	 * Compare the indices of the two objects and return true if some has been added or deleted.
@@ -476,6 +508,11 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 				// return types differ
 				return false;
 			}
+			if(getColumnSize(fromProp) != other.getColumnSize(fromProp) )
+			{
+				//sizes differ
+				return false;
+			}
 		}
 		// all properties and return types match
 		return true;
@@ -486,7 +523,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * @param x
 	 * @return
 	 */
-	protected Method getAccessor(int x)
+	public Method getAccessor(int x)
 	{
 		if (x >= this.getters.size())
 		{
@@ -495,6 +532,22 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return this.getters.get(x);
 	}
 
+	/**
+	 * Get the accessor for a named property.
+	 * @param name the name of the property to return.
+	 * 
+	 * @return
+	 */
+	public Method getAccessor(String name)
+	{
+		int index = props.indexOf(name);
+		if (index >= 0)
+		{
+			return getAccessor(index);
+		}
+		return null;
+	}
+	
 	public Object getValue(String name)
 	{
 		int index = props.indexOf(name);
@@ -811,5 +864,23 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		}
 		
 	}
+
+	public void setColumnSize(String name, Long columnSize)
+	{
+		columnSizes.put(name,columnSize);
+	}
+	public Long getColumnSize(String name)
+	{
+		return columnSizes.get(name);
+	}
+
+	/**
+	 * Get the SQL column type for a named property.
+	 * @param prop the property to get the column type for.
+	 * @return
+	 */
+	public abstract String getColumnType(String prop);
+
+
 	
 }

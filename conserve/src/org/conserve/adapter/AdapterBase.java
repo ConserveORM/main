@@ -22,10 +22,10 @@ import java.lang.reflect.Method;
 import java.sql.Blob;
 import java.sql.Clob;
 
-import javax.naming.OperationNotSupportedException;
-
 import org.conserve.Persist;
+import org.conserve.annotations.Indexed;
 import org.conserve.annotations.MaxLength;
+import org.conserve.annotations.MultiIndexed;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.NameGenerator;
 
@@ -108,12 +108,19 @@ public class AdapterBase
 		{
 			if (m != null && m.isAnnotationPresent(MaxLength.class))
 			{
-				int length = m.getAnnotation(MaxLength.class).value();
+				long length = m.getAnnotation(MaxLength.class).value();
 				return getVarCharKeyword(length);
 			}
 			else
 			{
-				return getVarCharKeyword();
+				if(m != null && (m.isAnnotationPresent(Indexed.class) || m.isAnnotationPresent(MultiIndexed.class)))
+				{
+					return getVarCharIndexed();
+				}
+				else
+				{
+					return getVarCharKeyword();
+				}
 			}
 		}
 		else if (c.isEnum())
@@ -303,9 +310,9 @@ public class AdapterBase
 	 * @param length
 	 * @return the VARCHAR keyword, with appropriate length modifier.
 	 */
-	public String getVarCharKeyword(int length)
+	public String getVarCharKeyword(long length)
 	{
-		return "VARCHAR(" + Integer.toString(length) + ")";
+		return "VARCHAR(" + Long.toString(length) + ")";
 	}
 
 	/**
@@ -666,9 +673,9 @@ public class AdapterBase
 	 *            the name of the table to rename.
 	 * @param newTableName
 	 *            the new name of the table.
-	 * @param oldClass the old class description
+	 * @param clazz the old class description
 	 */
-	public String[] getTableRenameStatements(String oldTableName, String newTableName, Class<?>oldClass)
+	public String[] getTableRenameStatements(String oldTableName, String newTableName, Class<?>clazz)
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
 		sb.append(oldTableName);
@@ -743,7 +750,7 @@ public class AdapterBase
 	 */
 	public Object getColumnModificationKeyword()
 	{
-		return "ALTER";
+		return "ALTER COLUMN";
 	}
 
 	/**
@@ -794,6 +801,16 @@ public class AdapterBase
 	{
 		//the default implementation is to return null.
 		return null;
+	}
+
+	/**
+	 * Some database engines don't automatically drop indices when a table is dropped, which can waste space and will create problems
+	 * when the table is recreated after a rename.
+	 * @return
+	 */
+	public boolean indicesMustBeManuallyDropped()
+	{
+		return false;
 	}
 	
 }

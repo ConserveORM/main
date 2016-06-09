@@ -26,6 +26,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -306,8 +307,8 @@ public class TableManager
 					throw new SchemaPermissionException(Defaults.TYPE_TABLENAME + " does not exist, but can't create it.");
 				}
 				// create the type table
-				createTable(Defaults.TYPE_TABLENAME, new String[] { "OWNER_TABLE", "COLUMN_NAME", "COLUMN_CLASS" },
-						new String[] { adapter.getVarCharIndexed(), adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+				createTable(Defaults.TYPE_TABLENAME, new String[] { "OWNER_TABLE", "COLUMN_NAME", "COLUMN_CLASS","COLUMN_SIZE" },
+						new String[] { adapter.getVarCharIndexed(), adapter.getVarCharIndexed(), adapter.getVarCharIndexed(), adapter.getLongTypeKeyword() }, cw);
 
 			}
 
@@ -557,13 +558,13 @@ public class TableManager
 		}
 	}
 
-	public void ensureColumnExists(String tableName, String columnName, Class<?> paramType, ConnectionWrapper cw) throws SQLException
+	public void ensureColumnExists(String tableName, String columnName, Class<?> paramType, Long size, ConnectionWrapper cw) throws SQLException
 	{
 		if (createSchema)
 		{
 			if (!columnExists(tableName, columnName, cw))
 			{
-				createColumn(tableName, columnName, paramType, cw);
+				createColumn(tableName, columnName, paramType,size, cw);
 			}
 		}
 	}
@@ -1108,21 +1109,21 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void changeColumnType(Class<?> klass, String tableName, String column, Class<?> oldClass, Class<?> nuClass, ConnectionWrapper cw)
+	private void changeColumnType(Class<?> klass, String column, ObjectRepresentation fromRep, Long fromSize, ObjectRepresentation toRep, Long toSize, ConnectionWrapper cw)
 			throws SQLException, ClassNotFoundException
 	{
-		String oldType = adapter.getColumnType(oldClass, null);
-		String nuType = adapter.getColumnType(nuClass, null);
+		String oldType = fromRep.getColumnType(column );
+		String nuType = toRep.getColumnType(column);
 		// only do conversion if it is necessary
 		if (!oldType.equals(nuType))
 		{
 			if (adapter.canChangeColumnType())
 			{
 				StringBuilder sb = new StringBuilder("ALTER TABLE ");
-				sb.append(tableName);
+				sb.append(toRep.getTableName());
 				sb.append(" ");
 				sb.append(adapter.getColumnModificationKeyword());
-				sb.append(" COLUMN ");
+				sb.append(" ");
 				sb.append(column);
 				sb.append(" ");
 				sb.append(adapter.getColumnModificationTypeKeyword());
@@ -1139,18 +1140,18 @@ public class TableManager
 				// do a 4-step workaround
 				// 1. rename the old column to a temporary name
 				String nuName = "C__TEMP_NAME_" + column;
-				renameColumn(klass,tableName, column, nuName, cw);
+				renameColumn(klass,toRep.getTableName(), column, nuName, cw);
 				// 2. create a new column with the desired properties
-				createColumn(tableName, column, nuClass, cw);
+				createColumn(toRep.getTableName(), column, toRep.getReturnType(column),toRep.getColumnSize(column), cw);
 				// 3. copy all values from the old to the new column
-				copyValues(tableName, nuName, column, cw);
+				copyValues(toRep.getTableName(), nuName, column, cw);
 				// 4. drop the old column
-				dropColumn(tableName, nuName, cw);
+				dropColumn(toRep.getTableName(), nuName, cw);
 			}
 		}
 
 		// store the new column metadata
-		changeTypeInfo(tableName, column, nuClass, cw);
+		changeTypeInfo(toRep.getTableName(), column, toRep.getReturnType(column),toRep.getColumnSize(column), cw);
 	}
 
 	/**
@@ -1410,7 +1411,7 @@ public class TableManager
 							}
 							else if (change.isCreation())
 							{
-								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+								createColumn(toRep.getTableName(), change.getToName(), change.getToClass(),change.getToSize(), cw);
 							}
 							else if (change.isNameChange())
 							{	
@@ -1422,8 +1423,8 @@ public class TableManager
 								{
 									// there is a conversion available
 									// change the column type
-									changeColumnType(klass,toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
-
+									changeColumnType(klass,change.getToName(),fromRep,change.getFromSize(),toRep,change.getToSize(),cw);
+									
 									// Update object references and remove
 									// incompatible entries
 									updateReferences(toRep.getTableName(), change.getToName(), change.getFromClass(), change.getToClass(), cw);
@@ -1432,13 +1433,21 @@ public class TableManager
 								{
 									// no conversion, drop and recreate.
 									dropColumn(toRep.getTableName(), change.getFromName(), cw);
-									createColumn(toRep.getTableName(), change.getToName(), change.getToClass(), cw);
+									createColumn(toRep.getTableName(), change.getToName(), change.getToClass(),change.getToSize(), cw);
 								}
-							}
-							else if (change.isIndexChange())
+							} 
+							else //these changes can occur at the same time
 							{
-								// indexes have changed
-								recreateIndices(toRep, cw);
+								if(change.isSizeChange())
+								{
+									//resize the column
+									changeColumnType(klass,change.getToName(),fromRep,change.getFromSize(),toRep,change.getToSize(),cw);
+								}
+								if (change.isIndexChange())
+								{
+									// indexes have changed
+									recreateIndices(toRep, cw);
+								}
 							}
 						}
 					}
@@ -1493,7 +1502,7 @@ public class TableManager
 		// create the new field
 		if (!columnExists(movedField.getToTable(), movedField.getToName(), cw))
 		{
-			createColumn(movedField.getToTable(), movedField.getToName(), movedField.getToClass(), cw);
+			createColumn(movedField.getToTable(), movedField.getToName(), movedField.getToClass(),movedField.getToSize(), cw);
 		}
 		// copy all values
 		if (adapter.isSupportsJoinInUpdate())
@@ -1899,14 +1908,14 @@ public class TableManager
 	 * @param cw
 	 * @throws SQLException
 	 */
-	private void createColumn(String tableName, String columnName, Class<?> returnType, ConnectionWrapper cw) throws SQLException
+	private void createColumn(String tableName, String columnName, Class<?> returnType, Long size,ConnectionWrapper cw) throws SQLException
 	{
 		String columnType = adapter.getColumnType(returnType, null).trim();
 		PreparedStatement ps = cw.prepareStatement("ALTER TABLE " + tableName + " ADD " + columnName + " " + columnType);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		addTypeInfo(tableName, columnName, NameGenerator.getSystemicName(returnType), cw);
+		addTypeInfo(tableName, columnName, NameGenerator.getSystemicName(returnType),size, cw);
 	}
 
 	/**
@@ -2143,7 +2152,7 @@ public class TableManager
 	 * @param newName
 	 * @throws SQLException
 	 */
-	public void setTableName( String oldName, String newName, Class<?>oldClass, ConnectionWrapper cw) throws SQLException
+	public void setTableName( String oldName, String newName, Class<?>clazz, ConnectionWrapper cw) throws SQLException
 	{
 		if (tableExists(oldName, cw))
 		{
@@ -2167,16 +2176,20 @@ public class TableManager
 			}
 			else
 			{
+				if(adapter.indicesMustBeManuallyDropped())
+				{
+					dropAllIndicesForTable(oldName, cw);
+				}
 				if(!adapter.canRenameTable())
 				{
 					//we can't rename the table. We have to create a new, identical table. 
 					//The call to getTableRenameStatements() below will handle copying values.
-					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, oldClass,null,null);
+					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, clazz,null,null);
 					objRep.setTableName(newName);
 					this.ensureTableExists(objRep, cw);
 				}
 				// new table does not exist, rename old table
-				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName,oldClass);
+				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName,clazz);
 				for (String tableRenameStmt : tableRenameStmts)
 				{
 					PreparedStatement ps = cw.prepareStatement(tableRenameStmt);
@@ -2230,10 +2243,10 @@ public class TableManager
 		}
 	}
 
-	public void changeTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw) throws SQLException
+	public void changeTypeInfo(String tableName, String propertyName, Class<?> returnType,Long size, ConnectionWrapper cw) throws SQLException
 	{
 		removeTypeInfo(tableName, propertyName, cw);
-		addTypeInfo(tableName, propertyName, returnType, cw);
+		addTypeInfo(tableName, propertyName, returnType,size, cw);
 	}
 
 	/**
@@ -2245,9 +2258,9 @@ public class TableManager
 	 * @param returnType
 	 * @throws SQLException
 	 */
-	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType, ConnectionWrapper cw) throws SQLException
+	public void addTypeInfo(String tableName, String propertyName, Class<?> returnType, Long size, ConnectionWrapper cw) throws SQLException
 	{
-		addTypeInfo(tableName, propertyName, NameGenerator.getSystemicName(returnType), cw);
+		addTypeInfo(tableName, propertyName, NameGenerator.getSystemicName(returnType),size, cw);
 	}
 
 	/**
@@ -2259,15 +2272,23 @@ public class TableManager
 	 * @param returnType
 	 * @throws SQLException
 	 */
-	public void addTypeInfo(String tableName, String propertyName, String returnType, ConnectionWrapper cw) throws SQLException
+	public void addTypeInfo(String tableName, String propertyName, String returnType, Long size, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder stmt = new StringBuilder("INSERT INTO ");
 		stmt.append(Defaults.TYPE_TABLENAME);
-		stmt.append(" (OWNER_TABLE ,COLUMN_NAME ,COLUMN_CLASS) VALUES (?,?,?)");
+		stmt.append(" (OWNER_TABLE ,COLUMN_NAME ,COLUMN_CLASS, COLUMN_SIZE) VALUES (?,?,?,?)");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		ps.setString(1, tableName);
 		ps.setString(2, propertyName);
 		ps.setString(3, returnType);
+		if(size !=null)
+		{
+			ps.setLong(4, size);
+		}
+		else
+		{
+			ps.setNull(4, Types.BIGINT );
+		}
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();

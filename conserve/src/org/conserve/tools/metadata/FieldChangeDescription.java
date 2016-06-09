@@ -41,6 +41,10 @@ public class FieldChangeDescription
 	private String toTable;
 	//true if at least one index has changed
 	private boolean isIndexChange = false;
+	//the old size of a resized varchar field
+	private Long fromSize;
+	//the new size of a resized varchar field
+	private Long toSize;
 	
 	
 	/**
@@ -169,5 +173,30 @@ public class FieldChangeDescription
 	public boolean isIndexChange()
 	{
 		return this.isIndexChange;
+	}
+	
+	public Long getToSize()
+	{
+		return toSize;
+	}
+	
+	public void setToSize(Long toSize)
+	{
+		this.toSize = toSize;
+	}
+	
+	public Long getFromSize()
+	{
+		return fromSize;
+	}
+	
+	public void setFromSize(Long fromSize)
+	{
+		this.fromSize = fromSize;
+	}
+	
+	public boolean isSizeChange()
+	{
+		return ((toSize != null )||(fromSize!=null))&&(toSize!=fromSize);
 	}
 }

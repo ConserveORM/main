@@ -488,7 +488,7 @@ public class TableManager
 			}
 		}
 
-		if (adapter.isRequiresCommitAfterTableCreation())
+		if (adapter.isRequiresCommitAfterSchemaAlteration())
 		{
 			cw.commit();
 		}
@@ -1916,6 +1916,10 @@ public class TableManager
 		ps.execute();
 		ps.close();
 		addTypeInfo(tableName, columnName, NameGenerator.getSystemicName(returnType),size, cw);
+		if(adapter.isRequiresCommitAfterSchemaAlteration())
+		{
+			cw.commit();
+		}
 	}
 
 	/**
@@ -2027,7 +2031,7 @@ public class TableManager
 		ps.close();
 
 		// check if we must commit
-		if (adapter.isRequiresCommitAfterTableCreation())
+		if (adapter.isRequiresCommitAfterSchemaAlteration())
 		{
 			cw.commit();
 		}
@@ -2550,7 +2554,7 @@ public class TableManager
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
-		if (adapter.isRequiresCommitAfterTableCreation())
+		if (adapter.isRequiresCommitAfterSchemaAlteration())
 		{
 			cw.commit();
 		}

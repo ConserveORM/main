@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.Serializable;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -3455,7 +3456,7 @@ public class PersistTest
 
 		// drop all tables
 		pm.dropTable(Object.class);
-		// create two OriginalObjects to make sure the are preserved
+		// create two OriginalObjects to make sure they are preserved
 		pm.saveObject(new OriginalObject());
 		pm.saveObject(new OriginalObject());
 		// create two SubClass, store them in ContainerObject
@@ -3479,15 +3480,10 @@ public class PersistTest
 		assertEquals(2, pm.getCount(ContainerObject.class, new All()));
 		assertEquals(4, pm.getCount(OriginalObject.class, new All()));
 		assertEquals(2, pm.getCount(SubClass.class, new All()));
+		
 
-		pm.close();
-
-		pm = new PersistenceManager(driver, database, login, password);
 		// rename SubClass to NotSubClass, move from OrignialObject to Object
 		new TestTools(pm.getPersist()).changeName(SubClass.class, NotSubClass.class);
-		pm.close();
-
-		pm = new PersistenceManager(driver, database, login, password);
 		// change the database schema
 		pm.updateSchema(NotSubClass.class);
 		pm.close();

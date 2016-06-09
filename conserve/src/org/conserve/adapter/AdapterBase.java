@@ -400,13 +400,13 @@ public class AdapterBase
 
 	/**
 	 * True return values indicate that a transaction must be committed after
-	 * creating a table and before a table can be used.
+	 * creating/altering a table and before a table can be used.
 	 * 
 	 * The default is false;
 	 * 
 	 * @return true or false;
 	 */
-	public boolean isRequiresCommitAfterTableCreation()
+	public boolean isRequiresCommitAfterSchemaAlteration()
 	{
 		return false;
 	}
@@ -812,5 +812,6 @@ public class AdapterBase
 	{
 		return false;
 	}
+
 	
 }

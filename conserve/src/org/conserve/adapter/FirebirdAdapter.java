@@ -67,10 +67,10 @@ public class FirebirdAdapter extends AdapterBase
 	 * 
 	 * Firebird requires transaction to be committed before a new table can be used.
 	 * 
-	 * @see org.conserve.adapter.AdapterBase#isRequiresCommitAfterTableCreation()
+	 * @see org.conserve.adapter.AdapterBase#isRequiresCommitAfterSchemaAlteration()
 	 */
 	@Override
-	public boolean isRequiresCommitAfterTableCreation()
+	public boolean isRequiresCommitAfterSchemaAlteration()
 	{
 		return true;
 	}
@@ -287,4 +287,5 @@ public class FirebirdAdapter extends AdapterBase
 	{
 		return "TYPE";
 	}
+	
 }

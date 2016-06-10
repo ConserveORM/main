@@ -1491,6 +1491,34 @@ public class PersistTest
 
 		persist.close();
 	}
+	
+	/**
+	 * Test the extended book/author example.
+	 */
+	@Test
+	public void testAuthorBookExample2() throws Exception
+	{
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+		persist.close();
+
+		this.createAuthors();
+		// open a new connection
+		persist = new PersistenceManager(driver, database, login, password);
+
+		//find all books by authors that have written about crime
+		Author crimeAuthor = new Author();
+		Book crimeBook = new Book();
+		crimeBook.addKeyWord("crime");
+		crimeAuthor.addBook(crimeBook);
+		Book seekBook = new Book();
+		seekBook.addAuthor(crimeAuthor);
+		List<Book> crimeAuthorBooks = 
+		           persist.getObjects(Book.class, new Equal(seekBook));
+		assertEquals(4,crimeAuthorBooks.size());
+		
+		persist.close();
+	}
 
 	/**
 	 * Test saving/searching/loading an object that contains itself.
@@ -2738,7 +2766,6 @@ public class PersistTest
 	public void testCopyDown() throws Exception
 	{
 		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
-		pm.dropTable(Object.class);
 
 		// drop all tables
 		pm.dropTable(Object.class);

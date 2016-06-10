@@ -1708,13 +1708,13 @@ public class TableManager
 			{
 				Node nuClass = deletedClasses.get(x);
 				// remove the entries
-				StringBuilder insert = new StringBuilder();
-				insert.append("DELETE FROM ");
-				insert.append(nuClass.getRepresentation().getTableName());
-				insert.append(" WHERE ");
-				insert.append(Defaults.ID_COL);
-				insert.append(" = ?");
-				PreparedStatement pInsert = cw.prepareStatement(insert.toString());
+				StringBuilder deleteStmt = new StringBuilder();
+				deleteStmt.append("DELETE FROM ");
+				deleteStmt.append(nuClass.getRepresentation().getTableName());
+				deleteStmt.append(" WHERE ");
+				deleteStmt.append(Defaults.ID_COL);
+				deleteStmt.append(" = ?");
+				PreparedStatement pInsert = cw.prepareStatement(deleteStmt.toString());
 				pInsert.setLong(1, id);
 				Tools.logFine(pInsert);
 				pInsert.executeUpdate();

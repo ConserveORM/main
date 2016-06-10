@@ -2541,10 +2541,12 @@ public class PersistTest
 		if (ncList.get(0).getFoo() != null)
 		{
 			assertEquals(76, ncList.get(0).getFoo().getValue());
-		} else if (ncList.get(1).getFoo() != null)
+		} 
+		else if (ncList.get(1).getFoo() != null)
 		{
 			assertEquals(76, ncList.get(1).getFoo().getValue());
-		} else
+		} 
+		else
 		{
 			fail("Reference not preserved.");
 		}

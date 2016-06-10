@@ -165,20 +165,20 @@ public class DerbyAdapter extends AdapterBase
 		statement.append(Defaults.NEW_COLUMN_NAME_PLACEHOLDER);
 		return statement.toString();
 	}
-	
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String,java.lang.Class)
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String,
+	 *      java.lang.String,java.lang.Class)
 	 */
 	@Override
-	public String [] getTableRenameStatements(String oldTableName, String newTableName,Class<?>oldClass)
+	public String[] getTableRenameStatements(String oldTableName, Class<?> oldClass, String newTableName, Class<?> newClass)
 	{
 		StringBuilder sb = new StringBuilder("RENAME TABLE ");
 		sb.append(oldTableName);
 		sb.append(" TO ");
 		sb.append(newTableName);
-		return new String[]{sb.toString()};
-		
+		return new String[] { sb.toString() };
+
 	}
 
 	/**
@@ -187,7 +187,7 @@ public class DerbyAdapter extends AdapterBase
 	@Override
 	public boolean canChangeColumnType()
 	{
-		//Derby only allows string widening, which is not enough.
+		// Derby only allows string widening, which is not enough.
 		return false;
 	}
 

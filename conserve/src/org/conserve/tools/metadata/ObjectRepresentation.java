@@ -579,6 +579,16 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return !ObjectTools.isDatabasePrimitive(c);
 
 	}
+	
+	public boolean isReferenceType(String prop)
+	{
+		int index = props.indexOf(prop);
+		if (index >= 0)
+		{
+			return isReferenceType(index);
+		}
+		return false;
+	}
 
 	public String getTableName()
 	{
@@ -880,6 +890,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * @return
 	 */
 	public abstract String getColumnType(String prop);
+
 
 
 	

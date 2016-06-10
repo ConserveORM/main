@@ -120,7 +120,7 @@ public class MonetDbAdapter extends AdapterBase
 	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String,java.lang.Class)
 	 */
 	@Override
-	public String[] getTableRenameStatements(String oldTableName, String newTableName,Class<?>oldClass)
+	public String[] getTableRenameStatements(String oldTableName,Class<?>oldClass, String newTableName,Class<?>newClass)
 	{
 		String [] res = new String[2];
 		res[0] = "CREATE TABLE "+newTableName+" AS SELECT * FROM " +oldTableName+" WITH DATA";

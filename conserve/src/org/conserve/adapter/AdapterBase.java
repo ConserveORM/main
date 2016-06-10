@@ -671,11 +671,12 @@ public class AdapterBase
 	 * 
 	 * @param oldTableName
 	 *            the name of the table to rename.
+	 * @param oldClass the old class description
 	 * @param newTableName
 	 *            the new name of the table.
-	 * @param clazz the old class description
+	 * @param newClass the new class description
 	 */
-	public String[] getTableRenameStatements(String oldTableName, String newTableName, Class<?>clazz)
+	public String[] getTableRenameStatements(String oldTableName, Class<?> oldClass, String newTableName, Class<?>newClass)
 	{
 		StringBuilder sb = new StringBuilder("ALTER TABLE ");
 		sb.append(oldTableName);

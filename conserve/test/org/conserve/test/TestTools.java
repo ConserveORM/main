@@ -122,12 +122,12 @@ public class TestTools
 			adapter.getPersist().getCache().purge(oldTableName);
 
 			// alter the table name
-			persist.getTableManager().setTableName(oldTableName, newTableName,oldClass, cw);
+			persist.getTableManager().setTableName(oldTableName,oldClass, newTableName,newClass, cw);
 
 			// change the array tables
 			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
-			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),
-					newArrayMemberTable,oldClass, cw);
+			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),oldClass,
+					newArrayMemberTable,newClass, cw);
 
 			// Update ownership relations
 			updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
@@ -205,11 +205,11 @@ public class TestTools
 			adapter.getPersist().getCache().purge(oldTableName);
 
 			// alter the table name
-			persist.getTableManager().setTableName(oldTableName, newTableName, oldClass,cw);
+			persist.getTableManager().setTableName(oldTableName,oldClass, newTableName,oldClass ,cw);
 
 			// change the array tables
 			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
-			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),
+			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),oldClass,
 					newArrayMemberTable,oldClass, cw);
 
 			// Update ownership relations

@@ -19,8 +19,12 @@
 package org.conserve.adapter;
 
 import org.conserve.Persist;
+import org.conserve.tools.CompabilityCalculator;
 import org.conserve.tools.Defaults;
+import org.conserve.tools.ObjectTools;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
+import org.conserve.tools.metadata.ObjectRepresentation;
+import org.conserve.tools.metadata.ObjectStack;
 
 /**
  * @author Erik Berglund
@@ -40,7 +44,7 @@ public class FirebirdAdapter extends AdapterBase
 	@Override
 	public String getVarCharKeyword()
 	{
-		return getVarCharKeyword(8191);//32765 bytes, 4 byte chars
+		return getVarCharKeyword(8191);// 32765 bytes, 4 byte chars
 	}
 
 	/**
@@ -49,7 +53,7 @@ public class FirebirdAdapter extends AdapterBase
 	@Override
 	public String getVarCharIndexed()
 	{
-		return  getVarCharKeyword(253);
+		return getVarCharKeyword(253);
 	}
 
 	/**
@@ -60,12 +64,11 @@ public class FirebirdAdapter extends AdapterBase
 	{
 		return "DOUBLE PRECISION";
 	}
-	
-	
 
 	/**
 	 * 
-	 * Firebird requires transaction to be committed before a new table can be used.
+	 * Firebird requires transaction to be committed before a new table can be
+	 * used.
 	 * 
 	 * @see org.conserve.adapter.AdapterBase#isRequiresCommitAfterSchemaAlteration()
 	 */
@@ -108,16 +111,10 @@ public class FirebirdAdapter extends AdapterBase
 	@Override
 	public String getLastInsertedIdentity(String tableName)
 	{
-		return "execute block\n" +
-				"returns (id bigint)\n" +
-				"as\n" +
-				"begin\n" +
-				"  id = RDB$GET_CONTEXT('USER_SESSION', 'LAST__INSERT__ID');\n" +
-				"suspend;\n" +
-				"end";
+		return "execute block\n" + "returns (id bigint)\n" + "as\n" + "begin\n"
+				+ "  id = RDB$GET_CONTEXT('USER_SESSION', 'LAST__INSERT__ID');\n" + "suspend;\n" + "end";
 	}
-	
-	
+
 	/**
 	 * Firebird can't even rename tables.
 	 * 
@@ -130,29 +127,42 @@ public class FirebirdAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String)
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String,
+	 *      java.lang.String)
 	 */
 	@Override
-	public String[] getTableRenameStatements(String oldTableName, String newTableName,Class<?>clazz)
+	public String[] getTableRenameStatements(String oldTableName, Class<?> oldClass, String newTableName,
+			Class<?> newClass)
 	{
-		//get a comma-separated list of fields
-		ConcreteObjectRepresentation rep = new ConcreteObjectRepresentation(this, clazz, null, null);
+		// get a comma-separated list of implemented fields
+		ObjectStack oldStack = new ObjectStack(this, oldClass);
+		ObjectStack newStack = new ObjectStack(this, newClass);
+		ObjectRepresentation oldRep = oldStack.getActualRepresentation();
+		ObjectRepresentation newRep = newStack.getActualRepresentation();
 		StringBuilder paramList = new StringBuilder(Defaults.ID_COL);
 		paramList.append(",").append(Defaults.REAL_CLASS_COL);
-		for(int x = 0; x<rep.getPropertyCount();x++)
+		for (int x = 0; x < newRep.getPropertyCount(); x++)
 		{
-			paramList.append(",");
-			paramList.append(rep.getPropertyName(x));
+			String prop = newRep.getPropertyName(x);
+			// only include fields that exist in both classes
+			if (oldRep.hasProperty(prop)
+					//and can be converted
+					&& (CompabilityCalculator.calculate(oldRep.getReturnType(prop), newRep.getReturnType(prop))
+							//reference types are always allowed, they'll be handled elsewhere if they are incompatible
+							|| (newRep.isReferenceType(x) && oldRep.isReferenceType(prop))))
+			{
+				paramList.append(",");
+				paramList.append(prop);
+			}
 		}
-		String params  = paramList.toString();
-		
-		String [] res = new String[3];
-		res[0]= "INSERT INTO "+newTableName+"("+params+") SELECT "+params+" FROM " +oldTableName ;
-		
-		res[1]="DROP TABLE " + oldTableName;
-		//remove old entries in TYPE_TABLENAME
-		res[2]="DELETE FROM "+Defaults.TYPE_TABLENAME+" WHERE OWNER_TABLE = '"+oldTableName+"'";
-		
+		String params = paramList.toString();
+
+		String[] res = new String[3];
+		res[0] = "INSERT INTO " + newTableName + "(" + params + ") SELECT " + params + " FROM " + oldTableName;
+		res[1] = "DROP TABLE " + oldTableName;
+		// remove old entries in TYPE_TABLENAME
+		res[2] = "DELETE FROM " + Defaults.TYPE_TABLENAME + " WHERE OWNER_TABLE = '" + oldTableName + "'";
+
 		return res;
 	}
 
@@ -259,12 +269,12 @@ public class FirebirdAdapter extends AdapterBase
 	public String getByteTypeKeyword()
 	{
 		return "SMALLINT";
-	}	
+	}
 
 	@Override
 	public String getSequenceExistsStatement(String sequenceName)
 	{
-		return "SELECT COUNT(*)  FROM RDB$GENERATORS WHERE RDB$GENERATOR_NAME='"+sequenceName+"'";
+		return "SELECT COUNT(*)  FROM RDB$GENERATORS WHERE RDB$GENERATOR_NAME='" + sequenceName + "'";
 	}
 
 	/**
@@ -275,17 +285,17 @@ public class FirebirdAdapter extends AdapterBase
 	{
 		return true;
 	}
-	
+
 	@Override
 	public Object getColumnModificationKeyword()
 	{
 		return "ALTER";
 	}
-	
+
 	@Override
 	public Object getColumnModificationTypeKeyword()
 	{
 		return "TYPE";
 	}
-	
+
 }

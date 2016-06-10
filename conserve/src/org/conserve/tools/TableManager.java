@@ -516,7 +516,6 @@ public class TableManager
 			// get the list of all fields indexed by the named index
 			List<String> indexedFields = objRes.getFieldNamesInIndex(indexName);
 			String[] fieldArray = indexedFields.toArray(new String[0]);
-			// TODO: check index key length
 			for (int x = 0; x < fieldArray.length; x++)
 			{
 				if (objRes.getReturnType(fieldArray[x]).equals(String.class))
@@ -1275,7 +1274,7 @@ public class TableManager
 				// drop old table
 				conditionalDelete(tableName, cw);
 				// rename new table
-				this.setTableName(temporaryName, tableName,clazz, cw);
+				this.setTableName(temporaryName,clazz, tableName,clazz, cw);
 				objRep.setTableName(tableName);
 				createIndicesForTable(objRep, cw);
 			}
@@ -1960,7 +1959,7 @@ public class TableManager
 			{
 				tempTableName = tempTableName.substring(0, tempTableName.length() - 1);
 			}
-			setTableName(tableName, tempTableName,null, cw);
+			setTableName(tableName,null, tempTableName,null, cw);
 
 			// 2. create a new table with same columns minus the one we want to
 			// remove and
@@ -2156,7 +2155,7 @@ public class TableManager
 	 * @param newName
 	 * @throws SQLException
 	 */
-	public void setTableName( String oldName, String newName, Class<?>clazz, ConnectionWrapper cw) throws SQLException
+	public void setTableName( String oldName, Class<?> oldClass, String newName, Class<?>newClass, ConnectionWrapper cw) throws SQLException
 	{
 		if (tableExists(oldName, cw))
 		{
@@ -2180,6 +2179,7 @@ public class TableManager
 			}
 			else
 			{
+				// new table does not exist, rename old table
 				if(adapter.indicesMustBeManuallyDropped())
 				{
 					dropAllIndicesForTable(oldName, cw);
@@ -2188,12 +2188,11 @@ public class TableManager
 				{
 					//we can't rename the table. We have to create a new, identical table. 
 					//The call to getTableRenameStatements() below will handle copying values.
-					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, clazz,null,null);
+					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, oldClass,null,null);
 					objRep.setTableName(newName);
 					this.ensureTableExists(objRep, cw);
 				}
-				// new table does not exist, rename old table
-				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, newName,clazz);
+				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, oldClass, newName,newClass);
 				for (String tableRenameStmt : tableRenameStmts)
 				{
 					PreparedStatement ps = cw.prepareStatement(tableRenameStmt);

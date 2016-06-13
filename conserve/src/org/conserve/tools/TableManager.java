@@ -387,7 +387,7 @@ public class TableManager
 	 * @param objRes
 	 *            .getTableName() the name of the database table.
 	 */
-	private boolean tableExists(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
+	public boolean tableExists(ObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
 	{
 		return tableExists(objRes.getTableName(), cw);
 	}
@@ -2190,7 +2190,30 @@ public class TableManager
 					//The call to getTableRenameStatements() below will handle copying values.
 					ConcreteObjectRepresentation objRep = new ConcreteObjectRepresentation(adapter, oldClass,null,null);
 					objRep.setTableName(newName);
-					this.ensureTableExists(objRep, cw);
+					if(!tableExists(objRep, cw))
+					{
+
+						String createStatement = objRep.getTableCreationStatement(cw);
+
+						PreparedStatement ps = cw.prepareStatement(createStatement);
+						Tools.logFine(ps);
+						ps.execute();
+						ps.close();
+
+						if (!adapter.isSupportsIdentity())
+						{
+							if (objRep.getRepresentedClass().equals(Object.class)
+									||objRep.getRepresentedClass().isArray())
+							{
+								createTriggeredSequence(cw, objRep.getTableName());
+							}
+						}
+
+						if (adapter.isRequiresCommitAfterSchemaAlteration())
+						{
+							cw.commit();
+						}
+					}
 				}
 				String[] tableRenameStmts = adapter.getTableRenameStatements(oldName, oldClass, newName,newClass);
 				for (String tableRenameStmt : tableRenameStmts)

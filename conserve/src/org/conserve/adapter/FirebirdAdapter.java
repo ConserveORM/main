@@ -136,24 +136,14 @@ public class FirebirdAdapter extends AdapterBase
 	{
 		// get a comma-separated list of implemented fields
 		ObjectStack oldStack = new ObjectStack(this, oldClass);
-		ObjectStack newStack = new ObjectStack(this, newClass);
 		ObjectRepresentation oldRep = oldStack.getActualRepresentation();
-		ObjectRepresentation newRep = newStack.getActualRepresentation();
 		StringBuilder paramList = new StringBuilder(Defaults.ID_COL);
 		paramList.append(",").append(Defaults.REAL_CLASS_COL);
-		for (int x = 0; x < newRep.getPropertyCount(); x++)
+		for (int x = 0; x < oldRep.getPropertyCount(); x++)
 		{
-			String prop = newRep.getPropertyName(x);
-			// only include fields that exist in both classes
-			if (oldRep.hasProperty(prop)
-					//and can be converted
-					&& (CompabilityCalculator.calculate(oldRep.getReturnType(prop), newRep.getReturnType(prop))
-							//reference types are always allowed, they'll be handled elsewhere if they are incompatible
-							|| (newRep.isReferenceType(x) && oldRep.isReferenceType(prop))))
-			{
-				paramList.append(",");
-				paramList.append(prop);
-			}
+			String prop = oldRep.getPropertyName(x);
+			paramList.append(",");
+			paramList.append(prop);
 		}
 		String params = paramList.toString();
 

@@ -37,7 +37,7 @@ public class FirebirdPersistTest extends PersistTest
 	{
 		
 		database = "jdbc:firebirdsql://localhost/test";
-		secondDatabase = "jdbc:firebirdsql//localhost/test2";
+		secondDatabase = "jdbc:firebirdsql://localhost/test2";
 
 		driver = "org.firebirdsql.jdbc.FBDriver";
 		login = "test";

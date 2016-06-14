@@ -176,33 +176,10 @@ public class TableManager
 				{
 					throw new SchemaPermissionException(Defaults.ARRAY_TABLENAME + " does not exist, but can't create it.");
 				}
-				if (adapter.isSupportsIdentity())
-				{
-					// create the table with an identity column
-					createTable(Defaults.ARRAY_TABLENAME,
-							new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL },
-							new String[] { adapter.getIdentity() + " PRIMARY KEY", adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
-				}
-				else
-				{
-					// the adapter does not support identity
-					// check if we can use a trigger
-					if (adapter.isSupportsTriggers())
-					{
-						// create the table as usual
-						createTable(Defaults.ARRAY_TABLENAME,
-								new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL }, new String[] {
-										adapter.getLongTypeKeyword() + " PRIMARY KEY", adapter.getVarCharIndexed(), adapter.getVarCharIndexed() },
-								cw);
-						// create the trigger sequence
-						createTriggeredSequence(cw, Defaults.ARRAY_TABLENAME);
-
-					}
-					else
-					{
-						throw new RuntimeException("Database engines without both autoincrements and triggers are not supported at this time.");
-					}
-				}
+				// create the table with an identity column
+				createTable(Defaults.ARRAY_TABLENAME,
+					new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL },
+					new String[] { adapter.getLongTypeKeyword() + " PRIMARY KEY", adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
 				// create an index on the id, as this is the one we
 				// will be searching for most frequently
 				createIndex(Defaults.ARRAY_TABLENAME, new String[] { Defaults.ID_COL }, Defaults.ARRAY_TABLENAME + "_INDEX", cw);

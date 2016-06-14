@@ -493,10 +493,9 @@ public class Persist
 		// find all properties
 		StringBuilder statement = new StringBuilder("SELECT PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
+		statement.append(" WHERE OWNER_ID = ?");
 		PreparedStatement query = cw.prepareStatement(statement.toString());
-		query.setString(1, tableName);
-		query.setLong(2, id);
+		query.setLong(1, id);
 		Tools.logFine(query);
 		ResultSet subObjects = query.executeQuery();
 		while (subObjects.next())

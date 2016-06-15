@@ -1026,7 +1026,7 @@ public class TableManager
 				// remove the reference
 				setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
 				// remove protection entry
-				pm.unprotectObjectInternal( innerRes.getLong(1),  innerRes.getLong(3), cw);
+				pm.unprotectObjectInternal( innerRes.getLong(1), innerRes.getString(2), innerRes.getLong(3), cw);
 				// if item is unprotected, remove it
 				if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
 				{
@@ -1784,7 +1784,7 @@ public class TableManager
 				// null the reference in the owner table
 				setReferenceTo(tableName, ownerId, colName, null, cw);
 				// remove protection
-				pm.unprotectObjectInternal( ownerId,  propertyId, cw);
+				pm.unprotectObjectInternal( ownerId, propertyTable, propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
@@ -2052,12 +2052,7 @@ public class TableManager
 	private void dropUprotectedReferences(String tableName, String column, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
 		// Get affected entries from HAS_A table
-		StringBuilder statement = new StringBuilder("SELECT ");
-		statement.append("OWNER_ID,");
-		statement.append("PROPERTY_TABLE,");
-		statement.append("PROPERTY_ID,");
-		statement.append("PROPERTY_CLASS");
-		statement.append(" FROM ");
+		StringBuilder statement = new StringBuilder("SELECT OWNER_ID,PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE OWNER_TABLE=? AND ");
 		statement.append(Defaults.RELATION_NAME_COL);
@@ -2079,7 +2074,7 @@ public class TableManager
 			if (propertyClassName != null)
 			{
 				// remove protection
-				pm.unprotectObjectInternal( ownerId,  propertyId, cw);
+				pm.unprotectObjectInternal( ownerId, propertyTable, propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{

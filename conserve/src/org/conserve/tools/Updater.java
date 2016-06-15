@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.conserve.Persist;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.metadata.ObjectRepresentation;
@@ -305,7 +306,7 @@ public class Updater
 				String propertyTable = NameGenerator.getTableName(component,
 						adapter);
 				Long propertyId = adapter.getPersist().getId(component);
-				protecter.unprotectObjectInternal( ownerId, propertyId, cw);
+				protecter.unprotectObjectInternal( ownerId, propertyTable,propertyId, cw);
 				if (!protecter.isProtected(propertyTable, propertyId, cw)
 						&& !nuIds.contains(new TableId(propertyTable,
 								propertyId)))
@@ -382,25 +383,23 @@ public class Updater
 					+ updatedCount);
 		}
 		// unprotect and optionally delete discarded values of the object
+		Persist persist = adapter.getPersist();
 		for (String nValue : nullValues)
 		{
 			Long propertyId = refValues.get(nValue);
 			if (propertyId != null)
 			{
-				ClassIdTuple actualNameId = adapter.getPersist()
-						.getRealTableNameAndId(cw, rep.getReturnType(nValue),
+				ClassIdTuple actualNameId = persist.getRealTableNameAndId(cw, rep.getReturnType(nValue),
 								propertyId);
+				String tableName = actualNameId.getTableName(adapter);
 
-				adapter.getPersist()
-						.getProtectionManager()
-						.unprotectObjectInternal(rep.getId(),actualNameId.getId(), cw);
-				if (!adapter
-						.getPersist()
-						.getProtectionManager()
-						.isProtected(actualNameId.getTableName(adapter),
+				persist.getProtectionManager()
+						.unprotectObjectInternal(rep.getId(),tableName,actualNameId.getId(), cw);
+				if (!persist.getProtectionManager()
+						.isProtected(tableName,
 								actualNameId.getId(), cw))
 				{
-					adapter.getPersist().deleteObject(
+					persist.deleteObject(
 							actualNameId.getRepresentedClass(),
 							actualNameId.getId(), cw);
 				}

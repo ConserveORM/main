@@ -417,7 +417,7 @@ public class Persist
 		{
 			// this means the object is an array, delete the array
 			// delete all the array's members before deleting the array itself
-			deletePropertiesOf( id, cw);
+			deletePropertiesOfArray( id, cw);
 			// all arrays also have an entry in the Object, Serializable, and Cloneable tables, so
 			// we must delete those as well.
 			deleteObjectHelper(Object.class,  id, cw);
@@ -497,7 +497,7 @@ public class Persist
 			Long propertyId = subObjects.getLong(2);
 			String propertyClassName = subObjects.getString(3);
 			// unprotect the sub-object relative to the current object
-			protectionManager.unprotectObjectInternal( id,  propertyId, cw);
+			protectionManager.unprotectObjectInternal( id, propertyTable, propertyId, cw);
 			// check if the property is unprotected
 			if (!protectionManager.isProtected(propertyTable, propertyId, cw))
 			{
@@ -526,6 +526,60 @@ public class Persist
 		query.close();
 	}
 
+	
+
+	/**
+	 * Delete the properties of an Array with a given id.
+	 * 
+	 * @param id
+	 *            the id of the object who's properties we are deleting.
+	 * @throws SQLException
+	 */
+	private void deletePropertiesOfArray( Long id, ConnectionWrapper cw) throws SQLException
+	{
+		// find all properties
+		StringBuilder statement = new StringBuilder("SELECT PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
+		statement.append(Defaults.HAS_A_TABLENAME);
+		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
+		PreparedStatement query = cw.prepareStatement(statement.toString());
+		query.setString(1, Defaults.ARRAY_TABLENAME);
+		query.setLong(2, id);
+		Tools.logFine(query);
+		ResultSet subObjects = query.executeQuery();
+		while (subObjects.next())
+		{
+			String propertyTable = subObjects.getString(1);
+			Long propertyId = subObjects.getLong(2);
+			String propertyClassName = subObjects.getString(3);
+			// unprotect the sub-object relative to the current object
+			protectionManager.unprotectObjectInternal( id, propertyTable, propertyId, cw);
+			// check if the property is unprotected
+			if (!protectionManager.isProtected(propertyTable, propertyId, cw))
+			{
+				// delete the property itself
+				try
+				{
+					if (propertyTable.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
+							|| propertyTable.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME)
+							|| propertyClassName.contains("["))
+					{
+						deleteObject(propertyTable, propertyId, cw);
+					}
+					else
+					{
+						Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);
+						deleteObject(c, propertyId, cw);
+					}
+				}
+				catch (ClassNotFoundException e)
+				{
+					query.close();
+					throw new SQLException(e);
+				}
+			}
+		}
+		query.close();
+	}
 	/**
 	 * Get the database IDs of all objects of clazz that satisfy clause.
 	 * 

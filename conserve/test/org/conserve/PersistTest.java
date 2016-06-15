@@ -151,7 +151,7 @@ public class PersistTest
 	{
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.FINE;
+		Level level = Level.WARNING;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}
@@ -2413,8 +2413,6 @@ public class PersistTest
 		pm = new PersistenceManager(driver, database, login, password);
 		TestTools testTools = new TestTools(pm.getPersist());
 		testTools.changeName(OriginalObject.class, ArrayToLong.class);
-		pm.close();
-		pm = new PersistenceManager(driver, database, login, password);
 		pm.updateSchema(ArrayToLong.class);
 		pm.close();
 		// check that array no longer exist

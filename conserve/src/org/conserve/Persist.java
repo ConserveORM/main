@@ -388,15 +388,14 @@ public class Persist
 	{
 		boolean res = false;
 		String tableName = NameGenerator.getTableName(clazz, adapter);
-		//delete object itself
+		//delete object itself and its properties
 		res = deleteObject(tableName, id, cw);
-		//delete superclass recursively
-		res &= deleteObjectHelper(clazz.getSuperclass(), id, cw);
-		//delete interfaces recursively
-		Class<?>[] infs = clazz.getInterfaces();
-		for(Class<?>inf:infs)
+		
+		//get a list of all classes to delete from
+		List<Class<?>>toDelete = ObjectTools.getAllLegalReferenceTypes(clazz);
+		for(Class<?>c:toDelete)
 		{
-			res &= deleteObjectHelper(inf, id, cw);
+			res &= deleteObjectHelper(c, id, cw);
 		}
 		return res;
 	}
@@ -470,16 +469,6 @@ public class Persist
 			Tools.logFine(ps);
 			res = ps.executeUpdate() == 1;
 			ps.close();
-
-			// recurse superclass
-			deleteObjectHelper(clazz.getSuperclass(), id, cw);
-
-			// recurse interfaces
-			Class<?>[] infs = clazz.getInterfaces();
-			for (Class<?> inf : infs)
-			{
-				deleteObjectHelper(inf, id, cw);
-			}
 
 		}
 		return res;
@@ -619,14 +608,18 @@ public class Persist
 			return res;
 		}
 
+		
 		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 		whereGenerator.setClauses(clause);
 		StatementPrototype sp = whereGenerator.generate(clazz, clause != null);
 		// get the id of clazz
 		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
+		if (id != null)
+		{
+			sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
+		}
 
-		StringBuilder statement = new StringBuilder("SELECT ");
-		statement.append("DISTINCT(");
+		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.ID_COL);
@@ -635,10 +628,6 @@ public class Persist
 		statement.append(".");
 		statement.append(Defaults.REAL_CLASS_COL);
 		statement.append(" FROM ");
-		if (id != null)
-		{
-			sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
-		}
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
@@ -659,7 +648,7 @@ public class Persist
 				// get the real class and id
 				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
 				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, subClassName, null,id, cw);
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, subClassName, null,dbId, cw);
 				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 				{
 					Class<?> c = en.getKey();

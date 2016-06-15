@@ -274,7 +274,6 @@ public class IdStatementGenerator
 	 */
 	public void addPropertyTablesToJoin(ObjectStack propertyStack)
 	{
-		// TODO: Must this recurse from specific to general?
 		boolean propertiesFound = false;
 		List<ObjectRepresentation> allReps = propertyStack
 				.getAllRepresentations();

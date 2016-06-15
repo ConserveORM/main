@@ -88,6 +88,7 @@ public class ObjectTools
 	 * Get all types that can legally be used to reference an object of c.
 	 * This includes all superclasses of c, and all interfaces implemented by c or any of its superclasses.
 	 * The class c itself is not included in the result.
+	 * Each class is only present once.
 	 * 
 	 * @param c
 	 * @return
@@ -97,9 +98,17 @@ public class ObjectTools
 		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
 		while (c != null)
 		{
-			res.addAll(getAllInterfaces(c));
+			List<Class<?>>tmp = getAllInterfaces(c);
+			for(Class<?>t:tmp)
+			{
+				//only add interfaces we haven't added already.
+				if(!res.contains(t))
+				{
+					res.add(t);
+				}
+			}
 			c = c.getSuperclass();
-			if(c != null)
+			if(c != null && !res.contains(c))
 			{
 				res.add(c);
 			}

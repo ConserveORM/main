@@ -289,7 +289,6 @@ public class Updater
 		ArrayLoader arrayLoader = new ArrayLoader(adapter, adapter.getPersist()
 				.getCache(), cw);
 		arrayLoader.loadArray(databaseId);
-		String ownerTable = arrayLoader.getRelationalTableName();
 		Class<?> componentType = arrayLoader.getArray().getClass()
 				.getComponentType();
 		// List all members of the existing array
@@ -306,8 +305,7 @@ public class Updater
 				String propertyTable = NameGenerator.getTableName(component,
 						adapter);
 				Long propertyId = adapter.getPersist().getId(component);
-				protecter.unprotectObjectInternal(ownerTable, ownerId,
-						propertyTable, propertyId, cw);
+				protecter.unprotectObjectInternal( ownerId, propertyId, cw);
 				if (!protecter.isProtected(propertyTable, propertyId, cw)
 						&& !nuIds.contains(new TableId(propertyTable,
 								propertyId)))
@@ -395,10 +393,7 @@ public class Updater
 
 				adapter.getPersist()
 						.getProtectionManager()
-						.unprotectObjectInternal(rep.getTableName(),
-								rep.getId(),
-								actualNameId.getTableName(adapter),
-								actualNameId.getId(), cw);
+						.unprotectObjectInternal(rep.getId(),actualNameId.getId(), cw);
 				if (!adapter
 						.getPersist()
 						.getProtectionManager()

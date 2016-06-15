@@ -19,10 +19,7 @@
 package org.conserve.adapter;
 
 import org.conserve.Persist;
-import org.conserve.tools.CompabilityCalculator;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.ObjectTools;
-import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 

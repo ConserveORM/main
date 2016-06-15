@@ -418,9 +418,9 @@ public class Persist
 		{
 			// this means the object is an array, delete the array
 			// delete all the array's members before deleting the array itself
-			deletePropertiesOf(tableName, id, cw);
+			deletePropertiesOf( id, cw);
 			// all arrays also have an entry in the Object, Serializable, and Cloneable tables, so
-			// we must delete those as well
+			// we must delete those as well.
 			deleteObjectHelper(Object.class,  id, cw);
 			deleteObjectHelper(Serializable.class, id, cw);
 			deleteObjectHelper(Cloneable.class,  id, cw);
@@ -439,11 +439,19 @@ public class Persist
 		if (!isArray)
 		{
 			// properties of non-arrays are deleted after the object itself
-			deletePropertiesOf(tableName, id, cw);
+			deletePropertiesOf( id, cw);
 		}
 		return res;
 	}
 
+	/**
+	 * 
+	 * @param clazz the class to delete objects from.
+	 * @param id the ID of the class 
+	 * @param cw the connection wrapper
+	 * @return
+	 * @throws SQLException
+	 */
 	private boolean deleteObjectHelper(Class<?> clazz,  Long id, ConnectionWrapper cw)
 			throws SQLException
 	{
@@ -473,22 +481,18 @@ public class Persist
 				deleteObjectHelper(inf, id, cw);
 			}
 
-			// delete properties
-			deletePropertiesOf(tableName, id, cw);
 		}
 		return res;
 	}
 
 	/**
-	 * Recursively delete the properties of the object of clazz with id.
+	 * Recursively delete the properties of the object with id.
 	 * 
-	 * @param tableName
-	 *            the table of the object who's properties we are deleting.
 	 * @param id
 	 *            the id of the object who's properties we are deleting.
 	 * @throws SQLException
 	 */
-	private void deletePropertiesOf(String tableName, Long id, ConnectionWrapper cw) throws SQLException
+	private void deletePropertiesOf( Long id, ConnectionWrapper cw) throws SQLException
 	{
 		// find all properties
 		StringBuilder statement = new StringBuilder("SELECT PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
@@ -504,7 +508,7 @@ public class Persist
 			Long propertyId = subObjects.getLong(2);
 			String propertyClassName = subObjects.getString(3);
 			// unprotect the sub-object relative to the current object
-			protectionManager.unprotectObjectInternal(tableName, id, propertyTable, propertyId, cw);
+			protectionManager.unprotectObjectInternal( id,  propertyId, cw);
 			// check if the property is unprotected
 			if (!protectionManager.isProtected(propertyTable, propertyId, cw))
 			{

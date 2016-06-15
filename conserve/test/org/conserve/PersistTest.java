@@ -198,6 +198,8 @@ public class PersistTest
 	public void testAddSimplestObject() throws Exception
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+	
 		// create a test object
 		SimplestObject so = new SimplestObject();
 		so.setFoo(0.67);

@@ -1026,7 +1026,7 @@ public class TableManager
 				// remove the reference
 				setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
 				// remove protection entry
-				pm.unprotectObjectInternal(ownerTable, innerRes.getLong(1), innerRes.getString(2), innerRes.getLong(3), cw);
+				pm.unprotectObjectInternal( innerRes.getLong(1),  innerRes.getLong(3), cw);
 				// if item is unprotected, remove it
 				if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
 				{
@@ -1784,7 +1784,7 @@ public class TableManager
 				// null the reference in the owner table
 				setReferenceTo(tableName, ownerId, colName, null, cw);
 				// remove protection
-				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
+				pm.unprotectObjectInternal( ownerId,  propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
@@ -2079,7 +2079,7 @@ public class TableManager
 			if (propertyClassName != null)
 			{
 				// remove protection
-				pm.unprotectObjectInternal(tableName, ownerId, propertyTable, propertyId, cw);
+				pm.unprotectObjectInternal( ownerId,  propertyId, cw);
 				// if entity is unprotected,
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{

@@ -469,7 +469,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 							// ARRAY_TABLE_NAME row that represents them
 							if (value.getClass().isArray())
 							{
-								protectionStack.addEntry(new ProtectionEntry(Defaults.ARRAY_TABLENAME, null, id, props.get(x)));
+								protectionStack.addEntry(new ProtectionEntry(NameGenerator.getArrayTablename(adapter), null, id, props.get(x)));
 							}
 							else
 							{

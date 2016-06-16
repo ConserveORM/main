@@ -141,7 +141,7 @@ public class ArrayEntryWriter
 				}
 
 				String valueClassName = null;
-				String propertyName = Defaults.ARRAY_TABLENAME;
+				String propertyName = NameGenerator.getArrayTablename(adapter);
 				// add a protection entry for the __ARRAY table
 				if (!compType.isArray())
 				{
@@ -159,7 +159,7 @@ public class ArrayEntryWriter
 				}
 				// protect the array-member with array as owner
 				protectionManager.protectObjectInternal(
-						Defaults.ARRAY_TABLENAME, arrayId, null,tableName,
+						NameGenerator.getArrayTablename(adapter), arrayId, null,tableName,
 						memberId, valueClassName, cw);
 
 			}

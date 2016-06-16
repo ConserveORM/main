@@ -411,7 +411,7 @@ public class Persist
 	public boolean deleteObject(String tableName, Long id, ConnectionWrapper cw) throws SQLException
 	{
 		boolean res = false;
-		if (tableName.equals(Defaults.ARRAY_TABLENAME))
+		if (tableName.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 		{
 			// this means the object is an array, delete the array
 			try

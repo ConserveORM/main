@@ -207,4 +207,19 @@ public class NameGenerator
 		return res;
 	}
 
+	/**
+	 * Get the name of the table that stores arrays.
+	 * @param adapter
+	 * @return
+	 */
+	public static String getArrayTablename(AdapterBase adapter)
+	{
+		String res = Defaults.ARRAY_TABLENAME;
+		if(adapter.tableNamesAreLowerCase())
+		{
+			res = res.toLowerCase();
+		}
+		return res;
+	}
+
 }

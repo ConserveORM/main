@@ -490,6 +490,7 @@ public class PersistTest
 		assertEquals(3, ob1.getData().length);
 		persist.close();
 
+		//delete the ComplexArrayObject, make sure one ComplexObject is untouched because of  external reference
 		persist = new PersistenceManager(driver, database, login, password);
 		persist.deleteObjects(new ComplexArrayObject());
 		List<ComplexObject> tmp = persist.getObjects(new ComplexObject());
@@ -507,7 +508,7 @@ public class PersistTest
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		persist.dropTable(Object.class);
 
-		int arraySize = 1;
+		int arraySize = 5;
 
 		ComplexObject co = new ComplexObject();
 		SimplestObject[][][] array = new SimplestObject[arraySize][arraySize][1];
@@ -764,16 +765,19 @@ public class PersistTest
 		foo.add(1.1);
 		persist.saveObject(foo);
 		persist.close();
-		/*
-		 * persist = new PersistenceManager(driver, database, login, password);
-		 * 
-		 * @SuppressWarnings("rawtypes") List<ArrayList> result =
-		 * persist.getObjects(ArrayList.class, new All()); assertEquals(1,
-		 * result.size()); ArrayList<?> first = result.get(0); assertEquals(2,
-		 * first.size()); assertEquals(6.9, first.get(0)); assertEquals(1.1,
-		 * first.get(1)); List<Object> all = persist.getObjects(new Object());
-		 * assertEquals(1, all.size()); persist.close();
-		 */
+
+		persist = new PersistenceManager(driver, database, login, password);
+
+		@SuppressWarnings("rawtypes")
+		List<ArrayList> result = persist.getObjects(ArrayList.class, new All());
+		assertEquals(1, result.size());
+		ArrayList<?> first = result.get(0);
+		assertEquals(2, first.size());
+		assertEquals(6.9, first.get(0));
+		assertEquals(1.1, first.get(1));
+		List<Object> all = persist.getObjects(new Object());
+		assertEquals(1, all.size());
+		persist.close();
 
 	}
 

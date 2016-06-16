@@ -181,19 +181,20 @@ public class ProtectionManager
 	 * @param propertyId the database id of the protected id to delete
 	 * @param cw
 	 */
-	public void unprotectObjectInternal(Long ownerId, String propertyTable, Long propertyId,
+	public void unprotectObjectInternal(String ownerTable, Long ownerId, String propertyTable, Long propertyId,
 			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("DELETE FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_ID = ? AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ? AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setLong(1, ownerId);
-			ps.setString(2, propertyTable);
-			ps.setLong(3, propertyId);
+			ps.setString(1, ownerTable);
+			ps.setLong(2, ownerId);
+			ps.setString(3, propertyTable);
+			ps.setLong(4, propertyId);
 			Tools.logFine(ps);
 			ps.execute();
 		}

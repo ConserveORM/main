@@ -64,6 +64,28 @@ public class ObjectTools
 		}
 		return res;
 	}
+	
+	/**
+	 * Get a list of all direct interfaces of c. 
+	 * If c is an interface, it is not included. Ignores superclasses of c. 
+	 * Ignores super-interfaces.
+	 * 
+	 * @param c
+	 * @return
+	 */
+	public static List<Class<?>>getAllDirectInterfaces(Class<?>c)
+	{
+		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
+		if (c != null)
+		{
+			Class<?>[] interfaces = c.getInterfaces();
+			for (Class<?> intf : interfaces)
+			{
+				res.add(intf);
+			}
+		}
+		return res;
+	}
 
 	/**
 	 * Get all interfaces of c. If c is an interface, get all super-interfaces.

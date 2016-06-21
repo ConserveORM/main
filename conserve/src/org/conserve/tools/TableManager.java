@@ -749,7 +749,7 @@ public class TableManager
 
 			// delete all instances of the class
 			adapter.getPersist().deleteObjects(cw, c, new All());
-			// drop table of subclasses
+			// drop tables of subclasses
 			List<Class<?>> subClasses = this.getSubClasses(c, cw);
 			for (Class<?> subClass : subClasses)
 			{
@@ -783,8 +783,40 @@ public class TableManager
 			{
 				dropTableHelper(ref, cw, classList);
 			}
+			
+			//find all interfaces implemented by c, delete those that no longer has any implementors
+			List<Class<?>> interfaces = ObjectTools.getAllDirectInterfaces(c);
+			for(Class<?>intf:interfaces)
+			{
+				if(!hasSubclasses(intf,cw))
+				{
+					dropTableHelper(intf, cw, classList);
+				}
+			}
 		}
 	}
+
+	/**
+	 * Return true if the class c has subclasses or implementing classes, false otherwise.
+	 * @param c
+	 * @param cw
+	 * @return
+	 * @throws SQLException 
+	 */
+	private boolean hasSubclasses(Class<?> c, ConnectionWrapper cw) throws SQLException
+	{
+		Connection conn = cw.getConnection();
+		PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM " + Defaults.IS_A_TABLENAME +" WHERE SUPERCLASS = ?");
+		ps.setString(1, NameGenerator.getSystemicName(c));
+		Tools.logFine(ps);
+		ResultSet rs = ps.executeQuery();
+		if (rs.next() && (rs.getLong(1) > 0))
+		{
+			return true;
+		}
+		return false;
+	}
+	
 
 	private void conditionalDelete(String tableName, ConnectionWrapper cw) throws SQLException
 	{

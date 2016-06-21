@@ -45,32 +45,4 @@ public class SqLitePersistTest extends PersistTest
 		deleteAll();
 	}
 
-	/**
-	 * Try reading from a database table.
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void testBasicFunctionality() throws Exception
-	{
-
-		PersistenceManager persist = new PersistenceManager(driver, database,
-				login, password);
-		ConnectionWrapper cw = persist.getConnectionWrapper();
-		
-		PreparedStatement stmt = cw.prepareStatement("SELECT COUNT(*) FROM C__ARRAY");
-		ResultSet rs = stmt.executeQuery();
-		if(rs.next())
-		{
-			System.out.println("Found " + rs.getInt(1) + " objects.");
-		}
-		else
-		{
-			System.out.println("No result.");
-		}
-		stmt.close();
-		cw.commitAndDiscard();
-		persist.close();
-	}
-
 }

@@ -451,6 +451,10 @@ public class Persist
 	 */
 	private boolean deleteArray(Long id, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
+		if(id == 2)
+		{
+			System.out.println("Deleting suspect array");
+		}
 		boolean res = false;
 		// delete all the array's members before deleting the array itself
 		// find the array contents class
@@ -468,32 +472,36 @@ public class Persist
 			String compType = rs.getString(2);
 			Class<?> compClass = ObjectTools.lookUpClass(compType, adapter).getComponentType();
 			String compTable = NameGenerator.getArrayMemberTableName(compClass, adapter);
-			if (!ObjectTools.isDatabasePrimitive(compClass))
+			boolean isObject = !ObjectTools.isDatabasePrimitive(compClass);
+
+			// all entries are actual objects, delete them
+			StringBuilder componentQuery = new StringBuilder(
+					"SELECT " + Defaults.COMPONENT_CLASS_COL + ", " + Defaults.VALUE_COL + ", " + Defaults.ID_COL + " FROM ");
+			componentQuery.append(compTable);
+			componentQuery.append(" WHERE C__ARRAY_MEMBER_ID = ?");
+			PreparedStatement componentStmt = cw.prepareStatement(componentQuery.toString());
+			componentStmt.setLong(1, id);
+			Tools.logFine(componentStmt);
+			ResultSet components = componentStmt.executeQuery();
+			while (components.next())
 			{
-				// all entries are actual objects, delete them
-				StringBuilder componentQuery = new StringBuilder("SELECT "+Defaults.COMPONENT_CLASS_COL+", "+Defaults.VALUE_COL+", "+Defaults.ID_COL+" FROM ");
-				componentQuery.append(compTable);
-				componentQuery.append(" WHERE C__ARRAY_MEMBER_ID = ?");
-				PreparedStatement componentStmt = cw.prepareStatement(componentQuery.toString());
-				componentStmt.setLong(1, id);
-				Tools.logFine(componentStmt);
-				ResultSet components = componentStmt.executeQuery();
-				while (components.next())
+				String type = components.getString(1);
+				Long valueId = components.getLong(2);
+				Long compId = components.getLong(3);
+				Class<?> clazz = ObjectTools.lookUpClass(type, adapter);
+				String table = NameGenerator.getTableName(clazz, adapter);
+				protectionManager.unprotectObjectInternal(NameGenerator.getArrayTablename(adapter), id, compTable, compId, cw);
+				if (isObject)
 				{
-					String type = components.getString(1);
-					Long valueId = components.getLong(2);
-					Long compId = components.getLong(3);
-					Class<?> clazz = ObjectTools.lookUpClass(type, adapter);
-					String table = NameGenerator.getTableName(clazz, adapter);
-					protectionManager.unprotectObjectInternal(Defaults.ARRAY_TABLENAME, id, compTable, compId, cw);
-					protectionManager.unprotectObjectInternal(compTable,compId, table, valueId, cw);
-					if(!protectionManager.isProtected(table, valueId, cw))
+					protectionManager.unprotectObjectInternal(compTable, compId, table, valueId, cw);
+					if (!protectionManager.isProtected(table, valueId, cw))
 					{
 						deleteObject(clazz, valueId, cw);
 					}
 				}
-				componentStmt.close();
 			}
+			componentStmt.close();
+
 			// delete all entries in the comp table
 			String deleteCommand = "DELETE FROM " + compTable + " WHERE C__ARRAY_MEMBER_ID = ?";
 			PreparedStatement deleteStmt = cw.prepareStatement(deleteCommand);

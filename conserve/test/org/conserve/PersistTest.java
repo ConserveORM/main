@@ -178,7 +178,7 @@ public class PersistTest
 	@After
 	public void tearDown() throws Exception
 	{
-		// deleteAll();
+		deleteAll();
 	}
 
 	protected void deleteAll() throws SQLException

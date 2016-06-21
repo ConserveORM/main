@@ -299,15 +299,16 @@ public class Updater
 		for (int x = 0; x < arrayLoader.getLength(); x++)
 		{
 			Object component = arrayLoader.getEntry(x);
+			// unprotect them
+			Long ownerId = arrayLoader.getRelationalIds().get(x);
+			protecter.unprotectObjectInternal(NameGenerator.getArrayTablename(adapter), databaseId, arrayMemberTable, ownerId, cw);
+				
 			// if they are non-primitive
 			if (!ObjectTools.isDatabasePrimitive(component.getClass()))
 			{
-				// unprotect them
-				Long ownerId = arrayLoader.getRelationalIds().get(x);
 				String propertyTable = NameGenerator.getTableName(component,
 						adapter);
 				Long propertyId = adapter.getPersist().getId(component);
-				protecter.unprotectObjectInternal(Defaults.ARRAY_TABLENAME, databaseId, arrayMemberTable, ownerId, cw);
 				protecter.unprotectObjectInternal(arrayMemberTable, ownerId, propertyTable,propertyId, cw);
 				if (!protecter.isProtected(propertyTable, propertyId, cw)
 						&& !nuIds.contains(new TableId(propertyTable,

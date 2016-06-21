@@ -646,7 +646,7 @@ public class ObjectStack
 				subName = subSuper.getRepresentation().getSystemicName(); 
 				if(subSuper.getRepresentation().isArray())
 				{
-					subName = Defaults.ARRAY_TABLENAME;
+					subName = NameGenerator.getArrayTablename(adapter);
 				}
 			}
 			objeRep.save(cw, subName , null);
@@ -667,7 +667,7 @@ public class ObjectStack
 			String className = root.getRepresentation().getSystemicName();
 			if (root.getRepresentation().isArray())
 			{
-				className = Defaults.ARRAY_TABLENAME;
+				className = NameGenerator.getArrayTablename(adapter);
 			}
 
 			// get the superclasses

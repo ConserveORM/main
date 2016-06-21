@@ -112,7 +112,7 @@ public class ArrayLoader
 			SQLException, ClassNotFoundException
 	{
 		setDimensions(className);
-		Object tmpObject = cache.getObject(Defaults.ARRAY_TABLENAME, dbId);
+		Object tmpObject = cache.getObject(NameGenerator.getArrayTablename(adapter), dbId);
 		if (tmpObject == null)
 		{
 			relationalIds = new ArrayList<Long>();
@@ -157,7 +157,7 @@ public class ArrayLoader
 					}
 				}
 			}
-			cache.storeObject(Defaults.ARRAY_TABLENAME, array, dbId);
+			cache.storeObject(NameGenerator.getArrayTablename(adapter), array, dbId);
 		}
 		else
 		{

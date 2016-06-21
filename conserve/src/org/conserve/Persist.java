@@ -451,15 +451,11 @@ public class Persist
 	 */
 	private boolean deleteArray(Long id, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
-		if(id == 2)
-		{
-			System.out.println("Deleting suspect array");
-		}
 		boolean res = false;
 		// delete all the array's members before deleting the array itself
 		// find the array contents class
 		StringBuilder arrayQuery = new StringBuilder("SELECT COMPONENT_TABLE,COMPONENT_TYPE FROM ");
-		arrayQuery.append(Defaults.ARRAY_TABLENAME);
+		arrayQuery.append(NameGenerator.getArrayTablename(adapter));
 		arrayQuery.append(" WHERE ");
 		arrayQuery.append(Defaults.ID_COL);
 		arrayQuery.append(" = ? ");
@@ -691,7 +687,7 @@ public class Persist
 			throws ClassNotFoundException, SQLException
 	{
 		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
-		if (className != null && className.equals(Defaults.ARRAY_TABLENAME))
+		if (className != null && className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 		{
 			// can't load array classes, so ignore
 			return res;
@@ -874,7 +870,7 @@ public class Persist
 		String tableName = null;
 		if (object.getClass().isArray())
 		{
-			tableName = Defaults.ARRAY_TABLENAME;
+			tableName = NameGenerator.getArrayTablename(adapter);
 		}
 		else
 		{
@@ -987,7 +983,7 @@ public class Persist
 				{
 					// get the real class
 					String className = (String) map.get(Defaults.REAL_CLASS_COL);
-					if (className.equals(Defaults.ARRAY_TABLENAME))
+					if (className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 					{
 						// arrays are not loaded in response to WHERE queries,
 						// only as members of specific objects.
@@ -1125,7 +1121,7 @@ public class Persist
 					{
 						// get the real class
 						String className = (String) map.get(Defaults.REAL_CLASS_COL);
-						if (className.equals(Defaults.ARRAY_TABLENAME))
+						if (className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 						{
 							// arrays are not loaded in response to WHERE
 							// queries,
@@ -1379,7 +1375,7 @@ public class Persist
 			{
 				// get the real class and id
 				className = (String) map.get(Defaults.REAL_CLASS_COL);
-				if (!className.equals(Defaults.ARRAY_TABLENAME))
+				if (!className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 				{
 					// load the real class
 					clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
@@ -1391,11 +1387,11 @@ public class Persist
 			}
 
 			// check if the object is an array
-			if (clazz.isArray() || className.equals(Defaults.ARRAY_TABLENAME))
+			if (clazz.isArray() || className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 			{
 
 				// the referenced object is an array, so load it
-				Object cachedObject = cache.getObject(Defaults.ARRAY_TABLENAME, dbId);
+				Object cachedObject = cache.getObject(NameGenerator.getArrayTablename(adapter), dbId);
 
 				if (cachedObject == null)
 				{

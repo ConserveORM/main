@@ -25,6 +25,7 @@ import java.util.List;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.select.Clause;
 import org.conserve.tools.Defaults;
+import org.conserve.tools.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.metadata.ObjectStack.Node;
@@ -290,7 +291,7 @@ public class IdStatementGenerator
 			{
 				if (rep.isArray())
 				{
-					addPropertyTableToJoin(Defaults.ARRAY_TABLENAME,
+					addPropertyTableToJoin(NameGenerator.getArrayTablename(adapter),
 							rep.getAsName());
 				}
 				else
@@ -314,7 +315,7 @@ public class IdStatementGenerator
 		this.joinRepresentations.add(actual);
 		if (actual.isArray())
 		{
-			addTableToJoin(Defaults.ARRAY_TABLENAME, actual.getAsName());
+			addTableToJoin(NameGenerator.getArrayTablename(adapter), actual.getAsName());
 		}
 		else
 		{
@@ -331,7 +332,7 @@ public class IdStatementGenerator
 					this.joinRepresentations.add(rep);
 					if (rep.isArray())
 					{
-						addTableToJoin(Defaults.ARRAY_TABLENAME,
+						addTableToJoin(NameGenerator.getArrayTablename(adapter),
 								rep.getAsName());
 					}
 					else

@@ -125,7 +125,7 @@ public class TestTools
 			persist.getTableManager().setTableName(oldTableName,oldClass, newTableName,newClass, cw);
 
 			// change the array tables
-			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
 			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),oldClass,
 					newArrayMemberTable,newClass, cw);
 
@@ -161,7 +161,7 @@ public class TestTools
 				updateSuperClass(NameGenerator.getTableName(superClass, adapter), oldClassName, newClassName, cw);
 			}
 			// update array tables
-			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
 			if (persist.getTableManager().tableExists(newArrayMemberTable, cw))
 			{
 				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
@@ -208,7 +208,7 @@ public class TestTools
 			persist.getTableManager().setTableName(oldTableName,oldClass, newTableName,oldClass ,cw);
 
 			// change the array tables
-			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
 			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),oldClass,
 					newArrayMemberTable,oldClass, cw);
 
@@ -240,7 +240,7 @@ public class TestTools
 			}
 
 			// update array tables
-			updateAllRelations(Defaults.ARRAY_TABLENAME, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
 			if (persist.getTableManager().tableExists(newArrayMemberTable, cw))
 			{
 				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);

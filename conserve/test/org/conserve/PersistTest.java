@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.Serializable;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -50,6 +51,7 @@ import org.conserve.aggregate.Maximum;
 import org.conserve.aggregate.Minimum;
 import org.conserve.aggregate.Sum;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.objects.ArrayContainingObject;
 import org.conserve.objects.Author;
 import org.conserve.objects.BaseInterface;
 import org.conserve.objects.BlobClobObject;
@@ -150,7 +152,7 @@ public class PersistTest
 	{
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.FINE;
+		Level level = Level.WARNING;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}
@@ -520,6 +522,7 @@ public class PersistTest
 			}
 		}
 		co.setObject(array);
+		co.setSimplestObject(new SimplestObject());
 		persist.saveObject(co);
 		ComplexObject co2 = new ComplexObject();
 		SimplestObject[][][] array2 = new SimplestObject[1][][];
@@ -531,6 +534,10 @@ public class PersistTest
 		List<ComplexObject> cos = persist.getObjects(new ComplexObject());
 		assertEquals(2, cos.size());
 		co = cos.get(0);
+		if(co.getSimplestObject()==null)
+		{
+			co = cos.get(1);
+		}
 		SimplestObject[][][] resArray = (SimplestObject[][][]) co.getObject();
 		assertTrue(resArray != null);
 		assertEquals(arraySize, resArray.length);
@@ -4226,5 +4233,45 @@ public class PersistTest
 		assertNull(first.getName());
 		assertNull(first.getScale());
 		assertNull(first.getAge());
+	}
+	
+	/**
+	 * Test if all C__HAS_A entries are deleted after deleting objects.
+	 */
+	@Test
+	public void testProtectionEntryDeletion() throws Exception
+	{
+
+		// create the database connection
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		persist.dropTable(Object.class);
+
+		ArrayContainingObject aco = new ArrayContainingObject();
+		aco.setDataarray(new double[] { 1.1, 2.2, 3.3, 4.4 });
+		// saving the object gives it an outside reference
+		persist.saveObject(aco);
+		persist.saveObject(aco);
+
+		//delete the ComplexObject
+		persist.deleteObjects(ArrayContainingObject.class, new All());
+		
+		
+		//make sure the C__HAS_A table is empty
+		ConnectionWrapper cw = persist.getConnectionWrapper();
+		Connection c = cw.getConnection();
+		PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM " + Defaults.HAS_A_TABLENAME);
+		ResultSet rs = ps.executeQuery();
+		if(rs.next())
+		{
+			long count = rs.getLong(1);
+			assertEquals(0,count);
+		}
+		else
+		{
+			fail("Could not get count from "+Defaults.HAS_A_TABLENAME);
+		}
+		
+
+		persist.close();
 	}
 }

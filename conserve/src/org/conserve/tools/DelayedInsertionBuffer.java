@@ -178,7 +178,7 @@ public class DelayedInsertionBuffer
 					String tableName = null;
 					if (i.getReferenceType().isArray())
 					{
-						tableName = Defaults.ARRAY_TABLENAME;
+						tableName = NameGenerator.getArrayTablename(persist.getAdapter());
 					}
 					else
 					{

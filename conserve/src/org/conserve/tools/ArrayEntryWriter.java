@@ -99,7 +99,7 @@ public class ArrayEntryWriter
 				long memberId = adapter.getPersist().getLastId(cw, tableName);
 				// add a protection entry for the __ARRAY table
 				protectionManager.protectObjectInternal(
-						Defaults.ARRAY_TABLENAME, arrayId,null, NameGenerator
+						NameGenerator.getArrayTablename(adapter), arrayId,null, NameGenerator
 								.getArrayMemberTableName(compType, adapter),
 						memberId, NameGenerator.getSystemicName(Array.get(array,
 								x).getClass()), cw);

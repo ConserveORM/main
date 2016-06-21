@@ -42,6 +42,7 @@ import org.conserve.sort.Order;
 import org.conserve.sort.Sorter;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
+import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.metadata.ObjectRepresentation;
@@ -396,7 +397,7 @@ public class StatementPrototypeGenerator
 		}
 		if (objRep.getRepresentation().isArray())
 		{
-			sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, objRep.getRepresentation().getAsName());
+			sp.getIdStatementGenerator().addPropertyTableToJoin(NameGenerator.getArrayTablename(adapter), objRep.getRepresentation().getAsName());
 		}
 		else
 		{
@@ -543,7 +544,7 @@ public class StatementPrototypeGenerator
 	private void generateArrayQuery(Selector sel, StatementPrototype sp, ObjectStack oStack, Boolean sorted) throws SQLException
 	{
 		ObjectRepresentation rep = oStack.getActualRepresentation();
-		sp.getIdStatementGenerator().addPropertyTableToJoin(Defaults.ARRAY_TABLENAME, rep.getAsName());
+		sp.getIdStatementGenerator().addPropertyTableToJoin(NameGenerator.getArrayTablename(adapter), rep.getAsName());
 		// iterate over all non-null array entries
 		// satisfy all the non-null members of the array
 		int length = Array.getLength(sel.getSelectionObject());

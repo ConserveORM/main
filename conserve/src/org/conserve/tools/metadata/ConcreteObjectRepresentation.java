@@ -218,9 +218,9 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			// add the entries of the array
 			if (realId == null)
 			{
-				id = adapter.getPersist().getLastId(cw, Defaults.ARRAY_TABLENAME);
+				id = adapter.getPersist().getLastId(cw,NameGenerator.getArrayTablename(adapter));
 			}
-			protectionStack.save(Defaults.ARRAY_TABLENAME, id, cw);
+			protectionStack.save(NameGenerator.getArrayTablename(adapter), id, cw);
 			adapter.getPersist().getArrayEntryWriter().addArrayEntries(cw, id, object, delayBuffer);
 		}
 		if (delayBuffer != null && object != null)
@@ -427,7 +427,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			ps.setString(1, NameGenerator.getTableName(clazz.getComponentType(), adapter));
 			if (clazz.getComponentType().isArray())
 			{
-				ps.setString(1, Defaults.ARRAY_TABLENAME);
+				ps.setString(1, NameGenerator.getArrayTablename(adapter));
 			}
 			// the table also contains the actual name of the class
 			ps.setString(2, NameGenerator.getSystemicName(clazz));

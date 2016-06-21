@@ -112,8 +112,8 @@ public class Duplicator
 		String targetTableName = null;
 		if (object.getClass().isArray())
 		{
-			sourceTableName = Defaults.ARRAY_TABLENAME;
-			targetTableName = Defaults.ARRAY_TABLENAME;
+			sourceTableName = NameGenerator.getArrayTablename(source.getAdapter());
+			targetTableName = NameGenerator.getArrayTablename(target.getAdapter());
 		}
 		else
 		{

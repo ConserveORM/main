@@ -18,12 +18,6 @@
  *******************************************************************************/
 package org.conserve;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-
-import org.conserve.connection.ConnectionWrapper;
-import org.junit.Test;
-
 /**
  * @author Erik Berglund
  * 

@@ -534,9 +534,11 @@ public class PersistTest
 		List<ComplexObject> cos = persist.getObjects(new ComplexObject());
 		assertEquals(2, cos.size());
 		co = cos.get(0);
+		co2 = cos.get(1);
 		if(co.getSimplestObject()==null)
 		{
 			co = cos.get(1);
+			co2 = cos.get(0);
 		}
 		SimplestObject[][][] resArray = (SimplestObject[][][]) co.getObject();
 		assertTrue(resArray != null);
@@ -551,7 +553,6 @@ public class PersistTest
 				assertTrue(resArray[x][y][0] != null);
 			}
 		}
-		co2 = cos.get(1);
 		SimplestObject[][][] resArray2 = (SimplestObject[][][]) co2.getObject();
 		assertTrue(resArray != resArray2);
 		assertArrayEquals(resArray[0], resArray2[0]);

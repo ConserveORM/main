@@ -805,6 +805,7 @@ public class TableManager
 	 */
 	private boolean hasSubclasses(Class<?> c, ConnectionWrapper cw) throws SQLException
 	{
+		boolean res  = false;
 		Connection conn = cw.getConnection();
 		PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM " + Defaults.IS_A_TABLENAME +" WHERE SUPERCLASS = ?");
 		ps.setString(1, NameGenerator.getSystemicName(c));
@@ -812,9 +813,10 @@ public class TableManager
 		ResultSet rs = ps.executeQuery();
 		if (rs.next() && (rs.getLong(1) > 0))
 		{
-			return true;
+			res = true;
 		}
-		return false;
+		ps.close();
+		return res;
 	}
 	
 
@@ -856,6 +858,7 @@ public class TableManager
 			// SQLstate.
 			else if (e.getMessage().toLowerCase().contains("no such table"))
 			{
+				//this is ok
 			}
 			else
 			{

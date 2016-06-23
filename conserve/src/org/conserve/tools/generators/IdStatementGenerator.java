@@ -108,65 +108,6 @@ public class IdStatementGenerator
 		return tmp.toString();
 	}
 
-	/**
-	 * Generate a linking statement that uses nested inner joins.
-	 * 
-	 * @param tablesToShorten
-	 *            optional list of tables to replace with their respective short
-	 *            name.
-	 * @return
-	 */
-	public String generateInnerJoins(String[] tablesToShorten)
-	{
-		List<String> shortenTables = new ArrayList<String>();
-		if (tablesToShorten != null)
-		{
-			for (String s : tablesToShorten)
-			{
-				shortenTables.add(s);
-			}
-		}
-		StringBuilder tmp = new StringBuilder(100);
-		// generate the id statement
-		if (addJoins)
-		{
-			for (RelationDescriptor rdesc : getRelationDescriptors())
-			{
-
-				if (tmp.length() > 0)
-				{
-					tmp.append(" AND ");
-				}
-				FieldDescriptor first = rdesc.getFirst();
-				FieldDescriptor second = rdesc.getSecond();
-				if (shortenTables.contains(first.getTableName()))
-				{
-					tmp.append(first.toShortString());
-				}
-				else
-				{
-					tmp.append(first.toFullString());
-				}
-				tmp.append(" = ");
-				if (rdesc.isRequiresvalue())
-				{
-					tmp.append("?");
-				}
-				else
-				{
-					if (shortenTables.contains(second.getTableName()))
-					{
-						tmp.append(second.toShortString());
-					}
-					else
-					{
-						tmp.append(second.toFullString());
-					}
-				}
-			}
-		}
-		return tmp.toString();
-	}
 
 	public void addRelationDescriptor(RelationDescriptor desc)
 	{

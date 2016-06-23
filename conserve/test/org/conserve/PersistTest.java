@@ -53,6 +53,7 @@ import org.conserve.aggregate.Sum;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.objects.ArrayContainingObject;
 import org.conserve.objects.Author;
+import org.conserve.objects.BadColumnNames;
 import org.conserve.objects.BaseInterface;
 import org.conserve.objects.BlobClobObject;
 import org.conserve.objects.Book;
@@ -4274,5 +4275,29 @@ public class PersistTest
 		
 
 		persist.close();
+	}
+	
+	/**
+	 * Test some prohibited column names.
+	 * 
+	 */
+	@Test
+	public void testBadColumnNames() throws Exception
+	{
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		BadColumnNames bad=new BadColumnNames();
+		bad.setCount(1234);
+		bad.setKey("the key");
+		persist.saveObject(bad);
+		persist.close();
+		
+		//get a new connection
+		persist = new PersistenceManager(driver, database, login, password);
+		BadColumnNames bcn = persist.getObjects(BadColumnNames.class, new All()).get(0);
+		assertEquals(bad.getCount(),bcn.getCount());
+		assertEquals(bad.getKey(),bcn.getKey());
+		persist.close();
+		
+		
 	}
 }

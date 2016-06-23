@@ -22,10 +22,7 @@ import java.io.CharArrayReader;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -73,7 +70,8 @@ public class Tools
 			{
 				ps.setDouble(i, (Double) value);
 			}
-		} else
+		} 
+		else
 		{
 			if (clazz.equals(Boolean.class))
 			{
@@ -163,70 +161,5 @@ public class Tools
 		{
 			LOGGER.fine(stmt.toString());
 		}
-	}
-
-	/**
-	 * Copy value i from ResultSet source to value j in PreparedStatement dest.
-	 * 
-	 * @param source
-	 * @param i
-	 * @param dest
-	 * @param j
-	 * @throws SQLException
-	 */
-	public static void copyValue(ResultSet source, int i, PreparedStatement dest, int j) throws SQLException
-	{
-		ResultSetMetaData metaData = source.getMetaData();
-		int colType = metaData.getColumnType(i);
-		switch (colType)
-		{
-		case Types.BIGINT:
-			dest.setLong(j, source.getLong(i));
-			break;
-		case Types.INTEGER:
-		case Types.SMALLINT:
-		case Types.TINYINT:
-			dest.setInt(j, source.getInt(i));
-			break;
-		case Types.DOUBLE:
-			dest.setDouble(j, source.getDouble(i));
-			break;
-		case Types.FLOAT:
-			dest.setFloat(j, source.getFloat(i));
-			break;
-		case Types.BLOB:
-			dest.setBlob(j, source.getBlob(i));
-			break;
-		case Types.BOOLEAN:
-			dest.setBoolean(j, source.getBoolean(i));
-			break;
-		case Types.CLOB:
-			dest.setClob(j, source.getClob(i));
-			break;
-		case Types.DATE:
-			dest.setDate(j, source.getDate(i));
-			break;
-		case Types.DECIMAL:
-			dest.setBigDecimal(j, source.getBigDecimal(i));
-			break;
-		case Types.LONGNVARCHAR:
-		case Types.LONGVARCHAR:
-		case Types.VARCHAR:
-		case Types.NVARCHAR:
-			dest.setString(j, source.getString(i));
-			break;
-		case Types.TIME:
-		case Types.TIME_WITH_TIMEZONE:
-			dest.setTime(j, source.getTime(i));
-			break;
-		case Types.TIMESTAMP:
-		case Types.TIMESTAMP_WITH_TIMEZONE:
-			dest.setTimestamp(j, source.getTimestamp(i));
-			break;
-
-		default:
-			throw new SQLException("Don't know how to handle data type: " + colType);
-		}
-
 	}
 }

@@ -149,7 +149,7 @@ public class ObjectRowMap implements Runnable
 		{
 			for (TableEntry entry : list)
 			{
-				if (entry.refernetEquals(o))
+				if (entry.referentEquals(o))
 				{
 					return entry.getDbId();
 				}
@@ -174,7 +174,7 @@ public class ObjectRowMap implements Runnable
 			TableEntry toRemove = null;
 			for (TableEntry entry : list)
 			{
-				if (entry.refernetEquals(o))
+				if (entry.referentEquals(o))
 				{
 					toRemove = entry;
 					break;
@@ -247,34 +247,6 @@ public class ObjectRowMap implements Runnable
 		}
 	}
 
-	/**
-	 * Change the stored name of all objects with a given name
-	 * 
-	 * @param oldName
-	 * @param newName
-	 */
-	public void changeName(String oldName, String newName)
-	{
-		// fix all the table-entries
-		for (List<TableEntry> list : classMap.values())
-		{
-			for (TableEntry entry : list)
-			{
-				if (entry.getTableName().equals(oldName))
-				{
-					entry.setTableName(newName);
-				}
-			}
-		}
-
-		// change the dbId -> object map
-		HashMap<Long, WeakReference<Object>> map = objectMap.get(oldName);
-		if (map != null)
-		{
-			objectMap.remove(oldName);
-			objectMap.put(newName, map);
-		}
-	}
 
 	public void stop()
 	{
@@ -326,7 +298,7 @@ public class ObjectRowMap implements Runnable
 			this.ref = new WeakReference<Object>(o);
 		}
 
-		public boolean refernetEquals(Object o)
+		public boolean referentEquals(Object o)
 		{
 			return ref.get() == o;
 		}
@@ -334,11 +306,6 @@ public class ObjectRowMap implements Runnable
 		public String getTableName()
 		{
 			return tableName;
-		}
-
-		public void setTableName(String tableName)
-		{
-			this.tableName = tableName;
 		}
 
 		public Long getDbId()

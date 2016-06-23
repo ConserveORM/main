@@ -70,10 +70,4 @@ public abstract class Clause
 		}
 	}
 
-
-	/**
-	 * @return
-	 */
-	public abstract Class<?> getQueryClass();
-
 }

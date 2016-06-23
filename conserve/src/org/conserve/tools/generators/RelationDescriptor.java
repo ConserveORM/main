@@ -35,12 +35,7 @@ public class RelationDescriptor
 		this.first = first;
 		this.second = second;
 	}
-	public RelationDescriptor(FieldDescriptor first,Object value)
-	{
-		this.first = first;
-		this.value = value;
-		this.requiresvalue = true;
-	}
+	
 	/**
 	 * @return the requiresvalue
 	 */

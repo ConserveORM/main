@@ -46,23 +46,6 @@ public class DataConnectionPool
 
 	private static final Logger LOGGER = Logger.getLogger("org.conserve");
 
-	/**
-	 * Creates a new pool of size 0
-	 * 
-	 * @param driver
-	 *            the JDBC driver class name to use for the pool connections.
-	 * @param db
-	 *            The name of the database
-	 * @param uname
-	 *            The login name
-	 * @param pw
-	 *            The login password
-	 * @throws SQLException
-	 */
-	public DataConnectionPool(String driver, String db, String uname, String pw) throws SQLException
-	{
-		this(0, driver, db, uname, pw);
-	}
 
 	/**
 	 * Creates a new pool

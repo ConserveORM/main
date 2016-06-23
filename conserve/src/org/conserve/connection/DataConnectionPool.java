@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.conserve.connection;
 
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -251,8 +252,14 @@ public class DataConnectionPool
 				while (!pool.isEmpty())
 				{
 					pool.get(0).setTaken(true);
-					pool.get(0).getConnection().commit();
-					pool.get(0).getConnection().close();
+					Connection c = pool.get(0).getConnection();
+					c.commit();
+				
+					//this is a workaround for a bug in some databases that 
+					//won't properly close connections if they're not in autocommit mode
+					c.setAutoCommit(true);
+					
+					c.close();
 					pool.remove(0);
 				}
 				this.pool = null;

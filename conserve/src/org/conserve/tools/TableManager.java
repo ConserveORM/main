@@ -858,7 +858,7 @@ public class TableManager
 			// SQLstate.
 			else if (e.getMessage().toLowerCase().contains("no such table"))
 			{
-				//this is ok
+				//this is OK
 			}
 			else
 			{

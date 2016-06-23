@@ -32,11 +32,4 @@ public abstract class ConditionalClause extends Clause
 	{
 		super(sel);
 	}
-	
-	@Override
-	public Class<?> getQueryClass()
-	{
-		return null;
-	}
-
 }

@@ -98,17 +98,11 @@ public class Persist
 	 * Keeps track of what objects are already in the database.
 	 */
 	private ObjectRowMap cache = new ObjectRowMap();
-
 	private TableManager tableManager;
-
 	private ProtectionManager protectionManager;
-
 	private Updater updater;
-
 	private ArrayEntryWriter arrayEntryWriter;
-
-	private String connectionString;
-
+	
 	private static final Logger LOGGER = Logger.getLogger("org.conserve");
 
 	/**
@@ -138,12 +132,10 @@ public class Persist
 			throw new SQLException("Property org.conserve.password not found.");
 		}
 		initialize(driver, connectionString, userName, password);
-		cache.start();
 	}
 
 	void initialize(String driver, String connectionstring, String username, String password) throws SQLException
 	{
-		this.connectionString = connectionstring;
 		// create the pool
 		connectionPool = new DataConnectionPool(1, driver, connectionstring, username, password);
 		// set up the default adapter
@@ -1737,11 +1729,6 @@ public class Persist
 	public ArrayEntryWriter getArrayEntryWriter()
 	{
 		return arrayEntryWriter;
-	}
-
-	public String getConnectionString()
-	{
-		return connectionString;
 	}
 
 	/**

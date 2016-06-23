@@ -53,6 +53,7 @@ import org.conserve.aggregate.Sum;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.objects.ArrayContainingObject;
 import org.conserve.objects.Author;
+import org.conserve.objects.BadColumnNames;
 import org.conserve.objects.BaseInterface;
 import org.conserve.objects.BlobClobObject;
 import org.conserve.objects.Book;
@@ -119,7 +120,10 @@ import org.conserve.select.discriminators.Different;
 import org.conserve.select.discriminators.Equal;
 import org.conserve.select.discriminators.Greater;
 import org.conserve.select.discriminators.GreaterOrEqual;
+import org.conserve.select.discriminators.Less;
 import org.conserve.select.discriminators.LessOrEqual;
+import org.conserve.select.discriminators.NotNull;
+import org.conserve.select.discriminators.Null;
 import org.conserve.sort.Ascending;
 import org.conserve.sort.Descending;
 import org.conserve.sort.Order;
@@ -4196,7 +4200,7 @@ public class PersistTest
 			pm.saveObject(s);
 		}
 
-		// retrieve the test data, sorted
+		// retrieve the test data, sorted ascending
 		FooSortable sortObject = new FooSortable();
 		sortObject.setFoo(1);
 		List<Sortable> sortable = pm.getObjects(Sortable.class, new All(), new Ascending(sortObject, Sortable.class));
@@ -4208,6 +4212,18 @@ public class PersistTest
 		{
 			assertEquals(lastValue, s.getFoo().intValue());
 			lastValue++;
+		}
+		
+
+		// retrieve the test data, sorted descending
+		sortable = pm.getObjects(Sortable.class, new All(), new Descending(sortObject, Sortable.class));
+		assertEquals(10, sortable.size());
+
+		// make sure everything is in the right order
+		for (Sortable s : sortable)
+		{
+			lastValue--;
+			assertEquals(lastValue, s.getFoo().intValue());
 		}
 
 		pm.close();
@@ -4275,4 +4291,98 @@ public class PersistTest
 
 		persist.close();
 	}
+	
+	/**
+	 * Test some prohibited column names.
+	 * 
+	 */
+	@Test
+	public void testBadColumnNames() throws Exception
+	{
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		BadColumnNames bad=new BadColumnNames();
+		bad.setCount(1234);
+		bad.setKey("the key");
+		persist.saveObject(bad);
+		persist.close();
+		
+		//get a new connection
+		persist = new PersistenceManager(driver, database, login, password);
+		BadColumnNames bcn = persist.getObjects(BadColumnNames.class, new All()).get(0);
+		assertEquals(bad.getCount(),bcn.getCount());
+		assertEquals(bad.getKey(),bcn.getKey());
+		persist.close();
+		
+		
+	}
+	
+	/**
+	 * Test searches on interfaces with one implementing object as example.
+	 * 
+	 */
+	@Test
+	public void testInterfaceSearches() throws Exception
+	{
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
+		//create some test data
+		for(int x =0;x<100;x++)
+		{
+			MyFooContainer mfc = new MyFooContainer();
+			mfc.setFoo(Integer.toString(x));
+			persist.saveObject(mfc);
+		}
+		persist.saveObject(new MyFooContainer());
+		persist.close();
+		
+		persist = new PersistenceManager(driver, database, login, password);
+		List<FooContainer> values = null;
+		MyFooContainer obj = new MyFooContainer();
+		obj.setFoo("42");
+		//get all FooContainer where foo is null
+		values = persist.getObjects(FooContainer.class, new Null(obj,FooContainer.class) );
+		assertEquals(1,values.size());
+		//get all FooContainer where foo is not null
+		values = persist.getObjects(FooContainer.class, new NotNull(obj,FooContainer.class) );
+		assertEquals(100,values.size());
+		//get all FooContainer where foo is different from "42"
+		values = persist.getObjects(FooContainer.class, new Different(obj,FooContainer.class) );
+		assertEquals(99,values.size());
+		//get all FooContainer where foo is greater than "42"
+		values = persist.getObjects(FooContainer.class, new Greater(obj) );
+		assertEquals(62,values.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new GreaterOrEqual(obj,FooContainer.class) );
+		assertEquals(63,values.size());
+		//get all FooContainer where foo is less than "42"
+		values = persist.getObjects(FooContainer.class, new Less(obj) );
+		assertEquals(37,values.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new LessOrEqual(obj,FooContainer.class) );
+		assertEquals(38,values.size());
+
+		List<MyFooContainer>values2=null;
+		//get all FooContainer where foo is null
+		values2 = persist.getObjects(MyFooContainer.class, new Null(obj) );
+		assertEquals(1,values2.size());
+		//get all FooContainer where foo is not null
+		values2 = persist.getObjects(MyFooContainer.class, new NotNull(obj) );
+		assertEquals(100,values2.size());
+		//get all FooContainer where foo is different from "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Different(obj,MyFooContainer.class) );
+		assertEquals(99,values2.size());
+		//get all FooContainer where foo is greater than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Greater(obj,MyFooContainer.class) );
+		assertEquals(62,values2.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new GreaterOrEqual(obj,MyFooContainer.class) );
+		assertEquals(63,values2.size());
+		//get all FooContainer where foo is less than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Less(obj) );
+		assertEquals(37,values2.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new LessOrEqual(obj,MyFooContainer.class) );
+		assertEquals(38,values2.size());
+		
+	}
+	
 }

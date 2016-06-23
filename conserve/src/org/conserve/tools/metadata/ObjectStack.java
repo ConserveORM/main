@@ -394,25 +394,6 @@ public class ObjectStack
 		return size;
 	}
 
-	/**
-	 * Get the concrete representation at a given level - this method does not
-	 * return interfaces.
-	 * 
-	 * @param level
-	 * @return the representation of this object at the given class level.
-	 */
-	public ObjectRepresentation getRepresentation(int level)
-	{
-		for (Node n : representations.allNodes())
-		{
-			int l = heightToLevel(n.getHeight());
-			if (l == level && !n.getRepresentation().isInterface())
-			{
-				return n.getRepresentation();
-			}
-		}
-		return null;
-	}
 
 	/**
 	 * Get all representations at a given level, including interfaces.

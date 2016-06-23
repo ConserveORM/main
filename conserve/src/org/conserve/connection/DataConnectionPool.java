@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.conserve.connection;
 
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -45,23 +46,6 @@ public class DataConnectionPool
 
 	private static final Logger LOGGER = Logger.getLogger("org.conserve");
 
-	/**
-	 * Creates a new pool of size 0
-	 * 
-	 * @param driver
-	 *            the JDBC driver class name to use for the pool connections.
-	 * @param db
-	 *            The name of the database
-	 * @param uname
-	 *            The login name
-	 * @param pw
-	 *            The login password
-	 * @throws SQLException
-	 */
-	public DataConnectionPool(String driver, String db, String uname, String pw) throws SQLException
-	{
-		this(0, driver, db, uname, pw);
-	}
 
 	/**
 	 * Creates a new pool
@@ -104,7 +88,6 @@ public class DataConnectionPool
 		{
 			if ((this.userName == null) || (this.dataBase == null) || (this.password == null))
 			{
-
 				throw new SQLException("Connection string, user name and password must be given. User name and password may be empty strings.");
 			}
 			else
@@ -224,6 +207,7 @@ public class DataConnectionPool
 						if (!pool.get(x).isTaken())
 						{
 							pool.get(x).setTaken(true);
+							pool.get(x).getConnection().setAutoCommit(true);
 							pool.get(x).getConnection().close();
 							pool.remove(x);
 							found = true;
@@ -251,8 +235,14 @@ public class DataConnectionPool
 				while (!pool.isEmpty())
 				{
 					pool.get(0).setTaken(true);
-					pool.get(0).getConnection().commit();
-					pool.get(0).getConnection().close();
+					Connection c = pool.get(0).getConnection();
+					c.commit();
+				
+					//this is a workaround for a bug in some databases that 
+					//won't properly close connections if they're not in autocommit mode
+					c.setAutoCommit(true);
+					
+					c.close();
 					pool.remove(0);
 				}
 				this.pool = null;

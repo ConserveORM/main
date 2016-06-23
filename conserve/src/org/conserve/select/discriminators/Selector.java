@@ -48,7 +48,7 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 
 	/**
 	 * @param sel
-	 *            the object used to discriminiate in this selector.
+	 *            the object used to discriminate in this selector.
 	 * @param clazz
 	 *            the class sel will be interpreted as belonging to, must be the
 	 *            equal to sel.getClass(), one of its superclasses or
@@ -76,7 +76,7 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 
 	/**
 	 * @param sel
-	 *            the object used to discriminiate in this selector.
+	 *            the object used to discriminate in this selector.
 	 * @param clazz
 	 *            the class sel will be interpreted as belonging to, must be the
 	 *            equal to sel.getClass(), one of its superclasses or
@@ -126,11 +126,6 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 		super.setQueryClass(queryClass);
 	}
 	
-	@Override 
-	public Class<?> getQueryClass()
-	{
-		return getSelectionClass();
-	}
 
 	/**
 	 * Indicates whether this object requires a placeholder, or if the value is
@@ -148,19 +143,6 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 	}
 
 	public abstract String getRelationalRepresentation();
-
-	/**
-	 * Return a selector of the same class, but with a new object as the
-	 * selection object.
-	 * 
-	 * @param selectionObject
-	 *            the new selection object.
-	 * @return an exact copy of the selector, but with a new selection object.
-	 */
-	public Selector duplicate(Object selectionObject)
-	{
-		return duplicate(selectionObject,selectionObject.getClass());
-	}
 	
 
 	/**
@@ -188,14 +170,6 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 			}
 	}
 
-	/**
-	 * @param strictInheritance
-	 *            the strictInheritance to set
-	 */
-	public void setStrictInheritance(boolean strictInheritance)
-	{
-		this.strictInheritance = strictInheritance;
-	}
 
 	/**
 	 * @return the strictInheritance

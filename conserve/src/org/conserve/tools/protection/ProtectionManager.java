@@ -276,42 +276,4 @@ public class ProtectionManager
 		}
 	}
 
-	/**
-	 * Change the ID of an object in the given table from oldId to nuId. This
-	 * changes the id both in the role as owner and property.
-	 * 
-	 * @param table
-	 *            the table name to update protection entries for.
-	 * @param oldId
-	 *            the id of the object to change id for.
-	 * @param nuId
-	 *            the id to change to.
-	 * @param cw
-	 * @throws SQLException
-	 */
-	public void changeObjectId(String table, long oldId, long nuId, ConnectionWrapper cw) throws SQLException
-	{
-		// first, set the owner references
-		StringBuilder statement = new StringBuilder("UPDATE ");
-		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" SET OWNER_ID = ? WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
-		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		ps.setLong(1, nuId);
-		ps.setString(2, table);
-		ps.setLong(3, oldId);
-		Tools.logFine(ps);
-		ps.executeUpdate();
-		ps.close();
-		// now set the property references
-		statement = new StringBuilder("UPDATE ");
-		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" SET PROPERTY_ID = ? WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
-		ps = cw.prepareStatement(statement.toString());
-		ps.setLong(1, nuId);
-		ps.setString(2, table);
-		ps.setLong(3, oldId);
-		Tools.logFine(ps);
-		ps.executeUpdate();
-		ps.close();
-	}
 }

@@ -49,36 +49,6 @@ public class HsqldbAdapter extends AdapterBase
 		return getVarCharKeyword();
 	}
 	
-	@Override
-	public boolean columnTypesEqual(String type1,String type2)
-	{
-		//LONGVARCHAR is a synonym for VARCHAR
-		if(type1.equalsIgnoreCase("LONGVARCHAR"))
-		{
-			type1="VARCHAR";
-		}
-		if(type2.equalsIgnoreCase("LONGVARCHAR"))
-		{
-			type2="VARCHAR";
-		}
-		return super.columnTypesEqual(type1, type2);
-	}
-
-	/**
-	 * @see org.conserve.adapter.AdapterBase#isValidColumnName(java.lang.String)
-	 */
-	@Override
-	public boolean isValidColumnName(String name)
-	{
-		if(name.equalsIgnoreCase("COUNT"))
-		{
-			return false;
-		}
-		else
-		{
-			return super.isValidColumnName(name);
-		}
-	}
 
 	/**
 	 * @see org.conserve.adapter.AdapterBase#getLastInsertedIdentity(java.lang.String)

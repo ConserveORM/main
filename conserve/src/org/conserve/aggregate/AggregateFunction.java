@@ -46,10 +46,6 @@ public abstract class AggregateFunction
 		this.methodName = methodName;
 	}
 
-	public String getMethodName()
-	{
-		return this.methodName;
-	}
 
 	/**
 	 * Get the SQL string that represents the aggregate function on a field.

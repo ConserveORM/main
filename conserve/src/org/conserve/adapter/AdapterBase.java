@@ -653,18 +653,6 @@ public class AdapterBase
 		return statement.toString();
 	}
 
-	/**
-	 * Check if the two column types are considered equal by this DB engine.
-	 * 
-	 * @param columnType
-	 * @param value
-	 * @return
-	 */
-	public boolean columnTypesEqual(String columnType, String value)
-	{
-
-		return columnType.equalsIgnoreCase(value);
-	}
 
 	/**
 	 * Get the statement to rename a table.

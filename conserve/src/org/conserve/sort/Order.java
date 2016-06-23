@@ -67,12 +67,4 @@ public class Order extends Clause
 	{
 		return offset;
 	}
-	/**
-	 * @see org.conserve.select.Clause#getQueryClass()
-	 */
-	@Override
-	public Class<?> getQueryClass()
-	{
-		return null;
-	}	
 }

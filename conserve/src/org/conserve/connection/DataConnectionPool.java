@@ -88,7 +88,6 @@ public class DataConnectionPool
 		{
 			if ((this.userName == null) || (this.dataBase == null) || (this.password == null))
 			{
-
 				throw new SQLException("Connection string, user name and password must be given. User name and password may be empty strings.");
 			}
 			else

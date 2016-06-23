@@ -13,7 +13,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	FirebirdPersistTest.class, 
 	HsqldbPersistTest.class, 
 	//MariaDBPersistTest.class,
-	MonetDbPersistTest.class, 
+	//MonetDbPersistTest.class, 
 	MySQLPersistTest.class, 
 	PersistTest.class, 
 	PostgreSQLPersistTest.class,

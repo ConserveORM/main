@@ -48,7 +48,7 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 
 	/**
 	 * @param sel
-	 *            the object used to discriminiate in this selector.
+	 *            the object used to discriminate in this selector.
 	 * @param clazz
 	 *            the class sel will be interpreted as belonging to, must be the
 	 *            equal to sel.getClass(), one of its superclasses or
@@ -76,7 +76,7 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 
 	/**
 	 * @param sel
-	 *            the object used to discriminiate in this selector.
+	 *            the object used to discriminate in this selector.
 	 * @param clazz
 	 *            the class sel will be interpreted as belonging to, must be the
 	 *            equal to sel.getClass(), one of its superclasses or

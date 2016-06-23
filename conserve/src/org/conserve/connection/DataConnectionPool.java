@@ -225,6 +225,7 @@ public class DataConnectionPool
 						if (!pool.get(x).isTaken())
 						{
 							pool.get(x).setTaken(true);
+							pool.get(x).getConnection().setAutoCommit(true);
 							pool.get(x).getConnection().close();
 							pool.remove(x);
 							found = true;

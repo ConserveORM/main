@@ -609,8 +609,11 @@ public class TableManager
 		try
 		{
 			//always include Object
-			res.add(Object.class);
-			existingClasses.add(Object.class);
+			if(tableExists(Object.class, cw))
+			{
+				res.add(Object.class);
+				existingClasses.add(Object.class);
+			}
 			// find all sub-classes
 			PreparedStatement ps = cw.prepareStatement("SELECT DISTINCT(SUBCLASS) FROM " + Defaults.IS_A_TABLENAME);
 			Tools.logFine(ps);

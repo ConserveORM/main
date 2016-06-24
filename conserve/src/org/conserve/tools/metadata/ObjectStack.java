@@ -395,26 +395,6 @@ public class ObjectStack
 	}
 
 
-	/**
-	 * Get all representations at a given level, including interfaces.
-	 * 
-	 * @param level
-	 *            the level to get representations at - 0 is "object" level.
-	 * @return
-	 */
-	public List<ObjectRepresentation> getRepresentations(int level)
-	{
-		List<ObjectRepresentation> res = new ArrayList<ObjectRepresentation>();
-		for (Node n : representations.allNodes())
-		{
-			int l = heightToLevel(n.getHeight());
-			if (l == level)
-			{
-				res.add(n.getRepresentation());
-			}
-		}
-		return res;
-	}
 
 	/**
 	 * Convert height (specific-to-general) to level (general-to-specific).
@@ -468,32 +448,6 @@ public class ObjectStack
 		return res;
 	}
 
-	/**
-	 * Get the level at which the given property is represented. If there is no
-	 * such representation, return null.
-	 * 
-	 * @param propertyName
-	 * @return
-	 */
-	public Integer getRepresentationLevel(String propertyName)
-	{
-		Integer maxLevel = null;
-		for (Node n : representations.allNodes())
-		{
-			if (n.getRepresentation().hasProperty(propertyName) && (maxLevel == null || n.getHeight() > maxLevel))
-			{
-				maxLevel = n.getHeight();
-			}
-		}
-		if (maxLevel != null)
-		{
-			return representations.getMaxHeight() - maxLevel;
-		}
-		else
-		{
-			return null;
-		}
-	}
 
 	/**
 	 * Get the representation of a given class, if it exists in this stack.
@@ -530,26 +484,6 @@ public class ObjectStack
 		return null;
 	}
 
-	/**
-	 * 
-	 * Get the representational level of the given class. Returns null if there
-	 * is no such class in the stack.
-	 * 
-	 * @param c
-	 * @return the level (where 0 equals Object.class) of the class c within
-	 *         this stack.
-	 */
-	public Integer getLevel(Class<?> c)
-	{
-		for (Node n : representations.allNodes())
-		{
-			if (n.getRepresentation().getRepresentedClass().equals(c))
-			{
-				return heightToLevel(n.getHeight());
-			}
-		}
-		return null;
-	}
 
 	/**
 	 * Save the object represented by this ObjectStack, and all referenced

@@ -156,6 +156,8 @@ public class Persist
 		}
 		catch (SchemaPermissionException e)
 		{
+			connectionPool.cleanUp();
+			connectionPool = null;
 			throw new SQLException(e);
 		}
 	}
@@ -263,7 +265,7 @@ public class Persist
 	 */
 	<T> int deleteObjects(Class<T> clazz, Clause where) throws SQLException
 	{
-		ConnectionWrapper cw = connectionPool.getConnectionWrapper();
+		ConnectionWrapper cw = getConnectionWrapper();
 		int res = 0;
 		try
 		{
@@ -345,7 +347,7 @@ public class Persist
 	 */
 	public boolean deleteObject(Class<?> clazz, Long id) throws SQLException
 	{
-		ConnectionWrapper cw = connectionPool.getConnectionWrapper();
+		ConnectionWrapper cw = getConnectionWrapper();
 		boolean res = false;
 		try
 		{
@@ -611,49 +613,6 @@ public class Persist
 		query.close();
 	}
 
-	/**
-	 * Get the database IDs of all objects of clazz that satisfy clause.
-	 * 
-	 * @param clazz
-	 *            the class to look in.
-	 * @param clause
-	 *            the clause that must be satisfied.
-	 * @param cw
-	 * @return an un-sorted list of all database IDs.
-	 * @throws SQLException
-	 */
-	public <T> List<Long> getObjectIds(Class<T> clazz, Clause clause, ConnectionWrapper cw) throws SQLException
-	{
-		List<Long> res = new ArrayList<>();
-		// check if the appropriate table exists
-		String tableName = NameGenerator.getTableName(clazz, adapter);
-		if (!tableManager.tableExists(tableName, cw))
-		{
-			return res;
-		}
-
-		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-		whereGenerator.setClauses(clause);
-		StatementPrototype sp = whereGenerator.generate(clazz, true);
-		// get the id of clazz
-		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
-
-		StringBuilder statement = new StringBuilder("SELECT ");
-		statement.append("DISTINCT(");
-		statement.append(shortName);
-		statement.append(".");
-		statement.append(Defaults.ID_COL);
-		statement.append(") ");
-		statement.append(" FROM ");
-		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
-		ResultSet rs = ps.executeQuery();
-		while (rs.next())
-		{
-			res.add(rs.getLong(1));
-		}
-		ps.close();
-		return res;
-	}
 
 	/**
 	 * Get a list of the classes and ids that satisfy the clause.
@@ -1179,6 +1138,7 @@ public class Persist
 					break;
 				}
 			}
+			cw.discard();
 		}
 		catch (ClassNotFoundException e)
 		{
@@ -1237,52 +1197,6 @@ public class Persist
 		return (Long) res[0];
 	}
 
-	/**
-	 * Find all classes that implements or extends clazz.
-	 * 
-	 * @param <T>
-	 * @param clazz
-	 *            the class (usually an interface) that we want to list the
-	 *            subclasses for.
-	 * @return a list of classes that implement or extend the interface or class
-	 *         represented by clazz.
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> List<Class<T>> getImplementingClasses(Class<T> clazz, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
-	{
-		ArrayList<Class<T>> res = new ArrayList<Class<T>>();
-		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT SUBCLASS FROM ");
-		sb.append(Defaults.IS_A_TABLENAME);
-		sb.append(" WHERE SUPERCLASS = ?");
-		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		ps.setString(1, NameGenerator.getSystemicName(clazz));
-		Tools.logFine(ps);
-		ResultSet rs = ps.executeQuery();
-
-		while (rs.next())
-		{
-			String subClassName = rs.getString(1);
-			Class<T> c = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
-			if (c.isInterface())
-			{
-				res.addAll(getImplementingClasses(c, cw));
-			}
-			else
-			{
-				res.add(c);
-			}
-		}
-		ps.close();
-		return res;
-	}
-
-	public Object checkCache(String tableName, Long id)
-	{
-		return this.cache.getObject(tableName, id);
-	}
 
 	public void saveToCache(String tableName, Object o, Long dbId)
 	{
@@ -1594,7 +1508,7 @@ public class Persist
 			if (!adapter.handlesDistinctWithClobsAndBlobsCorrectly())
 			{
 				// the DB engine we are using does not handle DISTINCT(...) in
-				// conjuction with Clobs and/or Blobs, so we are forced to
+				// conjunction with Clobs and/or Blobs, so we are forced to
 				// manually check that we don't insert double entries.
 				Long nuId = (Long) map.get(Defaults.ID_COL);
 				for (HashMap<String, Object> tmpMap : res)
@@ -1649,53 +1563,7 @@ public class Persist
 
 	void close()
 	{
-		if (adapter.getShutdownCommand() != null)
-		{
-			ConnectionWrapper cw = null;
-			try
-			{
-				cw = getConnectionWrapper();
-				PreparedStatement ps = cw.prepareStatement(adapter.getShutdownCommand());
-				ps.execute();
-				ps.close();
-				cw.commitAndDiscard();
-			}
-			catch (Exception e)
-			{
-				LOGGER.log(Level.WARNING, "Exception: ", e);
-				try
-				{
-					if (cw != null)
-					{
-						cw.rollbackAndDiscard();
-					}
-				}
-				catch (SQLException e1)
-				{
-					LOGGER.log(Level.WARNING, "SQLException: ", e1);
-				}
-			}
-		}
 		connectionPool.cleanUp();
-		if (adapter.getDriverManagerShutdownCommand() != null)
-		{
-			try
-			{
-				Connection c = DriverManager.getConnection(adapter.getDriverManagerShutdownCommand());
-				if (c != null)
-				{
-					c.close();
-				}
-			}
-			catch (SQLNonTransientConnectionException e)
-			{
-				// ignored
-			}
-			catch (SQLException e)
-			{
-				LOGGER.log(Level.WARNING, "SQLException: ", e);
-			}
-		}
 		cache.stop();
 	}
 

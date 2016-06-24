@@ -26,6 +26,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -40,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,10 +52,13 @@ import java.util.logging.Logger;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.aggregate.AggregateFunction;
 import org.conserve.aggregate.Average;
+import org.conserve.aggregate.Count;
 import org.conserve.aggregate.Maximum;
 import org.conserve.aggregate.Minimum;
 import org.conserve.aggregate.Sum;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.connection.DataConnectionPool;
+import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.objects.ArrayContainingObject;
 import org.conserve.objects.Author;
 import org.conserve.objects.BadColumnNames;
@@ -1090,9 +1098,13 @@ public class PersistTest
 		for (int x = 0; x < 200; x++)
 		{
 			SimplestObject so = new SimplestObject();
-			so.setFoo((double) x);
+			if(x>50)
+			{
+				so.setFoo((double) x);
+			}
 			persist.saveObject(cw, so);
 		}
+		
 		cw.commitAndDiscard();
 		// make sure the right number of objects are returned
 		long count = persist.getCount(new SimplestObject());
@@ -1103,7 +1115,13 @@ public class PersistTest
 		Greater g = new Greater(selectObject);
 		count = persist.getCount(SimplestObject.class, g);
 		assertEquals(100L, count);
+		
+		Number n = persist.calculateAggregate(SimplestObject.class, new Count("getFoo"),new All());
+		assertEquals(149l,n);
+		
 		persist.close();
+		
+		
 	}
 
 	/**
@@ -4348,24 +4366,46 @@ public class PersistTest
 		values = persist.getObjects(FooContainer.class, new Different(obj,FooContainer.class) );
 		assertEquals(99,values.size());
 		//get all FooContainer where foo is greater than "42"
-		values = persist.getObjects(FooContainer.class, new Greater(obj) );
+		values = persist.getObjects(FooContainer.class, new Greater(obj,FooContainer.class) );
 		assertEquals(62,values.size());
 		//get all FooContainer where foo is greater than or equal to "42"
 		values = persist.getObjects(FooContainer.class, new GreaterOrEqual(obj,FooContainer.class) );
 		assertEquals(63,values.size());
 		//get all FooContainer where foo is less than "42"
-		values = persist.getObjects(FooContainer.class, new Less(obj) );
+		values = persist.getObjects(FooContainer.class, new Less(obj,FooContainer.class) );
 		assertEquals(37,values.size());
 		//get all FooContainer where foo is less than or equal to "42"
 		values = persist.getObjects(FooContainer.class, new LessOrEqual(obj,FooContainer.class) );
 		assertEquals(38,values.size());
+		
+		//get all FooContainer where foo is null
+		values = persist.getObjects(FooContainer.class, new Null(obj) );
+		assertEquals(1,values.size());
+		//get all FooContainer where foo is not null
+		values = persist.getObjects(FooContainer.class, new NotNull(obj) );
+		assertEquals(100,values.size());
+		//get all FooContainer where foo is different from "42"
+		values = persist.getObjects(FooContainer.class, new Different(obj) );
+		assertEquals(99,values.size());
+		//get all FooContainer where foo is greater than "42"
+		values = persist.getObjects(FooContainer.class, new Greater(obj) );
+		assertEquals(62,values.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new GreaterOrEqual(obj) );
+		assertEquals(63,values.size());
+		//get all FooContainer where foo is less than "42"
+		values = persist.getObjects(FooContainer.class, new Less(obj) );
+		assertEquals(37,values.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new LessOrEqual(obj) );
+		assertEquals(38,values.size());
 
 		List<MyFooContainer>values2=null;
 		//get all FooContainer where foo is null
-		values2 = persist.getObjects(MyFooContainer.class, new Null(obj) );
+		values2 = persist.getObjects(MyFooContainer.class, new Null(obj,MyFooContainer.class) );
 		assertEquals(1,values2.size());
 		//get all FooContainer where foo is not null
-		values2 = persist.getObjects(MyFooContainer.class, new NotNull(obj) );
+		values2 = persist.getObjects(MyFooContainer.class, new NotNull(obj,MyFooContainer.class) );
 		assertEquals(100,values2.size());
 		//get all FooContainer where foo is different from "42"
 		values2 = persist.getObjects(MyFooContainer.class, new Different(obj,MyFooContainer.class) );
@@ -4377,12 +4417,448 @@ public class PersistTest
 		values2 = persist.getObjects(MyFooContainer.class, new GreaterOrEqual(obj,MyFooContainer.class) );
 		assertEquals(63,values2.size());
 		//get all FooContainer where foo is less than "42"
-		values2 = persist.getObjects(MyFooContainer.class, new Less(obj) );
+		values2 = persist.getObjects(MyFooContainer.class, new Less(obj,MyFooContainer.class) );
 		assertEquals(37,values2.size());
 		//get all FooContainer where foo is less than or equal to "42"
 		values2 = persist.getObjects(MyFooContainer.class, new LessOrEqual(obj,MyFooContainer.class) );
 		assertEquals(38,values2.size());
+
+		//get all FooContainer where foo is null
+		values2 = persist.getObjects(MyFooContainer.class, new Null(obj) );
+		assertEquals(1,values2.size());
+		//get all FooContainer where foo is not null
+		values2 = persist.getObjects(MyFooContainer.class, new NotNull(obj) );
+		assertEquals(100,values2.size());
+		//get all FooContainer where foo is different from "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Different(obj) );
+		assertEquals(99,values2.size());
+		//get all FooContainer where foo is greater than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Greater(obj) );
+		assertEquals(62,values2.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new GreaterOrEqual(obj) );
+		assertEquals(63,values2.size());
+		//get all FooContainer where foo is less than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Less(obj) );
+		assertEquals(37,values2.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new LessOrEqual(obj) );
+		assertEquals(38,values2.size());
 		
+		
+
+		//get all FooContainer where foo is null
+		values = persist.getObjects(FooContainer.class, new Null(obj,FooContainer.class,false) );
+		assertEquals(1,values.size());
+		//get all FooContainer where foo is not null
+		values = persist.getObjects(FooContainer.class, new NotNull(obj,FooContainer.class,false) );
+		assertEquals(100,values.size());
+		//get all FooContainer where foo is different from "42"
+		values = persist.getObjects(FooContainer.class, new Different(obj,FooContainer.class,false) );
+		assertEquals(99,values.size());
+		//get all FooContainer where foo is greater than "42"
+		values = persist.getObjects(FooContainer.class, new Greater(obj,FooContainer.class,false) );
+		assertEquals(62,values.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new GreaterOrEqual(obj,FooContainer.class,false) );
+		assertEquals(63,values.size());
+		//get all FooContainer where foo is less than "42"
+		values = persist.getObjects(FooContainer.class, new Less(obj,FooContainer.class,false) );
+		assertEquals(37,values.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new LessOrEqual(obj,FooContainer.class,false) );
+		assertEquals(38,values.size());
+		
+		//get all FooContainer where foo is null
+		values = persist.getObjects(FooContainer.class, new Null(obj,false) );
+		assertEquals(1,values.size());
+		//get all FooContainer where foo is not null
+		values = persist.getObjects(FooContainer.class, new NotNull(obj,false) );
+		assertEquals(100,values.size());
+		//get all FooContainer where foo is different from "42"
+		values = persist.getObjects(FooContainer.class, new Different(obj,false) );
+		assertEquals(99,values.size());
+		//get all FooContainer where foo is greater than "42"
+		values = persist.getObjects(FooContainer.class, new Greater(obj,false) );
+		assertEquals(62,values.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new GreaterOrEqual(obj,false) );
+		assertEquals(63,values.size());
+		//get all FooContainer where foo is less than "42"
+		values = persist.getObjects(FooContainer.class, new Less(obj,false) );
+		assertEquals(37,values.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values = persist.getObjects(FooContainer.class, new LessOrEqual(obj,false) );
+		assertEquals(38,values.size());
+
+		//get all FooContainer where foo is null
+		values2 = persist.getObjects(MyFooContainer.class, new Null(obj,MyFooContainer.class,false) );
+		assertEquals(1,values2.size());
+		//get all FooContainer where foo is not null
+		values2 = persist.getObjects(MyFooContainer.class, new NotNull(obj,MyFooContainer.class,false) );
+		assertEquals(100,values2.size());
+		//get all FooContainer where foo is different from "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Different(obj,MyFooContainer.class,false) );
+		assertEquals(99,values2.size());
+		//get all FooContainer where foo is greater than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Greater(obj,MyFooContainer.class,false) );
+		assertEquals(62,values2.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new GreaterOrEqual(obj,MyFooContainer.class,false) );
+		assertEquals(63,values2.size());
+		//get all FooContainer where foo is less than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Less(obj,MyFooContainer.class,false) );
+		assertEquals(37,values2.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new LessOrEqual(obj,MyFooContainer.class,false) );
+		assertEquals(38,values2.size());
+
+		//get all FooContainer where foo is null
+		values2 = persist.getObjects(MyFooContainer.class, new Null(obj,false) );
+		assertEquals(1,values2.size());
+		//get all FooContainer where foo is not null
+		values2 = persist.getObjects(MyFooContainer.class, new NotNull(obj,false) );
+		assertEquals(100,values2.size());
+		//get all FooContainer where foo is different from "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Different(obj,false) );
+		assertEquals(99,values2.size());
+		//get all FooContainer where foo is greater than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Greater(obj,false) );
+		assertEquals(62,values2.size());
+		//get all FooContainer where foo is greater than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new GreaterOrEqual(obj,false) );
+		assertEquals(63,values2.size());
+		//get all FooContainer where foo is less than "42"
+		values2 = persist.getObjects(MyFooContainer.class, new Less(obj,false) );
+		assertEquals(37,values2.size());
+		//get all FooContainer where foo is less than or equal to "42"
+		values2 = persist.getObjects(MyFooContainer.class, new LessOrEqual(obj,false) );
+		assertEquals(38,values2.size());
+		
+
+		persist.close();
 	}
 	
+	/**
+	 * Test basic database connection functions.
+	 */
+	@Test 
+	public void testDatabasePool() throws Exception
+	{
+		//test normal operation
+		DataConnectionPool dcp = new DataConnectionPool(1, driver, database, login, password);
+		dcp.getConnectionWrapper().commitAndDiscard();
+		dcp.getConnectionWrapper().rollbackAndDiscard();
+		//get several connection wrappers
+		ConnectionWrapper cw1 = dcp.getConnectionWrapper();
+		ConnectionWrapper cw2 = dcp.getConnectionWrapper();
+		ConnectionWrapper cw3 = dcp.getConnectionWrapper();
+		assertNotNull(cw3);
+		assertTrue(cw1.isTaken());
+		cw1.discard();
+		assertFalse(cw1.isTaken());
+		dcp.cleanUp();
+		assertTrue(cw1.isTaken());
+		
+		//test exceptions
+		boolean thrown = false;
+		try
+		{
+			dcp = new DataConnectionPool(1,driver,database,login,null);
+			dcp.cleanUp();
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		assertTrue("No exception thrown on null password.",thrown);
+		thrown = false;
+		try
+		{
+			dcp = new DataConnectionPool(1,driver,database,null,password);
+			dcp.cleanUp();
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		assertTrue("No exception thrown on null username.",thrown);
+		thrown = false;
+		try
+		{
+			dcp = new DataConnectionPool(1,driver,null,login,password);
+			dcp.cleanUp();
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		assertTrue("No exception thrown on null database.",thrown);
+		thrown = false;
+		try
+		{
+			dcp = new DataConnectionPool(1,"completely fake driver",database,login,password);
+			dcp.cleanUp();
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		assertTrue("No exception thrown on fake database.",thrown);
+	}
+	
+	/**
+	 * Test if rollback actually works.
+	 */
+	@Test
+	public void testRollback() throws Exception
+	{
+		DataConnectionPool dcp = new DataConnectionPool(1, driver, database, login, password);
+		ConnectionWrapper cw = dcp.getConnectionWrapper();
+		Connection c = cw.getConnection();
+
+		// drop fake table
+		PreparedStatement ps = null;
+		try
+		{
+			ps = c.prepareStatement("DROP TABLE TEST_TABLE ");
+			ps.execute();
+			ps.close();
+			cw.commit();
+		}
+		catch (Exception e)
+		{
+			// we don't care if this is thrown, it just means the table does not
+			// exist
+		}
+		cw.rollback();
+
+		// create a fake table
+		ps = c.prepareStatement("CREATE TABLE TEST_TABLE (FOO INT)");
+		ps.execute();
+		ps.close();
+		cw.commit();
+
+		// insert some fake data
+		ps = c.prepareStatement("INSERT INTO TEST_TABLE (FOO) VALUES(25)");
+		ps.execute();
+		ps.close();
+		// roll back operation
+		cw.rollback();
+
+		// make sure there is no fake data
+		ps = c.prepareStatement("SELECT COUNT(*) FROM TEST_TABLE");
+		ResultSet rs = ps.executeQuery();
+		assertTrue(rs.next());
+		assertEquals(0, rs.getInt(1));
+		ps.close();
+
+		// drop fake table
+		ps = c.prepareStatement("DROP TABLE TEST_TABLE ");
+		ps.execute();
+		ps.close();
+
+		// we're done with the connection
+		cw.commitAndDiscard();
+
+		dcp.cleanUp();
+
+	}
+	
+	/**
+	 * Test exception is thrown if we try to update a schema when we're not allowed.
+	 * 
+	 */
+	@Test
+	public void testSchemaPermissionException() throws Exception
+	{
+		boolean thrown = false;
+		PersistenceManager persist = null;
+		
+		//create a normal PersistManager
+		persist = new PersistenceManager(driver, database, login, password);
+		assertTrue(persist.getPersist().isCreateSchema());
+		persist.close();
+		persist = new PersistenceManager(driver, database, login, password, false);
+		assertFalse(persist.getPersist().isCreateSchema());
+		persist.close();
+		
+		
+		try
+		{
+			persist = new PersistenceManager(driver, database, login, password);
+			ConnectionWrapper cw = persist.getConnectionWrapper();
+			Connection c = cw.getConnection();
+			c.prepareStatement("DROP TABLE " + Defaults.HAS_A_TABLENAME).execute();
+			cw.commitAndDiscard();			
+		}
+		catch (Exception e)
+		{
+			// don't care, this just means the table didn't exist
+		}
+		finally
+		{
+			if (persist != null)
+			{
+				persist.close();
+			}
+		}
+
+		try
+		{
+			// create a manager that doesn't allow schema updates
+			persist = new PersistenceManager(driver, database, login, password, false);
+		}
+		catch (SQLException e)
+		{
+			if (e.getCause() instanceof SchemaPermissionException)
+			{
+				thrown = true;
+			}
+		}
+		finally
+		{
+			if (persist != null)
+			{
+				persist.close();
+			}
+		}
+		assertTrue("Could update schema despite not having permission.", thrown);
+	}
+	
+	/**
+	 * Test initialising from a properties file.
+	 */
+	@Test
+	public void testPropertiesFile() throws Exception
+	{
+		String filename = "temporary_test.prop";
+		//create a file for the properties
+		FileWriter fw = new FileWriter(filename);
+
+		// test all values correctly set
+		if (driver != null)
+		{
+			fw.write("org.conserve.driver=" + driver + "\n");
+		}
+		fw.write("org.conserve.connectionstring=" + database + "\n");
+		fw.write("org.conserve.username=" + login + "\n");
+		fw.write("org.conserve.password=" + password + "\n");
+		fw.close();
+		
+		PersistenceManager persist = new PersistenceManager(filename);
+		persist.saveObject(new Object());
+		assertEquals(1,persist.getCount(Object.class, new All()));
+		persist.dropTable(Object.class);
+		persist.close();
+		
+		FileInputStream fis = new FileInputStream(filename);
+		persist = new PersistenceManager(fis);
+		persist.saveObject(new Object());
+		assertEquals(1,persist.getCount(Object.class, new All()));
+		persist.dropTable(Object.class);
+		persist.close();
+		fis.close();
+		
+		Properties prop = new Properties();
+		fis = new FileInputStream(filename);
+		prop.load(fis);
+		persist = new PersistenceManager(prop);
+		persist.saveObject(new Object());
+		assertEquals(1,persist.getCount(Object.class, new All()));
+		persist.dropTable(Object.class);
+		persist.close();
+		fis.close();
+		
+		File f = new File(filename);
+		f.delete();
+		
+		//check if exeptions are thrown at the right place
+		boolean thrown = false;
+
+		//no database
+		fw = new FileWriter(filename);
+		if (driver != null)
+		{
+			fw.write("org.conserve.driver=" + driver + "\n");
+		}
+		fw.write("org.conserve.username="+login+"\n");
+		fw.write("org.conserve.password="+password+"\n");
+		fw.close();
+		try
+		{
+			persist = new PersistenceManager(filename);
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		finally
+		{
+			if(persist != null)
+			{
+				persist.close();
+			}
+		}
+		assertTrue("No exception on non-existing database.",thrown);
+		thrown =false;
+		f.delete();
+		
+		//no login
+		fw = new FileWriter(filename);
+		if (driver != null)
+		{
+			fw.write("org.conserve.driver=" + driver + "\n");
+		}
+		fw.write("org.conserve.connectionstring="+database+"\n");
+		fw.write("org.conserve.password="+password+"\n");
+		fw.close();
+		try
+		{
+			persist = new PersistenceManager(filename);
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		finally
+		{
+			if(persist != null)
+			{
+				persist.close();
+			}
+		}
+		assertTrue("No exception on non-existing database.",thrown);
+		thrown =false;
+		f.delete();
+
+		//no password
+		fw = new FileWriter(filename);
+		if (driver != null)
+		{
+			fw.write("org.conserve.driver=" + driver + "\n");
+		}
+		fw.write("org.conserve.connectionstring="+database+"\n");
+		fw.write("org.conserve.username="+login+"\n");
+		fw.close();
+		try
+		{
+			persist = new PersistenceManager(filename);
+		}
+		catch(SQLException e)
+		{
+			thrown = true;
+		}
+		finally
+		{
+			if(persist != null)
+			{
+				persist.close();
+			}
+		}
+		assertTrue("No exception on non-existing database.",thrown);
+		thrown =false;
+		f.delete();
+		
+	}
 }

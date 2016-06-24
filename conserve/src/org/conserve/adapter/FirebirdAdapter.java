@@ -162,23 +162,6 @@ public class FirebirdAdapter extends AdapterBase
 		return 31;
 	}
 
-	/**
-	 * @see org.conserve.adapter.AdapterBase#isRowSizeLimited()
-	 */
-	@Override
-	public boolean isRowSizeLimited()
-	{
-		return true;
-	}
-
-	/**
-	 * @see org.conserve.adapter.AdapterBase#getMaximumRowSize()
-	 */
-	@Override
-	public int getMaximumRowSize()
-	{
-		return 8192;
-	}
 
 	/**
 	 * @see org.conserve.adapter.AdapterBase#allowsEmptyStatements()

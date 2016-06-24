@@ -31,9 +31,6 @@ public class ClassIdTuple
 	private Class<?>representedClass;
 	private Long id;
 	
-	public ClassIdTuple()
-	{		
-	}
 	
 	public ClassIdTuple(Class<?> c,Long id)
 	{
@@ -45,20 +42,12 @@ public class ClassIdTuple
 	{
 		return id;
 	}
-	public void setId(Long id)
-	{
-		this.id = id;
-	}
 
 	public Class<?> getRepresentedClass()
 	{
 		return representedClass;
 	}
 
-	public void setRepresentedClass(Class<?> representedClass)
-	{
-		this.representedClass = representedClass;
-	}
 
 	public String getTableName(AdapterBase adapter)
 	{

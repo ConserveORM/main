@@ -89,6 +89,7 @@ public class ProtectionEntry
 	@Override
 	public boolean equals(Object obj)
 	{
+		boolean res = false;
 		if (obj instanceof ProtectionEntry)
 		{
 			ProtectionEntry other = (ProtectionEntry) obj;
@@ -97,17 +98,10 @@ public class ProtectionEntry
 							.equals(other.getPropertyTableName()) && this.propertyId
 							.equals(other.getPropertyId()))))
 			{
-				return true;
-			}
-			else
-			{
-				return false;
+				res = true;
 			}
 		}
-		else
-		{
-			return super.equals(obj);
-		}
+		return res;
 	}
 
 	/**

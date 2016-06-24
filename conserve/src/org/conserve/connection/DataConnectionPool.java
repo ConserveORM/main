@@ -79,7 +79,8 @@ public class DataConnectionPool
 			}
 			catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1)
 			{
-				e1.printStackTrace();
+				//re-throw
+				throw new SQLException(e1);
 			}
 		}
 
@@ -98,8 +99,8 @@ public class DataConnectionPool
 				}
 				catch (Exception e)
 				{
-					LOGGER.log(Level.WARNING, "Exception: ", e);
-					break;
+					//re-throw
+					throw new SQLException(e);
 				}
 			}
 
@@ -119,7 +120,7 @@ public class DataConnectionPool
 		{
 			int x = this.lastConnection;
 			ConnectionWrapper res = null;
-			loop1: for (int y = 0; y < pool.size(); y++)
+			for (int y = 0; y < pool.size(); y++)
 			{
 				x++;
 				x %= pool.size();
@@ -128,18 +129,17 @@ public class DataConnectionPool
 					res = pool.get(x);
 					res.setTaken(true);
 					this.lastConnection = x;
-					break loop1;
+					break;
 				}
 			}
-			if (res == null)// try increasing the pool size if no connection was
-							// available
+			if (res == null)// try increasing the pool size if no connection was available
 			{
 				try
 				{
 					this.increasePoolSizePercent(10);// increase poolsize with
 														// 10%
 					x = this.lastConnection;
-					loop2: for (int y = 0; y < pool.size(); y++)
+					for (int y = 0; y < pool.size(); y++)
 					{
 						x++;
 						x %= pool.size();
@@ -148,7 +148,7 @@ public class DataConnectionPool
 							res = pool.get(x);
 							res.setTaken(true);
 							this.lastConnection = x;
-							break loop2;
+							break;
 						}
 					}
 
@@ -157,7 +157,6 @@ public class DataConnectionPool
 				{
 					LOGGER.log(Level.WARNING, "Exception: ", e);
 					// okay, there's nothing more to do
-					return null;
 				}
 			}
 			if (res == null)
@@ -178,52 +177,14 @@ public class DataConnectionPool
 			{
 				newsize = pool.size() + 1;
 			}
-			this.setPoolSize(newsize);
+			LOGGER.fine("Increasing pool size from " + pool.size() + " to " + newsize + " connections.");
+			while (pool.size() < newsize)
+			{
+				pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName, this.password)));
+			}
 		}
 	}
 
-	private void setPoolSize(int newsize) throws SQLException
-	{
-		synchronized (this.mutex) // don't change pool size while it's in use
-		{
-			if (this.pool.size() < newsize) // increase the pool size
-			{
-				LOGGER.fine("Increasing pool size from " + pool.size() + " to " + newsize + " entries.");
-				while (pool.size() < newsize)
-				{
-					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName, this.password)));
-				}
-			}
-			else if (this.pool.size() > newsize)// decrease the pool size
-			{
-				LOGGER.fine("Decreasing pool size from " + pool.size() + " to " + newsize + " entries.");
-				while (pool.size() > newsize)
-				{
-					// find the first unused connection
-					boolean found = false;
-					int x = 0;
-					for (; x < pool.size(); x++)
-					{
-						if (!pool.get(x).isTaken())
-						{
-							pool.get(x).setTaken(true);
-							pool.get(x).getConnection().setAutoCommit(true);
-							pool.get(x).getConnection().close();
-							pool.remove(x);
-							found = true;
-							break;
-						}
-					}
-					if (!found)
-					{
-						// we have removed as many connections as we can, we
-						// won't remove taken connections
-						break;
-					}
-				}
-			}
-		}
-	}
 
 	// close all connections and get out of here
 	public void cleanUp()
@@ -250,6 +211,7 @@ public class DataConnectionPool
 		}
 		catch (Exception e)
 		{
+			//We catch all exceptions, there's nothing to be done if we can't close a connection.
 			LOGGER.log(Level.WARNING, "Exception: ", e);
 		}
 	}

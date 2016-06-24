@@ -119,12 +119,8 @@ public class IdStatementGenerator
 		return this.relationDescriptors;
 	}
 
-	public String generateAsStatement()
-	{
-		return generateAsStatement(new String[0]);
-	}
 
-	public String generateAsStatement(String[] omitTables)
+	public String generateAsStatement()
 	{
 		List<String> tables = new ArrayList<String>();
 		tables.addAll(joinTables);
@@ -132,8 +128,7 @@ public class IdStatementGenerator
 		List<String> ids = new ArrayList<String>();
 		ids.addAll(joinTableIds);
 		ids.addAll(joinPropertyTableIds);
-		return asGenerator.generate(tables, ids, relationDescriptors,
-				omitTables);
+		return asGenerator.generate(tables, ids, relationDescriptors);
 	}
 
 	public void addPropertyTableToJoin(String tableName, String asName)

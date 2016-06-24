@@ -46,26 +46,13 @@ public class AsStatementGenerator
 	 * @param joinTableIds 
 	 * @param joinTables 
 	 * @param relationDescriptors
-	 * @param omitTables table names to omit from the AS-statement.
 	 * @return
 	 */
-	public String generate(List<String> joinTables, List<String> joinTableIds, List<RelationDescriptor> relationDescriptors,String []omitTables)
+	public String generate(List<String> joinTables, List<String> joinTableIds, List<RelationDescriptor> relationDescriptors)
 	{
 		StringBuilder sb = new StringBuilder();
 		List<String>added = new ArrayList<String>();
-		//add the tables we are omitting to the list of added tables
-		for(String omit:omitTables)
-		{
-			int omitIndex = joinTables.indexOf(omit);
-			if(omitIndex>=0)
-			{
-				String omitId = joinTableIds.get(omitIndex);
-				if(!added.contains(omitId))
-				{
-					added.add(omitId);
-				}
-			}
-		}
+		
 		for(int x = 0;x<joinTables.size();x++)
 		{
 			if(!added.contains(joinTableIds.get(x)))

@@ -24,7 +24,6 @@ package org.conserve.tools.generators;
  */
 public class RelationDescriptor
 {
-	private boolean requiresvalue;
 	
 	private FieldDescriptor first;
 	private FieldDescriptor second;
@@ -36,13 +35,6 @@ public class RelationDescriptor
 		this.second = second;
 	}
 	
-	/**
-	 * @return the requiresvalue
-	 */
-	public boolean isRequiresvalue()
-	{
-		return requiresvalue;
-	}
 	/**
 	 * @return the first
 	 */
@@ -70,14 +62,7 @@ public class RelationDescriptor
 	{
 		StringBuilder sb = new StringBuilder(first.toShortString());
 		sb.append(" = ");
-		if(isRequiresvalue())
-		{
-			sb.append("?");
-		}
-		else
-		{
-			sb.append(second.toShortString());
-		}
+		sb.append(second.toShortString());
 		return sb.toString();
 	}
 }

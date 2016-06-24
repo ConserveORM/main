@@ -742,28 +742,6 @@ public class ObjectStack
 		return this.representations.getAllRepresentations();
 	}
 	
-	/**
-	 * Get all superclasses and interfaces of the actual representation, all the way to the top.
-	 * 
-	 * @return
-	 */
-	public List<Node> getAllSupers()
-	{
-		List<Node>res = new ArrayList<>();
-		Node n = getActual();
-		List<Node>tmp = n.getSupers();
-		while(!tmp.isEmpty())
-		{
-			List<Node>next = new ArrayList<>();
-			for(Node node:tmp)
-			{
-				res.add(node);
-				next.addAll(node.getSupers());
-			}
-			tmp = next;
-		}
-		return res;
-	}
 
 	/**
 	 * Check if this object stack contains a certain class.

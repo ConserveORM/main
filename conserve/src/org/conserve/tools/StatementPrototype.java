@@ -27,7 +27,6 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.select.Clause;
 import org.conserve.tools.generators.IdStatementGenerator;
-import org.conserve.tools.generators.RelationDescriptor;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
@@ -87,15 +86,7 @@ public class StatementPrototype
 				index++;
 				addValue(ps, index, o);
 			}
-		}		
-		for (RelationDescriptor o : idGen.getRelationDescriptors())
-		{
-			if(o.isRequiresvalue())
-			{
-				index++;
-				addValue(ps,index,o.getValue());
-			}
-		}
+		}	
 		for (Object o : conditionalValues)
 		{
 			if (ObjectTools.isDatabasePrimitive(o.getClass()))

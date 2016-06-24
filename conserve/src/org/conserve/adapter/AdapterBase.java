@@ -474,31 +474,6 @@ public class AdapterBase
 		return "BLOB";
 	}
 
-	/**
-	 * Get the command used to shut down the database engine (usual in cases of
-	 * embedded databases). This will, if non-null, be executed in SQL
-	 * statement. The default implementation returns null.
-	 * 
-	 * @return the shutdown command.
-	 */
-	public String getShutdownCommand()
-	{
-		return null;
-	}
-
-	/**
-	 * Get the command used to shut down the database engine (usual in cases of
-	 * embedded databases) in the driverManager.
-	 * 
-	 * This will, if non-null, be executed in a DriverManager.getConnection(...)
-	 * statement. The default implementation returns null.
-	 * 
-	 * @return the shutdown command.
-	 */
-	public String getDriverManagerShutdownCommand()
-	{
-		return null;
-	}
 
 	/**
 	 * Get the varchar for indexed varchar arrays, as this may be different from
@@ -597,34 +572,6 @@ public class AdapterBase
 		return Integer.MAX_VALUE;
 	}
 
-	/**
-	 * Check if the row size is limited. Default implementation returns false.
-	 * 
-	 * If this method returns true it will trigger the engine to query the
-	 * maximum size of the row.
-	 * 
-	 * @see #getMaximumRowSize()
-	 * 
-	 * @return true if there is a limit to the size of a row.
-	 */
-	public boolean isRowSizeLimited()
-	{
-		return false;
-	}
-
-	/**
-	 * This method is ONLY called if isRowSizeLimited() returns true. If
-	 * isRowSizeLimited() returns false, the value this method returns is of no
-	 * consequence.
-	 * 
-	 * @see #isRowSizeLimited()
-	 * 
-	 * @return the maximum size, in bytes, of one row.
-	 */
-	public int getMaximumRowSize()
-	{
-		return 0;
-	}
 
 	/**
 	 * Return true if the underlying database engine can rename a column.

@@ -608,6 +608,9 @@ public class TableManager
 		List<Class<?>> res = new ArrayList<Class<?>>();
 		try
 		{
+			//always include Object
+			res.add(Object.class);
+			existingClasses.add(Object.class);
 			// find all sub-classes
 			PreparedStatement ps = cw.prepareStatement("SELECT DISTINCT(SUBCLASS) FROM " + Defaults.IS_A_TABLENAME);
 			Tools.logFine(ps);
@@ -822,6 +825,13 @@ public class TableManager
 
 	private void conditionalDelete(String tableName, ConnectionWrapper cw) throws SQLException
 	{
+		if(!this.adapter.isSupportsExistsKeyword())
+		{
+			if(!tableExists(tableName, cw))
+			{
+				return;
+			}
+		}
 		StringBuilder query = new StringBuilder("DROP TABLE ");
 		if (this.adapter.isSupportsExistsKeyword())
 		{

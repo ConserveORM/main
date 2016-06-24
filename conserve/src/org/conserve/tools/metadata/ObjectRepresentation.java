@@ -192,11 +192,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return values.get(index);
 	}
 	
-	public List<String>getIndices(String propertyName)
-	{
-		return indices.get(propertyName);
-	}
-	
 	
 	/**
 	 * Get a set of all the index names in the represented class.
@@ -668,11 +663,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	public Class<?> getRepresentedClass()
 	{
 		return clazz;
-	}
-
-	public Class<?> getSuperclass()
-	{
-		return clazz.getSuperclass();
 	}
 
 	/**

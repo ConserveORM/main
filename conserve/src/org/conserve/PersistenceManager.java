@@ -916,8 +916,11 @@ public class PersistenceManager
 	 */
 	public void close()
 	{
-		persist.close();
-		persist = null;
+		if (persist != null)
+		{
+			persist.close();
+			persist = null;
+		}
 	}
 	
 	/**

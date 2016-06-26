@@ -28,5 +28,35 @@ package org.conserve.objects;
  */
 public class NonExistingClass
 {
-
+	private double foo;
+	private float bar;
+	
+	/**
+	 * @return the foo
+	 */
+	public double getFoo()
+	{
+		return foo;
+	}
+	/**
+	 * @param foo the foo to set
+	 */
+	public void setFoo(double foo)
+	{
+		this.foo = foo;
+	}
+	/**
+	 * @return the bar
+	 */
+	public float getBar()
+	{
+		return bar;
+	}
+	/**
+	 * @param bar the bar to set
+	 */
+	public void setBar(float bar)
+	{
+		this.bar = bar;
+	}
 }

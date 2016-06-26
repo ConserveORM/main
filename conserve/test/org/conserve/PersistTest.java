@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -59,6 +58,7 @@ import org.conserve.aggregate.Sum;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
 import org.conserve.exceptions.SchemaPermissionException;
+import org.conserve.objects.AllPrimitives;
 import org.conserve.objects.ArrayContainingObject;
 import org.conserve.objects.Author;
 import org.conserve.objects.BadColumnNames;
@@ -1872,6 +1872,12 @@ public class PersistTest
 
 		// save the object
 		persistOne.saveObject(so);
+		
+		//create and drop a complex object to prevent some database engines from bugging out
+		persistOne.saveObject(new ComplexObject());
+		persistOne.saveObject(new SimplestObject());
+		persistOne.deleteObjects(ComplexObject.class, new All());
+		persistOne.deleteObjects(SimplestObject.class, new All());
 
 		// load the object from another instance
 		List<SimpleObject> simpleObjects = persistTwo.getObjects(SimpleObject.class, new All());
@@ -1887,6 +1893,69 @@ public class PersistTest
 		assertEquals(so.getName(), copy.getName());
 		assertEquals(copy.getName(), copy2.getName());
 		assertEquals(copy, copy2);
+		
+		
+		so.setName(null);
+		so.setAge(null);
+		persistOne.saveObject(so);
+		persistTwo.refresh(copy);
+		assertNull(copy.getName());
+		assertNull(copy.getAge());
+		so.setName("updated");
+		so.setAge(42l);
+		persistOne.saveObject(so);
+		persistTwo.refresh(copy);
+		assertNotNull(copy.getName());
+		assertNotNull(copy.getAge());
+		assertEquals("updated",copy.getName());
+		assertEquals(42l,(long)copy.getAge());
+		
+		persistOne.deleteObject(so);
+		assertEquals(0,persistOne.getCount(SimpleObject.class, new All()));
+		assertEquals(0,persistTwo.getCount(SimpleObject.class, new All()));
+		persistTwo.close();
+		
+		//test refreshing some complex objects
+		ComplexObject co = new ComplexObject();
+		co.setSimplestObject(new SimplestObject());
+		co.getSimplestObject().setFoo(42.0);
+		persistOne.saveObject(co);
+		persistTwo = new PersistenceManager(driver, database, login, password);
+		assertEquals(1,persistTwo.getCount(ComplexObject.class, new All()));
+		assertEquals(1,persistTwo.getCount(SimplestObject.class, new All()));
+		List<ComplexObject>cos = persistTwo.getObjects(ComplexObject.class, new All());
+		assertEquals(1,cos.size());
+		ComplexObject complexCopy = cos.get(0);
+		assertEquals(co.getSimplestObject().getFoo(),complexCopy.getSimplestObject().getFoo());
+		
+		co.getSimplestObject().setFoo(18.0);
+		persistOne.saveObject(co);
+		persistTwo.refresh(complexCopy);
+		assertEquals(co.getSimplestObject().getFoo(),complexCopy.getSimplestObject().getFoo());
+		
+		co.getSimplestObject().setFoo(null);
+		persistOne.saveObject(co);
+		persistTwo.refresh(complexCopy);
+		assertNull(complexCopy.getSimplestObject().getFoo());
+		
+		
+		co.setSimplestObject(null);
+		persistOne.saveObject(co);
+		persistTwo.refresh(complexCopy);
+		assertNull(complexCopy.getSimplestObject());
+		assertEquals(0,persistOne.getCount(SimplestObject.class, new All()));
+		
+		co.setSimplestObject(new SimplestObject());
+		persistOne.saveObject(co);
+		persistTwo.refresh(complexCopy);
+		assertNotNull(complexCopy.getSimplestObject());
+		
+		
+		
+		
+		
+		persistOne.close();
+		persistTwo.close();
 	}
 
 	/**
@@ -1924,6 +1993,8 @@ public class PersistTest
 		persistTwo.refresh(copy);
 		// make sure the change has propagated
 		assertEquals(layer3.getLayer1().getName(), copy.getLayer1().getName());
+		persistOne.close();
+		persistTwo.close();
 	}
 
 	/**
@@ -1974,6 +2045,21 @@ public class PersistTest
 		LessSimpleObject first = lessSimpleObjects.get(0);
 		assertEquals("name", first.getName());
 		persistTwo.close();
+		
+		boolean thrown = false;
+		persistOne = new PersistenceManager(driver, database, login, password);
+		try
+		{
+			//this should throw an exception
+			persistOne.duplicate(persistOne);
+		}
+		catch(IllegalArgumentException e)
+		{
+			thrown = true;
+		}
+		assertTrue("Copying database into itself did not throw exception",thrown);
+		
+		persistOne.close();
 	}
 
 	/**
@@ -4073,8 +4159,33 @@ public class PersistTest
 		assertEquals(0, pm.deleteObjects(NonExistingClass.class, new All()));
 		// test counting objects of non-existing class
 		assertEquals(0, pm.getCount(NonExistingClass.class, new All()));
+		assertEquals(0, pm.getCount(new NonExistingClass()));
+		// test sum of object of non-existing class
+		assertEquals(0.0,pm.calculateAggregate(NonExistingClass.class, new Sum("getFoo"), new All()));
+		//test max, min, avg of non-existing class
+		AggregateFunction[] functions = new AggregateFunction[]{new Maximum("getFoo"),new Minimum("getFoo"),new Average("getFoo")};
+		Number[] numbers = pm.calculateAggregate(NonExistingClass.class, functions, new All());
+		assertEquals(3,numbers.length);
+		for(int x = 0;x<numbers.length;x++)
+		{
+			assertTrue("Result is not Double but "+ numbers[x].getClass(),numbers[x] instanceof Double);
+			assertTrue(((Double)numbers[x]).isNaN());
+		}
+		functions = new AggregateFunction[]{new Maximum("getBar"),new Minimum("getBar"),new Average("getBar")};
+		numbers = pm.calculateAggregate(NonExistingClass.class, functions, new All());
+		assertEquals(3,numbers.length);
+		for(int x = 0;x<numbers.length-1;x++)
+		{
+			assertTrue("Result is not Float but "+ numbers[x].getClass(),numbers[x] instanceof Float);
+			assertTrue(((Float)numbers[x]).isNaN());
+		}
+		assertTrue("Result is not Double but "+ numbers[2].getClass(),numbers[2] instanceof Double);
+		assertTrue(((Double)numbers[2]).isNaN());
+		
 		// test getting objects of non-existing class
 		List<NonExistingClass> res = pm.getObjects(NonExistingClass.class, new All());
+		assertEquals(0, res.size());
+		res = pm.getObjects(new NonExistingClass());
 		assertEquals(0, res.size());
 		pm.close();
 	}
@@ -4185,8 +4296,58 @@ public class PersistTest
 			}
 		}, new All(), new Order(totalCount, startAt, new Ascending(orderObject)));
 		assertEquals(totalCount, numberFound[0]);
-		pm.close();
+		
+		//make sure we get the all objects when we search by superclass
+		numberFound[0] = 0;
+		numberFound[1] = 0;
+		pm.getObjects(Object.class, new SearchListener<Object>()
+		{
+			@Override
+			public void objectFound(Object o)
+			{
+				if (o instanceof SimpleObject)
+				{
+					SimpleObject object = (SimpleObject) o;
+					if (numberFound[0] > 0)
+					{
+						// check that we're going descending order
+						assertEquals(numberFound[1] - 1, object.getCount());
+					}
+					numberFound[0]++;
+					numberFound[1] = object.getCount();
+				}
+			}
+		}, new All());
+		assertEquals(testCount, numberFound[0]);
 
+		pm.close();
+		
+
+		//make sure we get the all objects when we search by superclass, even from a new PM
+		pm = new PersistenceManager(driver, database, login, password);
+		numberFound[0] = 0;
+		numberFound[1] = 0;
+		pm.getObjects(Object.class, new SearchListener<Object>()
+		{
+			@Override
+			public void objectFound(Object o)
+			{
+				if (o instanceof SimpleObject)
+				{
+					SimpleObject object = (SimpleObject) o;
+					if (numberFound[0] > 0)
+					{
+						// check that we're going descending order
+						assertEquals(numberFound[1] - 1, object.getCount());
+					}
+					numberFound[0]++;
+					numberFound[1] = object.getCount();
+				}
+			}
+		}, new All());
+		assertEquals(testCount, numberFound[0]);
+
+		pm.close();
 	}
 
 	/**
@@ -4198,7 +4359,16 @@ public class PersistTest
 	@Test
 	public void testSortingInterface() throws Exception
 	{
-		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		PersistenceManager pm = null;
+		if(driver != null)
+		{
+			pm = new PersistenceManager(driver, database, login, password);
+		}
+		else
+		{
+			//we're dealing with a 4.0 or better driver, omit driver specification.
+			pm = new PersistenceManager( database, login, password);
+		}
 		// drop all tables
 		pm.dropTable(Object.class);
 
@@ -4553,6 +4723,8 @@ public class PersistTest
 		ConnectionWrapper cw1 = dcp.getConnectionWrapper();
 		ConnectionWrapper cw2 = dcp.getConnectionWrapper();
 		ConnectionWrapper cw3 = dcp.getConnectionWrapper();
+		assertNotNull(cw1);
+		assertNotNull(cw2);
 		assertNotNull(cw3);
 		assertTrue(cw1.isTaken());
 		cw1.discard();
@@ -4678,6 +4850,10 @@ public class PersistTest
 		//create a normal PersistManager
 		persist = new PersistenceManager(driver, database, login, password);
 		assertTrue(persist.getPersist().isCreateSchema());
+		persist.getPersist().setCreateSchema(false);
+		assertFalse(persist.getPersist().isCreateSchema());
+		persist.getPersist().setCreateSchema(true);
+		assertTrue(persist.getPersist().isCreateSchema());
 		persist.close();
 		persist = new PersistenceManager(driver, database, login, password, false);
 		assertFalse(persist.getPersist().isCreateSchema());
@@ -4798,10 +4974,12 @@ public class PersistTest
 			if(persist != null)
 			{
 				persist.close();
+				persist = null;
 			}
 		}
 		assertTrue("No exception on non-existing database.",thrown);
 		thrown =false;
+		f = new File(filename);
 		f.delete();
 		
 		//no login
@@ -4826,10 +5004,12 @@ public class PersistTest
 			if(persist != null)
 			{
 				persist.close();
+				persist = null;
 			}
 		}
 		assertTrue("No exception on non-existing database.",thrown);
 		thrown =false;
+		f = new File(filename);
 		f.delete();
 
 		//no password
@@ -4854,11 +5034,189 @@ public class PersistTest
 			if(persist != null)
 			{
 				persist.close();
+				persist = null;
 			}
 		}
 		assertTrue("No exception on non-existing database.",thrown);
 		thrown =false;
+		f = new File(filename);
 		f.delete();
 		
+	}
+	
+	/**
+	 * Test sum, max, min, avg for all possible data types.
+	 */
+	@Test
+	public void testAllDataTypesAggregate() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		for(int x = 1;x<=100;x++)
+		{
+			AllPrimitives ap = new AllPrimitives();
+			if(x%2==0)
+			{
+				ap.setBoolobject(Boolean.TRUE);
+				ap.setBoolvalue(true);
+			}
+			else
+			{
+				ap.setBoolobject(Boolean.FALSE);
+				ap.setBoolvalue(false);
+			}
+			ap.setByteobject((byte)x);
+			ap.setBytevalue((byte)x);
+			ap.setCharobject((char)x);
+			ap.setCharvalue((char)x);
+			ap.setDoubleobject((double)x);
+			ap.setDoublevalue((double)x);
+			ap.setFloatobject((float)x);
+			ap.setFloatvalue((float)x);
+			ap.setIntobject(x);
+			ap.setIntvalue(x);
+			ap.setLongobject((long)x);
+			ap.setLongvalue(x);
+			ap.setShortobject((short)x);
+			ap.setShortvalue((short)x);
+			
+			pm.saveObject(ap);
+		}
+		
+		//calculate all sums
+		AggregateFunction [] functions = new AggregateFunction[]{
+				new Sum("getByteobject"),
+				new Sum("getBytevalue"),
+				new Sum("getCharobject"),
+				new Sum("getCharvalue"),
+				new Sum("getDoubleobject"),
+				new Sum("getDoublevalue"),
+				new Sum("getFloatobject"),
+				new Sum("getFloatvalue"),
+				new Sum("getIntobject"),
+				new Sum("getIntvalue"),
+				new Sum("getLongobject"),
+				new Sum("getLongvalue"),
+				new Sum("getShortobject"),
+				new Sum("getShortvalue")
+		};
+		Number[] sums = pm.calculateAggregate(AllPrimitives.class, functions, new All());
+		for(int x = 0;x<sums.length;x++)
+		{
+			assertEquals(5050,sums[x].longValue());
+		}
+		
+		//calculate all maximums
+		functions = new AggregateFunction[]{
+				new Maximum("getByteobject"),
+				new Maximum("getBytevalue"),
+				new Maximum("getCharobject"),
+				new Maximum("getCharvalue"),
+				new Maximum("getDoubleobject"),
+				new Maximum("getDoublevalue"),
+				new Maximum("getFloatobject"),
+				new Maximum("getFloatvalue"),
+				new Maximum("getIntobject"),
+				new Maximum("getIntvalue"),
+				new Maximum("getLongobject"),
+				new Maximum("getLongvalue"),
+				new Maximum("getShortobject"),
+				new Maximum("getShortvalue")
+		};
+		Number[] maxs = pm.calculateAggregate(AllPrimitives.class, functions, new All());
+		for(int x = 0;x<maxs.length;x++)
+		{
+			assertEquals(100,maxs[x].longValue());
+		}
+		//calculate all minimums
+		functions = new AggregateFunction[]{
+				new Minimum("getByteobject"),
+				new Minimum("getBytevalue"),
+				new Minimum("getCharobject"),
+				new Minimum("getCharvalue"),
+				new Minimum("getDoubleobject"),
+				new Minimum("getDoublevalue"),
+				new Minimum("getFloatobject"),
+				new Minimum("getFloatvalue"),
+				new Minimum("getIntobject"),
+				new Minimum("getIntvalue"),
+				new Minimum("getLongobject"),
+				new Minimum("getLongvalue"),
+				new Minimum("getShortobject"),
+				new Minimum("getShortvalue")
+		};
+		Number[] mins = pm.calculateAggregate(AllPrimitives.class, functions, new All());
+		for(int x = 0;x<mins.length;x++)
+		{
+			assertEquals(1,mins[x].longValue());
+		}
+		//calculate all averages
+		functions = new AggregateFunction[]{
+				new Average("getByteobject"),
+				new Average("getBytevalue"),
+				new Average("getCharobject"),
+				new Average("getCharvalue"),
+				new Average("getDoubleobject"),
+				new Average("getDoublevalue"),
+				new Average("getFloatobject"),
+				new Average("getFloatvalue"),
+				new Average("getIntobject"),
+				new Average("getIntvalue"),
+				new Average("getLongobject"),
+				new Average("getLongvalue"),
+				new Average("getShortobject"),
+				new Average("getShortvalue")
+		};
+		Number[] avgs = pm.calculateAggregate(AllPrimitives.class, functions, new All());
+		for(int x = 0;x<avgs.length;x++)
+		{
+			assertEquals(50.5,avgs[x].doubleValue(),0.0001);
+		}
+		
+		//try using the ConnectionWrapper method
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		double avg = (double) pm.calculateAggregate(cw, AllPrimitives.class, new Average("getDoubleobject"), new All());
+		assertEquals(50.5,avg,0.0001);
+		
+		//delete all AllPrimitives
+		pm.deleteObjects(cw,AllPrimitives.class,new All());
+
+		//test all integer types return a zero long value
+		functions = new AggregateFunction[]{
+				new Sum("getByteobject"),
+				new Sum("getBytevalue"),
+				new Sum("getCharobject"),
+				new Sum("getCharvalue"),
+				new Sum("getIntobject"),
+				new Sum("getIntvalue"),
+				new Sum("getLongobject"),
+				new Sum("getLongvalue"),
+				new Sum("getShortobject"),
+				new Sum("getShortvalue")
+		};
+		Number[] num = pm.calculateAggregate(cw,AllPrimitives.class, functions, new All());
+		assertEquals(functions.length,num.length);
+		for(int x =0;x<num.length;x++)
+		{
+			assertTrue(num[x] instanceof Long);
+			assertEquals(0l,num[x].longValue());
+		}
+		
+		//test all float types return a zero double value
+		functions = new AggregateFunction[]{
+				new Sum("getDoubleobject"),
+				new Sum("getDoublevalue"),
+				new Sum("getFloatobject"),
+				new Sum("getFloatvalue")
+		};
+		num = pm.calculateAggregate(cw,AllPrimitives.class, functions, new All());
+		assertEquals(functions.length,num.length);
+		for(int x =0;x<num.length;x++)
+		{
+			assertTrue(num[x] instanceof Double);
+			assertEquals(0l,num[x].doubleValue(),0.0001);
+		}
+		cw.commitAndDiscard();
+		
+		pm.close();
 	}
 }

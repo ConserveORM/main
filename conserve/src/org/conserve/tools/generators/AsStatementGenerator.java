@@ -48,7 +48,7 @@ public class AsStatementGenerator
 	 * @param relationDescriptors
 	 * @return
 	 */
-	public String generate(List<String> joinTables, List<String> joinTableIds, List<RelationDescriptor> relationDescriptors)
+	public String generate(List<String> joinTables, List<String> joinTableIds)
 	{
 		StringBuilder sb = new StringBuilder();
 		List<String>added = new ArrayList<String>();
@@ -68,23 +68,6 @@ public class AsStatementGenerator
 				sb.append(" AS ");
 				sb.append(joinTableIds.get(x));
 				
-			}
-		}
-		for(RelationDescriptor desc:relationDescriptors)
-		{
-			FieldDescriptor fd = desc.getFirst();
-			if(!added.contains(fd.getShortName()))
-			{
-				added.add(fd.getShortName());
-				if(sb.length()>0)
-				{
-					sb.append(" ");
-					sb.append(adapter.getJoinKeyword());
-					sb.append(" ");
-				}
-				sb.append(fd.getTableName());
-				sb.append(" AS ");
-				sb.append(fd.getShortName());
 			}
 		}
 		return sb.toString();

@@ -18,6 +18,7 @@
  *******************************************************************************/
 package org.conserve.objects.schemaupdate.changedcolumns;
 
+import org.conserve.annotations.ColumnName;
 import org.conserve.annotations.TableName;
 import org.conserve.objects.SimplestObject;
 
@@ -74,6 +75,7 @@ public class ObjectToSubclass
 	/**
 	 * @param otherObject the otherObject to set
 	 */
+	@ColumnName("MySimplestObject")
 	public void setOtherObject(SimplestObject otherObject)
 	{
 		this.otherObject = otherObject;

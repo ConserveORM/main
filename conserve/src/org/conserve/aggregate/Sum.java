@@ -50,14 +50,14 @@ public class Sum extends AggregateFunction
 	@Override
 	protected Class<? extends Number> translateReturnType(Class<?> clazz)
 	{
-		Class<? extends Number>res = null;
+		Class<? extends Number> res = null;
 		// all integer type results are widened to Long
-		if (clazz == Long.class || clazz == Integer.class || clazz == Short.class
-				|| clazz == Byte.class || clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class)
+		if (clazz == Long.class || clazz == Integer.class || clazz == Short.class || clazz == Byte.class || clazz == Character.class
+				|| clazz == long.class || clazz == int.class || clazz == short.class || clazz == byte.class || clazz == char.class)
 		{
 			res = Long.class;
 		}
-		//all floating point results are widened to Double
+		// all floating point results are widened to Double
 		else if (clazz == Double.class || clazz == Float.class || clazz == double.class || clazz == float.class)
 		{
 			res = Double.class;

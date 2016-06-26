@@ -894,33 +894,6 @@ public class ObjectStack
 
 	}
 
-	/**
-	 * Remove nodes that fulfil these criteria:
-	 * 
-	 * 1. No superclasses
-	 * 
-	 * 2. No properties
-	 */
-	public void pruneEmptyClasses()
-	{
-		List<Node> nodes = this.representations.allNodes();
-		boolean found = true;
-		while (found)
-		{
-			found = false;
-			for (int x = 0; x < nodes.size(); x++)
-			{
-				Node node = nodes.get(x);
-				if (node.getSupers().isEmpty() && node.getRepresentation().getPropertyCount() == 0)
-				{
-					found = true;
-					representations.removeNode(node);
-					nodes.remove(x);
-					x--;
-				}
-			}
-		}
-	}
 
 	/**
 	 * Get a reference to the adapter used by this stack.

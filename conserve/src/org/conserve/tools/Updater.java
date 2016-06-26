@@ -130,15 +130,12 @@ public class Updater
 						values.add(propertyId);
 					}
 				}
-				// add all non-primitive null values to the deleteList
+				// add all null values to the deleteList
 				for (int y = 0; y < rep.getPropertyCount(); y++)
 				{
-					if (!rep.isPrimitive(y))
+					if (rep.getPropertyValue(y) == null)
 					{
-						if (rep.getPropertyValue(y) == null)
-						{
-							deleteList.add(rep.getPropertyName(y));
-						}
+						deleteList.add(rep.getPropertyName(y));
 					}
 				}
 				// delete complex values, if they exists

@@ -21,13 +21,10 @@ package org.conserve;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLNonTransientConnectionException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -1696,15 +1693,7 @@ public class Persist
 			}
 			return res;
 		}
-		catch (IllegalAccessException e)
-		{
-			throw new SQLException(e);
-		}
-		catch (InvocationTargetException e)
-		{
-			throw new SQLException(e);
-		}
-		catch (ClassNotFoundException e)
+		catch (IllegalAccessException | InvocationTargetException | ClassNotFoundException e)
 		{
 			throw new SQLException(e);
 		}
@@ -1722,7 +1711,10 @@ public class Persist
 				if (nuProperty != null)
 				{
 					orig.setPropertyValue(x, nuProperty);
-					origCache.storeObject(orig.getTableName(), nuProperty, nuCache.getDatabaseId(nuProperty));
+					if(orig.isReferenceType(x))
+					{
+						origCache.storeObject(orig.getTableName(), nuProperty, nuCache.getDatabaseId(nuProperty));
+					}
 				}
 			}
 			else if (nuProperty == null)
@@ -1889,28 +1881,32 @@ public class Persist
 				for (int x = 0; x < functions.length; x++)
 				{
 					Class<? extends Number> n = functions[x].getReturnType(stack);
-					if (functions[x] instanceof Count || functions[x] instanceof Sum)
+					if (functions[x] instanceof Count)
 					{
-						// count is always Long, sum is always either Long or
-						// Double.
-						if (n.equals(Long.class))
+						// count is always Long
+						res[x] = new Long(0);
+					}
+					else if (functions[x] instanceof Sum)
+					{
+						//sum is always either Long or Double.
+						if (n.equals(Double.class))
 						{
-							res[x] = new Long(0);
+							res[x] = new Double(0);
 						}
 						else
 						{
-							res[x] = new Double(0);
+							res[x] = new Long(0);
 						}
 					}
 					else
 					{
 						// average, max, and min of an empty set does not make
 						// sense
-						if (n.equals(Float.class))
+						if (n.equals(Float.class) || n.equals(float.class))
 						{
 							res[x] = Float.NaN;
 						}
-						else if (n.equals(Double.class))
+						else if (n.equals(Double.class) || n.equals(double.class))
 						{
 							res[x] = Double.NaN;
 						}
@@ -1925,11 +1921,7 @@ public class Persist
 				}
 			}
 		}
-		catch (NoSuchMethodException e)
-		{
-			throw new SQLException(e);
-		}
-		catch (SecurityException e)
+		catch (NoSuchMethodException | SecurityException e)
 		{
 			throw new SQLException(e);
 		}
@@ -1974,6 +1966,11 @@ public class Persist
 		else if (number == Float.class || number == float.class)
 		{
 			res = rs.getFloat(column);
+		}
+		else if (number == Character.class || number == char.class)
+		{
+			//characters aren't numbers, so get the integer instead
+			res = rs.getInt(column);
 		}
 		else
 		{

@@ -128,7 +128,7 @@ public class IdStatementGenerator
 		List<String> ids = new ArrayList<String>();
 		ids.addAll(joinTableIds);
 		ids.addAll(joinPropertyTableIds);
-		return asGenerator.generate(tables, ids, relationDescriptors);
+		return asGenerator.generate(tables, ids);
 	}
 
 	public void addPropertyTableToJoin(String tableName, String asName)

@@ -60,17 +60,6 @@ public class NameGenerator
 				// if instead it starts with getXXX, chop of the first letter
 				res = res.substring(1);
 			}
-			else if (methodName.startsWith("set"))
-			{
-				// if instead it starts with setXXX, chop of the first letter
-				res = res.substring(1);
-				// find the matching accessor in the hierarchy tree
-				Method accessor = getAccessor(m.getDeclaringClass(), res);
-				if (accessor != null)
-				{
-					res = getColumnName(accessor);
-				}
-			}
 			StringBuilder candidateName = new StringBuilder(res.toUpperCase());
 			while (isForbiddenColumnName(candidateName.toString()))
 			{
@@ -80,28 +69,6 @@ public class NameGenerator
 		}
 	}
 
-	private static Method getAccessor(Class<?> declaringClass, String subName)
-	{
-		Method res = null;
-		if (declaringClass != null)
-		{
-			Method[] methods = declaringClass.getDeclaredMethods();
-			for (Method m : methods)
-			{
-				if (m.getName().compareTo("is" + subName) == 0
-						|| m.getName().compareTo("get" + subName) == 0)
-				{
-					res = m;
-					break;
-				}
-			}
-			if (res == null)
-			{
-				res = getAccessor(declaringClass.getSuperclass(), subName);
-			}
-		}
-		return res;
-	}
 
 	/*
 	 * Get a table name based on the canonical name of the class or annotation,

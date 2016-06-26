@@ -76,15 +76,6 @@ public class InheritanceChangeDescription
 
 
 	/**
-	 * @param realDeleted
-	 */
-	public void addRemovedNodeList(List<Node> realDeleted)
-	{
-		removedSuperClasses.add(realDeleted);		
-	}
-
-
-	/**
 	 * True if the inheritance model has changed so much that checking for changes in the actual object is pointless.
 	 * 
 	 * @return

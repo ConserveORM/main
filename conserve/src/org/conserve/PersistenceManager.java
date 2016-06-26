@@ -266,7 +266,7 @@ public class PersistenceManager
 	 * @return true if the object existed and was deleted, false otherwise.
 	 * @throws SQLExcpetion
 	 */
-	public boolean deleteObject(Object toDelete, ConnectionWrapper cw) throws SQLException
+	public boolean deleteObject(ConnectionWrapper cw, Object toDelete) throws SQLException
 	{
 		boolean res = false;
 		

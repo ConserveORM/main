@@ -50,16 +50,6 @@ public class AdapterBase
 	}
 
 	/**
-	 * Get the name of the JDBC driver this adapter is associated with.
-	 * 
-	 * @return a String, default is the empty string.
-	 */
-	public String getDriverName()
-	{
-		return "";
-	}
-
-	/**
 	 * Return the field type of a given class.
 	 * 
 	 * @param c

@@ -40,11 +40,11 @@ public class FieldDescriptor
 	
 	public String toShortString()
 	{
-		return shortName+"."+fieldName;
+		return getShortName()+"."+getFieldName();
 	}
 	public String toFullString()
 	{
-		return tableName+"."+fieldName;
+		return getTableName()+"."+getFieldName();
 	}
 
 	/**

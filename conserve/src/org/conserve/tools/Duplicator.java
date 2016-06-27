@@ -103,26 +103,12 @@ public class Duplicator
 	private void copyExternalProtection(ConnectionWrapper targetCw,
 			Object object) throws SQLException
 	{
-
-		String sourceTableName = null;
-		String targetTableName = null;
-		if (object.getClass().isArray())
+		//we know arrays are never externally referenced, so no need to copy their protection
+		String sourceTableName = NameGenerator.getTableName(object, source.getAdapter());
+		String targetTableName = NameGenerator.getTableName(object, target.getAdapter());
+		if (source.getProtectionManager().isProtectedExternal(sourceTableName, source.getId(object), sourceCw))
 		{
-			sourceTableName = NameGenerator.getArrayTablename(source.getAdapter());
-			targetTableName = NameGenerator.getArrayTablename(target.getAdapter());
-		}
-		else
-		{
-			sourceTableName = NameGenerator.getTableName(object,
-					source.getAdapter());
-			targetTableName = NameGenerator.getTableName(object,
-					target.getAdapter());
-		}
-		if (source.getProtectionManager().isProtectedExternal(sourceTableName,
-				source.getId(object), sourceCw))
-		{
-			target.getProtectionManager().protectObjectExternal(
-					targetTableName, target.getId(object),
+			target.getProtectionManager().protectObjectExternal(targetTableName, target.getId(object),
 					NameGenerator.getSystemicName(object.getClass()), targetCw);
 		}
 

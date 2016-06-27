@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -107,7 +108,7 @@ public class Persist
 	 */
 	Persist()
 	{
-
+		cache.start();
 	}
 
 	void initialize(Properties prop) throws SQLException
@@ -253,35 +254,6 @@ public class Persist
 	 * the where clause. If clazz is an interface, delete all implementing
 	 * classes that satisfy the where clause.
 	 * 
-	 * Convenience method that does not require the user to supply a
-	 * ConnectionWrapper.
-	 * 
-	 * @param clazz
-	 * @param where
-	 * @return the number of deleted objects.
-	 */
-	<T> int deleteObjects(Class<T> clazz, Clause where) throws SQLException
-	{
-		ConnectionWrapper cw = getConnectionWrapper();
-		int res = 0;
-		try
-		{
-			res = deleteObjects(cw, clazz, where);
-			cw.commitAndDiscard();
-		}
-		catch (Exception e)
-		{
-			cw.rollbackAndDiscard();
-			throw new SQLException(e);
-		}
-		return res;
-	}
-
-	/**
-	 * Delete all objects of class clazz (or any of its subclasses) that satisfy
-	 * the where clause. If clazz is an interface, delete all implementing
-	 * classes that satisfy the where clause.
-	 * 
 	 * @param clazz
 	 *            the class of objects to delete.
 	 * @param where
@@ -298,7 +270,7 @@ public class Persist
 			int deletedCount = 0;
 			String className = NameGenerator.getSystemicName(clazz);
 			// find all matching objects
-			HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(clazz, className, where, null, cw);
+			HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(cw,clazz, className, where, null);
 			for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
 			{
 				Class<?> c = en.getKey();
@@ -314,7 +286,7 @@ public class Persist
 					if (!protectionManager.isProtected(tableName, id, cw))
 					{
 						// if not, delete
-						deleteObject(c, id, cw);
+						deleteObject(cw,c, id);
 						deletedCount++;
 
 					}
@@ -329,35 +301,6 @@ public class Persist
 		return res;
 	}
 
-	/**
-	 * Delete an object, recursively clearing corresponding entries in
-	 * superclass tables.
-	 * 
-	 * @param clazz
-	 *            the type of object to delete.
-	 * @param id
-	 *            the database id to delete.
-	 * 
-	 * @return true if one object was deleted, false otherwise.
-	 * 
-	 * @throws SQLException
-	 */
-	public boolean deleteObject(Class<?> clazz, Long id) throws SQLException
-	{
-		ConnectionWrapper cw = getConnectionWrapper();
-		boolean res = false;
-		try
-		{
-			res = deleteObject(clazz, id, cw);
-			cw.commitAndDiscard();
-		}
-		catch (Exception e)
-		{
-			cw.rollbackAndDiscard();
-			throw new SQLException(e);
-		}
-		return res;
-	}
 
 	/**
 	 * Delete an object, recursively clearing corresponding entries in
@@ -374,18 +317,18 @@ public class Persist
 	 * 
 	 * @throws SQLException
 	 */
-	public boolean deleteObject(Class<?> clazz, Long id, ConnectionWrapper cw) throws SQLException
+	public boolean deleteObject(ConnectionWrapper cw,Class<?> clazz, Long id ) throws SQLException
 	{
 		boolean res = false;
 		String tableName = NameGenerator.getTableName(clazz, adapter);
 		// delete object itself and its properties
-		res = deleteObject(tableName, id, cw);
+		res = deleteObject(cw,tableName, id);
 
 		// get a list of all classes to delete from
 		List<Class<?>> toDelete = ObjectTools.getAllLegalReferenceTypes(clazz);
 		for (Class<?> c : toDelete)
 		{
-			res &= deleteObjectHelper(c, id, cw);
+			res &= deleteObjectHelper(cw,c, id);
 		}
 		return res;
 	}
@@ -399,7 +342,7 @@ public class Persist
 	 * @return true if one object was deleted, false otherwise.
 	 * @throws SQLException
 	 */
-	public boolean deleteObject(String tableName, Long id, ConnectionWrapper cw) throws SQLException
+	public boolean deleteObject(ConnectionWrapper cw,String tableName, Long id) throws SQLException
 	{
 		boolean res = false;
 		if (tableName.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
@@ -407,7 +350,7 @@ public class Persist
 			// this means the object is an array, delete the array
 			try
 			{
-				res = deleteArray(id, cw);
+				res = deleteArray(cw,id);
 			}
 			catch (ClassNotFoundException e)
 			{
@@ -427,7 +370,7 @@ public class Persist
 			res = ps.executeUpdate() == 1;
 			ps.close();
 			// properties of non-arrays are deleted after the object itself
-			deletePropertiesOf(id, cw);
+			deletePropertiesOf(cw,id);
 		}
 		return res;
 	}
@@ -440,7 +383,7 @@ public class Persist
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private boolean deleteArray(Long id, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
+	private boolean deleteArray(ConnectionWrapper cw,Long id) throws SQLException, ClassNotFoundException
 	{
 		boolean res = false;
 		// delete all the array's members before deleting the array itself
@@ -483,7 +426,7 @@ public class Persist
 					protectionManager.unprotectObjectInternal(compTable, compId, table, valueId, cw);
 					if (!protectionManager.isProtected(table, valueId, cw))
 					{
-						deleteObject(clazz, valueId, cw);
+						deleteObject(cw,clazz, valueId);
 					}
 				}
 			}
@@ -513,9 +456,9 @@ public class Persist
 		// all arrays also have an entry in the Object, Serializable, and
 		// Cloneable tables, so
 		// we must delete those as well.
-		deleteObjectHelper(Object.class, id, cw);
-		deleteObjectHelper(Serializable.class, id, cw);
-		deleteObjectHelper(Cloneable.class, id, cw);
+		deleteObjectHelper(cw,Object.class, id);
+		deleteObjectHelper(cw,Serializable.class, id);
+		deleteObjectHelper(cw,Cloneable.class, id);
 		return res;
 	}
 
@@ -530,7 +473,7 @@ public class Persist
 	 * @return
 	 * @throws SQLException
 	 */
-	private boolean deleteObjectHelper(Class<?> clazz, Long id, ConnectionWrapper cw) throws SQLException
+	private boolean deleteObjectHelper(ConnectionWrapper cw,Class<?> clazz, Long id) throws SQLException
 	{
 		boolean res = false;
 		if (clazz != null)
@@ -559,7 +502,7 @@ public class Persist
 	 *            the id of the object who's properties we are deleting.
 	 * @throws SQLException
 	 */
-	private void deletePropertiesOf(Long id, ConnectionWrapper cw) throws SQLException
+	private void deletePropertiesOf(ConnectionWrapper cw,Long id) throws SQLException
 	{
 		// find all properties
 		StringBuilder statement = new StringBuilder("SELECT OWNER_TABLE,PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
@@ -592,12 +535,12 @@ public class Persist
 					if (propertyTable.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
 							|| propertyTable.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME) || propertyClassName.contains("["))
 					{
-						deleteObject(propertyTable, propertyId, cw);
+						deleteObject(cw,propertyTable, propertyId);
 					}
 					else
 					{
 						Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);
-						deleteObject(c, propertyId, cw);
+						deleteObject(cw,c, propertyId);
 					}
 				}
 				catch (ClassNotFoundException e)
@@ -631,7 +574,7 @@ public class Persist
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(Class<T> clazz, String className, Clause clause, Long id, ConnectionWrapper cw)
+	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, String className, Clause clause, Long id)
 			throws ClassNotFoundException, SQLException
 	{
 		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
@@ -690,7 +633,7 @@ public class Persist
 				// get the real class and id
 				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
 				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(null, subClassName, null, dbId, cw);
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw,null, subClassName, null, dbId);
 				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 				{
 					Class<?> c = en.getKey();
@@ -752,21 +695,9 @@ public class Persist
 	 * 
 	 * @throws SQLException
 	 */
-	void saveObject(Object object) throws SQLException
+	void saveObject(ConnectionWrapper cw, Object object) throws SQLException
 	{
-		ConnectionWrapper cw = getConnectionWrapper();
-		try
-		{
-			saveObject(cw, object, true, null);
-			cw.commitAndDiscard();
-		}
-		catch (Exception e)
-		{
-			// cancel the operation
-			cw.rollbackAndDiscard();
-			// re-throw the original exception
-			throw new SQLException(e);
-		}
+		saveObject(cw, object, true, null);
 	}
 
 	/**
@@ -853,37 +784,6 @@ public class Persist
 		return res;
 	}
 
-	/**
-	 * Return a list of objects of a given class (including subclasses and/or
-	 * implementing classes) that satisfy the given clause. Convenience method
-	 * that does not require the user to supply a ConnectionWrapper.
-	 * 
-	 * @param <T>
-	 *            the type of objects to return
-	 * @param clazz
-	 *            the class of objects to return, subclasses will also be
-	 *            returned.
-	 * @param clause
-	 *            the clause that all the returned objects must satisfy.
-	 * @return an ArrayList of the desired type.
-	 * @throws SQLException
-	 */
-	public <T> List<T> getObjects(Class<T> clazz, Clause... clause) throws SQLException
-	{
-		List<T> res = null;
-		ConnectionWrapper cw = getConnectionWrapper();
-		try
-		{
-			res = getObjects(cw, clazz, clause);
-			cw.commitAndDiscard();
-		}
-		catch (Exception e)
-		{
-			cw.rollbackAndDiscard();
-			throw new SQLException(e);
-		}
-		return res;
-	}
 
 	/**
 	 * Return a list of objects of a given class (including subclasses and/or
@@ -947,7 +847,7 @@ public class Persist
 						if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class)) && !(clazz.equals(Number.class)))
 						{
 							// get the subclass-specific data
-							getSubClassData(map, clazz, dbId, cw);
+							getSubClassData(cw,map, clazz, dbId);
 							// load the real class info
 							className = (String) map.get(Defaults.REAL_CLASS_COL);
 							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
@@ -1003,7 +903,7 @@ public class Persist
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> void getObjects(SearchListener<T> listener, Class<T> clazz, Clause... clauses) throws SQLException
+	public <T> void getObjects(ConnectionWrapper cw, SearchListener<T> listener, Class<T> clazz, Clause... clauses) throws SQLException
 	{
 		try
 		{
@@ -1011,10 +911,8 @@ public class Persist
 			{
 				clause.setQueryClass(clazz);
 			}
-			ConnectionWrapper cw = getConnectionWrapper();
 			if (!tableManager.tableExists(clazz, cw))
 			{
-				cw.discard();
 				return;
 			}
 
@@ -1086,7 +984,7 @@ public class Persist
 							if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class)) && !(clazz.equals(Number.class)))
 							{
 								// get the subclass-specific data
-								getSubClassData(map, clazz, dbId, cw);
+								getSubClassData(cw,map, clazz, dbId);
 								// load the real class info
 								className = (String) map.get(Defaults.REAL_CLASS_COL);
 								clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
@@ -1135,7 +1033,6 @@ public class Persist
 					break;
 				}
 			}
-			cw.discard();
 		}
 		catch (ClassNotFoundException e)
 		{
@@ -1143,36 +1040,6 @@ public class Persist
 		}
 	}
 
-	/**
-	 * Get the number of database objects of class clazz that satisfy the
-	 * clause. Convenience method that does not require the user to supply a
-	 * ConnectionWrapper.
-	 * 
-	 * @param <T>
-	 * @param clazz
-	 *            the class to look for.
-	 * @param clause
-	 *            the clause that must be satisfied.
-	 * @return the number of objects of class clazz and its subclasses that
-	 *         satisfy clause.
-	 * @throws SQLException
-	 */
-	<T> long getCount(Class<T> clazz, Clause... clause) throws SQLException
-	{
-		long res = 0;
-		ConnectionWrapper cw = getConnectionWrapper();
-		try
-		{
-			res = getCount(cw, clazz, clause);
-		}
-		catch (Exception e)
-		{
-			cw.rollback();
-			throw new SQLException(e);
-		}
-		cw.discard();
-		return res;
-	}
 
 	/**
 	 * Get the number of database objects of class clazz that satisfy the
@@ -1283,7 +1150,7 @@ public class Persist
 					// load the real class
 					clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 					// get the subclass-specific data
-					getSubClassData(map, clazz, dbId, cw);
+					getSubClassData(cw,map, clazz, dbId);
 					// load the real class info
 					className = (String) map.get(Defaults.REAL_CLASS_COL);
 				}
@@ -1452,7 +1319,7 @@ public class Persist
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	private <T> void getSubClassData(HashMap<String, Object> map, Class<T> clazz, Long dbId, ConnectionWrapper cw)
+	private <T> void getSubClassData(ConnectionWrapper cw, HashMap<String, Object> map, Class<T> clazz, Long dbId)
 			throws ClassNotFoundException, SQLException
 	{
 		String realClassName = (String) map.get(Defaults.REAL_CLASS_COL);
@@ -1478,7 +1345,7 @@ public class Persist
 		if (subClassName != null)
 		{
 			Class<?> subClass = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
-			getSubClassData(map, subClass, dbId, cw);
+			getSubClassData(cw,map, subClass, dbId);
 		}
 		else
 		{
@@ -1547,13 +1414,20 @@ public class Persist
 		{
 			// for all the column names, set the corresponding property
 			String key = md.getColumnName(x + 1);
-			if (adapter.tableNamesAreLowerCase())
+			if (adapter.getTableNamesAreLowerCase())
 			{
 				key = key.toUpperCase();
 			}
 			if (map.get(key) == null)
 			{
-				map.put(key, rs.getObject(x + 1));
+				Object o = rs.getObject(x+1);
+				//check if the database has converted a tinyint into a string out of sheer stupidity
+				if(md.getColumnType(x+1)==Types.TINYINT && o instanceof String)
+				{
+					//we must be dealing with a poorly implemented driver
+					o = Short.parseShort(o.toString());
+				}
+				map.put(key, o);
 			}
 		}
 	}
@@ -1691,6 +1565,7 @@ public class Persist
 				ArrayList<Long> idList = new ArrayList<Long>();
 				refresh(orig, cache, nu, tmpCache, idList);
 			}
+			tmpCache.stop();
 			return res;
 		}
 		catch (IllegalAccessException | InvocationTargetException | ClassNotFoundException e)

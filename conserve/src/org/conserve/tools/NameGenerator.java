@@ -110,7 +110,7 @@ public class NameGenerator
 		{
 			res = res.substring(1);
 		}
-		if(adapter.tableNamesAreLowerCase())
+		if(adapter.getTableNamesAreLowerCase())
 		{
 			res = res.toLowerCase();
 		}
@@ -138,7 +138,7 @@ public class NameGenerator
 				count++;
 			}
 		}
-		if(adapter.tableNamesAreLowerCase())
+		if(adapter.getTableNamesAreLowerCase())
 		{
 			res = res.toLowerCase();
 		}
@@ -182,7 +182,7 @@ public class NameGenerator
 	public static String getArrayTablename(AdapterBase adapter)
 	{
 		String res = Defaults.ARRAY_TABLENAME;
-		if(adapter.tableNamesAreLowerCase())
+		if(adapter.getTableNamesAreLowerCase())
 		{
 			res = res.toLowerCase();
 		}

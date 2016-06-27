@@ -249,10 +249,16 @@ public class PersistenceManager
 	{
 		boolean res = false;
 		
-		Long dbId = persist.getCache().getDatabaseId(toDelete);
-		if(dbId != null)
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
 		{
-			res = persist.deleteObject(toDelete.getClass(), dbId);
+			res = deleteObject(cw,toDelete);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
 		}
 		
 		return res;		
@@ -273,7 +279,7 @@ public class PersistenceManager
 		Long dbId = persist.getCache().getDatabaseId(toDelete);
 		if(dbId != null)
 		{
-			res = persist.deleteObject(toDelete.getClass(), dbId,cw);
+			res = persist.deleteObject(cw,toDelete.getClass(), dbId);
 		}
 		
 		return res;		
@@ -288,7 +294,19 @@ public class PersistenceManager
 	 */
 	public int deleteObjects(Object pattern) throws SQLException
 	{
-		return persist.deleteObjects(pattern.getClass(), new Equal(pattern));
+		int res = 0;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = deleteObjects(cw,pattern);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
 	/**
@@ -318,7 +336,19 @@ public class PersistenceManager
 	 */
 	public <T> int deleteObjects(Class<T> clazz, Clause where) throws SQLException
 	{
-		return persist.deleteObjects(clazz, where);
+		int res = 0;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = deleteObjects(cw,clazz,where);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
 	/**
@@ -351,7 +381,17 @@ public class PersistenceManager
 	 */
 	public void saveObject(Object object) throws SQLException
 	{
-		persist.saveObject(object);
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			saveObject(cw,object);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
 	}
 
 	/**
@@ -380,10 +420,22 @@ public class PersistenceManager
 	 * @return a list of objects that match the pattern.
 	 * @throws SQLException
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> List<T> getObjects(T pattern) throws SQLException
 	{
-		return persist.getObjects((Class<T>) pattern.getClass(), new Equal(pattern, (Class<T>) pattern.getClass()));
+		List<T>res = null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getObjects(cw,pattern);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
+	
 	}
 
 
@@ -404,7 +456,19 @@ public class PersistenceManager
 	 */
 	public <T> List<T> getObjects(Class<T> clazz, Clause... clause) throws SQLException
 	{
-		return persist.getObjects(clazz, clause);
+		List<T> res = null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getObjects(cw,clazz,clause);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
 	/**
@@ -463,7 +527,17 @@ public class PersistenceManager
 	 */
 	public <T> void getObjects(Class<T> clazz, SearchListener<T> listener, Clause... clauses) throws SQLException
 	{
-		persist.getObjects(listener, clazz, clauses);
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			persist.getObjects(cw,listener, clazz, clauses);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
 	}
 
 	/**
@@ -553,7 +627,19 @@ public class PersistenceManager
 	 */
 	public <T> long getCount(Class<T> clazz, Clause... clause) throws SQLException
 	{
-		return persist.getCount(clazz, clause);
+		long res = 0;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getCount(cw,clazz,clause);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
 	/**
@@ -586,7 +672,7 @@ public class PersistenceManager
 	 * @param cw
 	 *            the connection wrapper to use for this operation.
 	 * @return the matching object.
-	 * @throws ClassNotFoundException
+	 * 
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
@@ -701,11 +787,11 @@ public class PersistenceManager
 			ConnectionWrapper cw = null;
 			try
 			{
-				cw = persist.getConnectionWrapper();
+				cw = getConnectionWrapper();
 				// Search using o as example, make sure returned object exists
 				// and has same table id number.
-				HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(o.getClass(), null, new Equal(o),
-						null, cw);
+				HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(cw,o.getClass(), null, new Equal(o),
+						null);
 				List<Long> ids = res.get(o.getClass());
 				if (ids!=null && ids.contains(dbId))
 				{

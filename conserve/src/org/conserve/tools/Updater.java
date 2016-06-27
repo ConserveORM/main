@@ -312,8 +312,8 @@ public class Updater
 								propertyId)))
 				{
 					// Delete them if they have no other protection
-					adapter.getPersist().deleteObject(component.getClass(),
-							propertyId, cw);
+					adapter.getPersist().deleteObject(cw,component.getClass(),
+							propertyId);
 				}
 			}
 		}
@@ -399,9 +399,9 @@ public class Updater
 						.isProtected(tableName,
 								actualNameId.getId(), cw))
 				{
-					persist.deleteObject(
+					persist.deleteObject(cw,
 							actualNameId.getRepresentedClass(),
-							actualNameId.getId(), cw);
+							actualNameId.getId());
 				}
 			}
 		}

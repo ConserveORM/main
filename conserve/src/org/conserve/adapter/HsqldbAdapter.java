@@ -60,10 +60,10 @@ public class HsqldbAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#allowsEmptyStatements()
+	 * @see org.conserve.adapter.AdapterBase#getAllowsEmptyStatements()
 	 */
 	@Override
-	public boolean allowsEmptyStatements()
+	public boolean getAllowsEmptyStatements()
 	{
 		return false;
 	}

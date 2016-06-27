@@ -43,10 +43,10 @@ public class PostgreSqlAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#tableNamesAreLowerCase()
+	 * @see org.conserve.adapter.AdapterBase#getTableNamesAreLowerCase()
 	 */
 	@Override
-	public boolean tableNamesAreLowerCase()
+	public boolean getTableNamesAreLowerCase()
 	{
 		return true;
 	}
@@ -80,10 +80,10 @@ public class PostgreSqlAdapter extends AdapterBase
 
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#allowsEmptyStatements()
+	 * @see org.conserve.adapter.AdapterBase#getAllowsEmptyStatements()
 	 */
 	@Override
-	public boolean allowsEmptyStatements()
+	public boolean getAllowsEmptyStatements()
 	{
 		return false;
 	}

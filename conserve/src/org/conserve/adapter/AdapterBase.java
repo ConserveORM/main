@@ -393,7 +393,7 @@ public class AdapterBase
 	 * 
 	 * @return true if TABLE_NAME should be converted to table_name before use.
 	 */
-	public boolean tableNamesAreLowerCase()
+	public boolean getTableNamesAreLowerCase()
 	{
 		return false;
 	}
@@ -427,7 +427,7 @@ public class AdapterBase
 	 * 
 	 * @return true if empty insert statements can be used.
 	 */
-	public boolean allowsEmptyStatements()
+	public boolean getAllowsEmptyStatements()
 	{
 		return true;
 	}

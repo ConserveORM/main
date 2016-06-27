@@ -394,7 +394,7 @@ public class TableManager
 	 */
 	private boolean columnExists(String tableName, String columnName, ConnectionWrapper cw) throws SQLException
 	{
-		if (adapter.tableNamesAreLowerCase())
+		if (adapter.getTableNamesAreLowerCase())
 		{
 			tableName = tableName.toLowerCase();
 			columnName = columnName.toLowerCase();
@@ -423,7 +423,7 @@ public class TableManager
 	 */
 	public boolean tableExists(String tableName, ConnectionWrapper cw) throws SQLException
 	{
-		if (adapter.tableNamesAreLowerCase())
+		if (adapter.getTableNamesAreLowerCase())
 		{
 			tableName = tableName.toLowerCase();
 		}
@@ -1079,7 +1079,7 @@ public class TableManager
 				if (!pm.isProtected(innerRes.getString(2), innerRes.getLong(3), cw))
 				{
 					Class<?> lookUpClass = ObjectTools.lookUpClass(getClassForTableName(innerRes.getString(2), cw), adapter);
-					adapter.getPersist().deleteObject(lookUpClass, innerRes.getLong(3), cw);
+					adapter.getPersist().deleteObject(cw,lookUpClass, innerRes.getLong(3));
 				}
 			}
 			innerStmt.close();
@@ -1217,7 +1217,7 @@ public class TableManager
 	private void renameColumn(Class<?>clazz,String tableName, String oldName, String nuName, ConnectionWrapper cw) throws SQLException
 	{
 		// check that the old column exists
-		if (adapter.tableNamesAreLowerCase())
+		if (adapter.getTableNamesAreLowerCase())
 		{
 			tableName = tableName.toLowerCase();
 		}
@@ -1250,7 +1250,7 @@ public class TableManager
 				sameColums.addAll(nuCols.keySet());
 				// create new table, temporary name
 				String temporaryName = "T__" + tableName;
-				if (adapter.tableNamesAreLowerCase())
+				if (adapter.getTableNamesAreLowerCase())
 				{
 					temporaryName = temporaryName.toLowerCase();
 				}
@@ -1837,7 +1837,7 @@ public class TableManager
 				if (!pm.isProtected(propertyTable, propertyId, cw))
 				{
 					// then delete the entity
-					adapter.getPersist().deleteObject(sourceClass, propertyId, cw);
+					adapter.getPersist().deleteObject(cw,sourceClass, propertyId);
 				}
 			}
 		}
@@ -1976,7 +1976,7 @@ public class TableManager
 
 			// 1. rename old table to a temporary name
 			String tempTableName = "T__" + tableName;
-			if (adapter.tableNamesAreLowerCase())
+			if (adapter.getTableNamesAreLowerCase())
 			{
 				tempTableName = tempTableName.toLowerCase();
 			}
@@ -2128,13 +2128,13 @@ public class TableManager
 				{
 					// then delete the entity
 					Class<?> c = ObjectTools.lookUpClass(propertyClassName, adapter);
-					adapter.getPersist().deleteObject(c, propertyId, cw);
+					adapter.getPersist().deleteObject(cw,c, propertyId);
 				}
 			}
 			else
 			{
 				// we're dealing with an array, delete it especially
-				adapter.getPersist().deleteObject(propertyTable, propertyId, cw);
+				adapter.getPersist().deleteObject(cw,propertyTable, propertyId);
 			}
 		}
 		rs.close();

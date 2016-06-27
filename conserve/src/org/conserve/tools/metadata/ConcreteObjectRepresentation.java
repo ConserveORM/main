@@ -368,7 +368,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			statement.append(getTableName());
 			int nonNullCount = this.getNonNullPropertyCount();
 			statement.append(" (");
-			if (nonNullCount == 0 && !adapter.allowsEmptyStatements())
+			if (nonNullCount == 0 && !adapter.getAllowsEmptyStatements())
 			{
 				if (this.getPropertyCount() > 0)
 				{

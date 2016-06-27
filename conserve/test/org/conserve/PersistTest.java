@@ -263,6 +263,7 @@ public class PersistTest
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		persist.dropTable(Object.class);
+		
 
 		// create a test object
 		SimpleObject so = new SimpleObject();

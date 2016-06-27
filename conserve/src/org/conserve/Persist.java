@@ -684,22 +684,7 @@ public class Persist
 		ps.close();
 		return res;
 	}
-
-	/**
-	 * Add an object to the database. If the object already exists, it will be
-	 * updated. Convenience method that does not require the user to supply a
-	 * ConnectionWrapper.
-	 * 
-	 * @param object
-	 *            the object to save.
-	 * 
-	 * @throws SQLException
-	 */
-	void saveObject(ConnectionWrapper cw, Object object) throws SQLException
-	{
-		saveObject(cw, object, true, null);
-	}
-
+	
 	/**
 	 * Add an object to the database. If the object already exists, it will be
 	 * updated.
@@ -711,9 +696,9 @@ public class Persist
 	 * 
 	 * @throws SQLException
 	 */
-	public void saveObjectUnprotected(ConnectionWrapper cw, Object object) throws SQLException, IOException
+	public Long saveObjectUnprotected(ConnectionWrapper cw, Object object) throws SQLException, IOException
 	{
-		saveObject(cw, object, false, null);
+		return saveObject(cw, object, false, null);
 	}
 
 	/**
@@ -1551,6 +1536,10 @@ public class Persist
 		{
 			T res = obj;
 			Long dbId = cache.getDatabaseId(obj);
+			if(dbId == null)
+			{
+				throw new IllegalArgumentException("Could not find object in cache");
+			}
 			ObjectRowMap tmpCache = new ObjectRowMap();
 			tmpCache.start();
 			Object nuObject = this.getObject(cw, obj.getClass(), dbId, tmpCache);

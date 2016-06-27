@@ -19,6 +19,7 @@
 package org.conserve.select.discriminators;
 
 import java.lang.reflect.Constructor;
+import java.sql.SQLException;
 
 import org.conserve.select.ConditionalClause;
 
@@ -154,9 +155,10 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 	 * @param selectionClass
 	 *            class to select from.
 	 * @return an exact copy of the selector, but with a new selection object.
+	 * @throws SQLException 
 	 */
 	public Selector duplicate(Object selectionObject,
-			Class<?> selectionClass)
+			Class<?> selectionClass) throws SQLException
 	{
 			try
 			{
@@ -165,8 +167,7 @@ public abstract class Selector extends ConditionalClause implements Cloneable
 			}
 			catch (Exception e)
 			{
-				// we use a catch-all exception here, since there is no way to recover from an error.
-				return null;
+				throw new SQLException(e);
 			}
 	}
 

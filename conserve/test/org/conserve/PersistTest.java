@@ -5220,4 +5220,33 @@ public class PersistTest
 		
 		pm.close();
 	}
+	
+	/**
+	 * Test if getting an object by its database ID works.
+	 */
+	@Test
+	public void testGetObjectById() throws Exception
+	{
+		//create some dummy objects
+		for(int x = 0;x<50;x++)
+		{
+			PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+			SimpleObject so = new SimpleObject();
+			long id = pm.saveObject(so);
+			so.setAge(id);
+			so.setName(Long.toString(id));
+			long id2 = pm.saveObject(so);
+			//make sure the id is the same
+			assertEquals(id,id2);
+			pm.close();
+			
+			pm = new PersistenceManager(driver,database,login,password);
+			ConnectionWrapper cw = pm.getConnectionWrapper();
+			SimpleObject sos = pm.getObject(cw,SimpleObject.class,id);
+			assertEquals(so.getAge(),sos.getAge());
+			assertEquals(so.getName(),sos.getName());
+		
+			pm.close();
+		}
+	}
 }

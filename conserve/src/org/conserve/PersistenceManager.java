@@ -379,12 +379,13 @@ public class PersistenceManager
 	 * 
 	 * @throws SQLException
 	 */
-	public void saveObject(Object object) throws SQLException
+	public Long saveObject(Object object) throws SQLException
 	{
+		Long res = null;
 		ConnectionWrapper cw = getConnectionWrapper();
 		try
 		{
-			saveObject(cw,object);
+			res = saveObject(cw,object);
 			cw.commitAndDiscard();
 		}
 		catch(Exception e)
@@ -392,6 +393,7 @@ public class PersistenceManager
 			cw.rollbackAndDiscard();
 			throw new SQLException(e);
 		}
+		return res;
 	}
 
 	/**
@@ -405,9 +407,9 @@ public class PersistenceManager
 	 * 
 	 * @throws SQLException
 	 */
-	public void saveObject(ConnectionWrapper cw, Object object) throws SQLException
+	public Long saveObject(ConnectionWrapper cw, Object object) throws SQLException
 	{
-		persist.saveObject(cw, object, true, null);
+		return persist.saveObject(cw, object, true, null);
 	}
 
 	/**
@@ -574,7 +576,19 @@ public class PersistenceManager
 	@SuppressWarnings("unchecked")
 	public <T> long getCount(T pattern) throws SQLException
 	{
- 		return getCount((Class<T>) pattern.getClass(), new Equal(pattern));
+		long res = 0;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getCount(cw,pattern);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
 	/**
@@ -725,11 +739,6 @@ public class PersistenceManager
 		{
 			res = refresh(cw, obj);
 			cw.commitAndDiscard();
-		}
-		catch (IllegalArgumentException iae)
-		{
-			// rethrow
-			throw iae;
 		}
 		catch (Exception e)
 		{

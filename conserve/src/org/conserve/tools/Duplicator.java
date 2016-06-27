@@ -81,11 +81,7 @@ public class Duplicator
 				currentId = getSmallestIdLargerThan(currentId);
 			}
 		}
-		catch (ClassNotFoundException e)
-		{
-			throw new SQLException(e);
-		}
-		catch (IOException e)
+		catch (ClassNotFoundException | IOException e)
 		{
 			throw new SQLException(e);
 		}

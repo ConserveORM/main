@@ -345,22 +345,6 @@ public class ArrayLoader
 	}
 
 	/**
-	 * @return the componentClassName
-	 */
-	public String getComponentClassName()
-	{
-		return componentClassName;
-	}
-
-	/**
-	 * @return the relationalTableName
-	 */
-	public String getRelationalTableName()
-	{
-		return relationalTableName;
-	}
-
-	/**
 	 * @return the relationalIds
 	 */
 	public ArrayList<Long> getRelationalIds()

@@ -18,8 +18,11 @@
  *******************************************************************************/
 package org.conserve.tools;
 
+import java.sql.Clob;
+import java.sql.Blob;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * 
@@ -78,11 +81,21 @@ public class CompabilityCalculator
 		directs.add(java.sql.Timestamp.class);
 	}
 
+	/**
+	 * Return true if the class represents a floating point type (double, float, or their object counterparts).
+	 * @param c
+	 * @return
+	 */
 	private static boolean isFloat(Class<?> c)
 	{
 		return floats.contains(c);
 	}
 
+	/**
+	 * Returns true if the class represents an integer type (long, int, short, byte, char, boolean, or their object counterparts).
+	 * @param c
+	 * @return
+	 */
 	private static boolean isInteger(Class<?> c)
 	{
 		return ints.contains(c);
@@ -109,31 +122,40 @@ public class CompabilityCalculator
 	
 	/**
 	 * Get the bit size of an integer type.
+	 * 
 	 * @param c
 	 * @return
 	 */
-	private static int sizeof(Class<?>c)
+	private static int sizeof(Class<?> c)
 	{
-		if(c.equals(Boolean.class) || c.equals(boolean.class))
+		if (c.equals(Boolean.class) || c.equals(boolean.class))
 		{
 			return 1;
 		}
-		else if(c.equals(Byte.class) || c.equals(byte.class))
+		else if (c.equals(Byte.class) || c.equals(byte.class))
 		{
 			return 8;
 		}
-		else if(c.equals(Integer.class) || c.equals(int.class))
+		else if (c.equals(Integer.class) || c.equals(int.class))
 		{
 			return 32;
 		}
-		else if(c.equals(Long.class) || c.equals(long.class))
+		else if (c.equals(Long.class) || c.equals(long.class))
+		{
+			return 64;
+		}
+		else if (c.equals(Short.class) || c.equals(short.class) || c.equals(Character.class) || c.equals(char.class))
+		{
+			return 16;
+		}
+		else if (c.equals(Double.class)||c.equals(double.class))
 		{
 			return 64;
 		}
 		else
 		{
-			//short or char
-			return 16;
+			//float 
+			return 32;
 		}
 	}
 
@@ -155,11 +177,11 @@ public class CompabilityCalculator
 		{
 			if(isInteger(fromClass)&&isInteger(toClass))
 			{
-				return sizeof(fromClass)<sizeof(toClass);
+				return sizeof(fromClass)<=sizeof(toClass);
 			}
 			else if(isFloat(fromClass)&&isFloat(toClass))
 			{
-				return toClass.equals(Double.class) || toClass.equals(double.class);
+				return sizeof(fromClass)<=sizeof(toClass);
 			}
 			else
 			{
@@ -173,16 +195,12 @@ public class CompabilityCalculator
 			//one primitive and one non-primitive, no conversion
 			return false;
 		}
-		if(directs.contains(fromClass)||directs.contains(toClass))
+		// date and time can be converted to timestamp, all others are off
+		if (toClass.equals(java.sql.Timestamp.class) && (fromClass.equals(java.sql.Time.class) || fromClass.equals(java.sql.Date.class)))
 		{
-			//date and time can be converted to timestamp, all others are off
-			if(toClass.equals(java.sql.Timestamp.class) && (fromClass.equals(java.sql.Time.class) || fromClass.equals(java.sql.Date.class)))
-			{
-				return true;
-			}
-			return false;
+			return true;
 		}
-		if(fromClass.isEnum() && toClass.equals(String.class))
+		if (fromClass.isEnum() && toClass.equals(String.class))
 		{
 			//enums can be converted to strings, but not the other way around
 			return true;
@@ -191,6 +209,20 @@ public class CompabilityCalculator
 		{
 			//arrays can not be converted
 			return false;
+		}		
+		//blobs and clobs can not be converted to or from
+		if(fromClass.equals(Blob.class)  || toClass.equals(Blob.class))
+		{
+			return (toClass.equals(fromClass));
+		}
+		if(fromClass.equals(Clob.class) || toClass.equals(Clob.class))
+		{
+			return (toClass.equals(fromClass));
+		}
+		//enum can only be converted to another enum
+		if(fromClass.isEnum() || toClass.isEnum())
+		{
+			return (fromClass.isEnum() == toClass.isEnum());
 		}
 		
 		//if we got this far it's a reference type
@@ -198,7 +230,7 @@ public class CompabilityCalculator
 		if(ObjectTools.isA(fromClass, toClass)||ObjectTools.isA(toClass,fromClass))
 		{
 			return true;
-		}		
+		}
 		//if either reference is to an interface, conversion may be possible
 		if(fromClass.isInterface() || toClass.isInterface())
 		{

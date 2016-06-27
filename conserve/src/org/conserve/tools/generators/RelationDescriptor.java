@@ -27,7 +27,6 @@ public class RelationDescriptor
 	
 	private FieldDescriptor first;
 	private FieldDescriptor second;
-	private Object value;
 
 	public RelationDescriptor(FieldDescriptor first,FieldDescriptor second)
 	{
@@ -49,20 +48,13 @@ public class RelationDescriptor
 	{
 		return second;
 	}
-	/**
-	 * @return the value
-	 */
-	public Object getValue()
-	{
-		return value;
-	}
 	
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder(first.toShortString());
+		StringBuilder sb = new StringBuilder(getFirst().toShortString());
 		sb.append(" = ");
-		sb.append(second.toShortString());
+		sb.append(getSecond().toShortString());
 		return sb.toString();
 	}
 }

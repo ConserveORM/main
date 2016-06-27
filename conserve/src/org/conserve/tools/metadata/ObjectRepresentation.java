@@ -527,31 +527,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return this.getters.get(x);
 	}
 
-	/**
-	 * Get the accessor for a named property.
-	 * @param name the name of the property to return.
-	 * 
-	 * @return
-	 */
-	public Method getAccessor(String name)
-	{
-		int index = props.indexOf(name);
-		if (index >= 0)
-		{
-			return getAccessor(index);
-		}
-		return null;
-	}
-	
-	public Object getValue(String name)
-	{
-		int index = props.indexOf(name);
-		if (index >= 0)
-		{
-			return values.get(index);
-		}
-		return null;
-	}
 
 	public Class<?> getReturnType(String name)
 	{
@@ -575,15 +550,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 
 	}
 	
-	public boolean isReferenceType(String prop)
-	{
-		int index = props.indexOf(prop);
-		if (index >= 0)
-		{
-			return isReferenceType(index);
-		}
-		return false;
-	}
 
 	public String getTableName()
 	{
@@ -623,17 +589,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		{
 			return null;// not valid, should not happen
 		}
-	}
-
-	/**
-	 * Add a value as if it was a bona-fide property of the represented object.
-	 * 
-	 * @param column
-	 * @param value
-	 */
-	public void addValuePair(String column, Object value)
-	{
-		addValueTrio(column, value, value.getClass());
 	}
 
 	/**

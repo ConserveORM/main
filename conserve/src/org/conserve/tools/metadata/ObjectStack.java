@@ -758,16 +758,6 @@ public class ObjectStack
 		}
 
 		/**
-		 * Remove a super-class.
-		 * 
-		 * @param node
-		 */
-		public void removeSuper(Node node)
-		{
-			superclasses.remove(node);
-		}
-		
-		/**
 		 * @see java.lang.Object#toString()
 		 */
 		@Override
@@ -877,23 +867,7 @@ public class ObjectStack
 				addNode(res, t);
 			}
 		}
-
-		/**
-		 * Remove a node from the tree.
-		 * 
-		 * @param node
-		 */
-		public void removeNode(Node node)
-		{
-			List<Node> all = allNodes();
-			for (Node n : all)
-			{
-				n.removeSuper(node);
-			}
-		}
-
 	}
-
 
 	/**
 	 * Get a reference to the adapter used by this stack.

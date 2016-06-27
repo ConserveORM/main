@@ -134,29 +134,20 @@ public class DataConnectionPool
 			}
 			if (res == null)// try increasing the pool size if no connection was available
 			{
-				try
+				this.increasePoolSizePercent(10);// increase poolsize with
+													// 10%
+				x = this.lastConnection;
+				for (int y = 0; y < pool.size(); y++)
 				{
-					this.increasePoolSizePercent(10);// increase poolsize with
-														// 10%
-					x = this.lastConnection;
-					for (int y = 0; y < pool.size(); y++)
+					x++;
+					x %= pool.size();
+					if (!pool.get(x).isTaken())
 					{
-						x++;
-						x %= pool.size();
-						if (!pool.get(x).isTaken())
-						{
-							res = pool.get(x);
-							res.setTaken(true);
-							this.lastConnection = x;
-							break;
-						}
+						res = pool.get(x);
+						res.setTaken(true);
+						this.lastConnection = x;
+						break;
 					}
-
-				}
-				catch (Exception e)
-				{
-					LOGGER.log(Level.WARNING, "Exception: ", e);
-					// okay, there's nothing more to do
 				}
 			}
 			if (res == null)

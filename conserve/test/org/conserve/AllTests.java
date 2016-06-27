@@ -1,5 +1,6 @@
 package org.conserve;
 
+import org.conserve.tools.CompabilityCalculatorTest;
 import org.conserve.tools.ObjectRepresentationTest;
 import org.conserve.tools.ObjectToolsTest;
 import org.conserve.tools.UniqueIdGeneratorTest;
@@ -20,7 +21,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	SqLitePersistTest.class, 
 	ObjectRepresentationTest.class, 
 	ObjectToolsTest.class, 
-	UniqueIdGeneratorTest.class })
+	UniqueIdGeneratorTest.class,
+	CompabilityCalculatorTest.class})
 public class AllTests
 {
 

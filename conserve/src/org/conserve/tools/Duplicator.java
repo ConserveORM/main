@@ -193,12 +193,13 @@ public class Duplicator
 		PreparedStatement ps = sourceCw.prepareStatement(statement.toString());
 		try
 		{
-			ResultSet res = ps.executeQuery();
-			if (res.next())
+			Long res = null;
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
 			{
-				return res.getLong(1);
+				res = rs.getLong(1);
 			}
-			return null;
+			return res;
 		}
 		finally
 		{

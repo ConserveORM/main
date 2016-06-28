@@ -46,7 +46,7 @@ public class ObjectRowMap implements Runnable
 	private HashMap<String, HashMap<Long, WeakReference<Object>>> objectMap = new HashMap<String, HashMap<Long, WeakReference<Object>>>();
 
 	/**
-	 * Map that maps from a weakreference to the systemHashCode it is mapped
+	 * Map that maps from a WeakReference to the systemHashCode it is mapped
 	 * under. This is to ensure safe deletion of the key.
 	 */
 	private HashMap<WeakReference<Object>, Long> inverseReferenceMap = new HashMap<WeakReference<Object>, Long>();
@@ -212,10 +212,42 @@ public class ObjectRowMap implements Runnable
 	 */
 	public void purge(String tableName, Long dbId)
 	{
-		Object o = getObject(tableName, dbId);
-		if (o != null)
+		HashMap<Long, WeakReference<Object>> tableEntries = objectMap.get(tableName);
+		if(tableEntries!=null)
 		{
-			purge(o);
+			WeakReference<Object> weakRef = tableEntries.get(dbId);
+			if(weakRef != null)
+			{
+				//remove table entry
+				tableEntries.remove(dbId);
+				if(tableEntries.isEmpty())
+				{
+					//this is the last entry for this tablename
+					objectMap.remove(tableName);
+				}
+				Object o = weakRef.get();
+				Long id = (long) System.identityHashCode(o);
+				// remove from the id -> dbId map, if exists
+				List<TableEntry>toRemove = new ArrayList<>();
+				List<TableEntry> list = classMap.get(id);
+				if(list != null)
+				{
+					for(TableEntry entry:list)
+					{
+						if(entry.getDbId().equals(dbId))
+						{
+							toRemove.add(entry);
+						}
+					}
+					list.removeAll(toRemove);
+					if(list.isEmpty())
+					{
+						//the last object with this system has has been deleted
+						classMap.remove(id);
+					}
+				}
+				inverseReferenceMap.remove(weakRef);
+			}
 		}
 	}
 
@@ -228,7 +260,7 @@ public class ObjectRowMap implements Runnable
 	{
 
 		HashMap<Long, WeakReference<Object>> map = objectMap.get(tableName);
-		List<Object> toRemove = new ArrayList<Object>();
+		List<Object> toRemove = new ArrayList<>();
 		if (map != null)
 		{
 			for (Entry<Long, WeakReference<Object>> e : map.entrySet())

@@ -48,73 +48,93 @@ public class Tools
 			if (clazz.equals(boolean.class))
 			{
 				ps.setBoolean(i, (Boolean) value);
-			} else if (clazz.equals(byte.class))
+			}
+			else if (clazz.equals(byte.class))
 			{
 				ps.setByte(i, (Byte) value);
-			} else if (clazz.equals(short.class))
+			}
+			else if (clazz.equals(short.class))
 			{
 				ps.setShort(i, (Short) value);
-			} else if (clazz.equals(char.class))
+			}
+			else if (clazz.equals(char.class))
 			{
 				ps.setInt(i, (Character) value);
-			} else if (clazz.equals(int.class))
+			}
+			else if (clazz.equals(int.class))
 			{
 				ps.setInt(i, (Integer) value);
-			} else if (clazz.equals(long.class))
+			}
+			else if (clazz.equals(long.class))
 			{
 				ps.setLong(i, (Long) value);
-			} else if (clazz.equals(float.class))
+			}
+			else if (clazz.equals(float.class))
 			{
 				ps.setFloat(i, (Float) value);
-			} else if (clazz.equals(double.class))
+			}
+			else if (clazz.equals(double.class))
 			{
 				ps.setDouble(i, (Double) value);
 			}
-		} 
+		}
 		else
 		{
 			if (clazz.equals(Boolean.class))
 			{
 				ps.setBoolean(i, (Boolean) value);
-			} else if (clazz.equals(Byte.class))
+			}
+			else if (clazz.equals(Byte.class))
 			{
 				ps.setByte(i, (Byte) value);
-			} else if (clazz.equals(Short.class))
+			}
+			else if (clazz.equals(Short.class))
 			{
 				ps.setShort(i, (Short) value);
-			} else if (clazz.equals(Character.class))
+			}
+			else if (clazz.equals(Character.class))
 			{
 				ps.setInt(i, (Character) value);
-			} else if (clazz.equals(Integer.class))
+			}
+			else if (clazz.equals(Integer.class))
 			{
 				ps.setInt(i, (Integer) value);
-			} else if (clazz.equals(Long.class))
+			}
+			else if (clazz.equals(Long.class))
 			{
 				ps.setLong(i, (Long) value);
-			} else if (clazz.equals(Float.class))
+			}
+			else if (clazz.equals(Float.class))
 			{
 				ps.setFloat(i, (Float) value);
-			} else if (clazz.equals(Double.class))
+			}
+			else if (clazz.equals(Double.class))
 			{
 				ps.setDouble(i, (Double) value);
-			} else if (clazz.equals(String.class) || clazz.equals(Enum.class))
+			}
+			else if (clazz.equals(String.class) || clazz.equals(Enum.class))
 			{
 				ps.setString(i, value.toString());
-			} else if (clazz.equals(java.sql.Date.class))
+			}
+			else if (clazz.equals(java.sql.Date.class))
 			{
 				ps.setDate(i, (java.sql.Date) value);
-			} else if (clazz.equals(java.sql.Time.class))
+			}
+			else if (clazz.equals(java.sql.Time.class))
 			{
 				ps.setTime(i, (java.sql.Time) value);
-			} else if (clazz.equals(java.sql.Timestamp.class))
+			}
+			else if (clazz.equals(java.sql.Timestamp.class))
 			{
 				ps.setTimestamp(i, (java.sql.Timestamp) value);
-			} else if (clazz.equals(Clob.class))
+			}
+			else if (clazz.equals(Clob.class))
 			{
-				char [] array = (char[])value;
+				char[] array = (char[]) value;
 				CharArrayReader reader = new CharArrayReader(array);
-				ps.setCharacterStream(i, reader,array.length);
-			} else if (clazz.equals(Blob.class))
+				ps.setCharacterStream(i, reader, array.length);
+			}
+			else if (clazz.equals(Blob.class))
 			{
 				ps.setBytes(i, (byte[]) value);
 			}

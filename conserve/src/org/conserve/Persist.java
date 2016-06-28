@@ -568,7 +568,7 @@ public class Persist
 	 *            given).
 	 * @param clause
 	 *            the clause to distinguish (can be null if id is given).
-	 * @return id the database id of the object to search for (can be null if
+	 * @param id the database id of the object to search for (can be null if
 	 *         clause is given).
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
@@ -719,6 +719,11 @@ public class Persist
 
 	public Long saveObject(ConnectionWrapper cw, Object object, boolean protect, DelayedInsertionBuffer delayBuffer) throws SQLException
 	{
+		return saveObject(cw,object,protect,delayBuffer,cache);
+	}	
+	
+	Long saveObject(ConnectionWrapper cw, Object object, boolean protect, DelayedInsertionBuffer delayBuffer,ObjectRowMap theCache) throws SQLException
+	{
 		Long id = (long) System.identityHashCode(object);
 		if (delayBuffer == null)
 		{
@@ -726,7 +731,7 @@ public class Persist
 		}
 		else if (delayBuffer.isKnown(id, object))
 		{
-			Long dbId = cache.getDatabaseId(object);
+			Long dbId = theCache.getDatabaseId(object);
 			return dbId;
 		}
 		delayBuffer.addId(id, object);
@@ -741,7 +746,7 @@ public class Persist
 			tableName = NameGenerator.getTableName(object, adapter);
 		}
 		// check if the object exists
-		Long databaseId = cache.getDatabaseId(object);
+		Long databaseId = theCache.getDatabaseId(object);
 		if (databaseId != null && objectExists(cw, object.getClass(), databaseId))
 		{
 			// the object exists in the database
@@ -1764,8 +1769,7 @@ public class Persist
 					}
 					else
 					{
-						// average, max, and min of an empty set does not make
-						// sense
+						// average, max, and min of an empty set does not make sense
 						if (n.equals(Float.class) || n.equals(float.class))
 						{
 							res[x] = Float.NaN;
@@ -1776,10 +1780,8 @@ public class Persist
 						}
 						else
 						{
-							// no way to represent NaN in integer classes, leave
-							// as
-							// null and hope calling code knows how to handle
-							// this
+							// no way to represent NaN in integer classes, leave as
+							// null and hope calling code knows how to handle this
 						}
 					}
 				}

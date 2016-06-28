@@ -40,7 +40,6 @@ import org.conserve.tools.metadata.ObjectStack;
 public class StatementPrototype
 {
 	private List<Object> newValues = new ArrayList<Object>();
-	private Class<?> queryClass;
 	private AdapterBase adapter;
 	private String prePend = "";
 	private String append = "";
@@ -57,7 +56,6 @@ public class StatementPrototype
 	public StatementPrototype(AdapterBase adapter, ObjectStack oStack, Class<?> resultClass, Clause[]clauses, boolean addJoins)
 	{
 		this.adapter = adapter;
-		this.queryClass = resultClass;
 
 		idGen = new IdStatementGenerator(adapter,oStack,clauses,addJoins);
 		// initialise the statement stack
@@ -236,11 +234,6 @@ public class StatementPrototype
 	}
 
 
-	public Class<?> getQueryClass()
-	{
-		return this.queryClass;
-	}
-
 	/**
 	 * Set a string that will be prepended to the start of the SQL statement.
 	 * 
@@ -249,11 +242,6 @@ public class StatementPrototype
 	public void setPrepend(String string)
 	{
 		this.prePend = string;
-	}
-
-	public void setAppend(String append)
-	{
-		this.append = append;
 	}
 
 	public void setOffset(Long offset)

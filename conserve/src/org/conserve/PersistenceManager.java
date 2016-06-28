@@ -28,9 +28,11 @@ import java.util.List;
 import java.util.Properties;
 
 import org.conserve.aggregate.AggregateFunction;
+import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.select.Clause;
 import org.conserve.select.discriminators.Equal;
+import org.conserve.tools.NameGenerator;
 
 /**
  * Object database interface. Saves to and retrieves from a persistence
@@ -573,7 +575,6 @@ public class PersistenceManager
 	 * @return the number of objects that match the pattern.
 	 * @throws SQLException
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> long getCount(T pattern) throws SQLException
 	{
 		long res = 0;
@@ -804,7 +805,30 @@ public class PersistenceManager
 				List<Long> ids = res.get(o.getClass());
 				if (ids!=null && ids.contains(dbId))
 				{
-					return false;
+					boolean result = true;
+					//get the object from the database
+					ObjectRowMap tmpCache = new ObjectRowMap();
+					tmpCache.start();
+					Object actual = persist.getObject(cw, Object.class, dbId,tmpCache);
+					tmpCache.stop();
+					tmpCache = new ObjectRowMap();
+					tmpCache.start();
+					//temporarily save the old object, bypassing the cache
+					long tmpId =persist.saveObject(cw,o,false,null,tmpCache);
+					//make sure the new object can be used to find the old object
+					res = persist.getObjectDescriptors(cw,o.getClass(), null, new Equal(actual),
+							null);
+					ids = res.get(o.getClass());
+					if(ids != null && ids.contains(tmpId))
+					{
+						result = false;
+					}
+					//delete the temporary object by rolling back the transaction
+					cw.rollback();
+					tmpCache.stop();
+					//purge temporary object from cache
+					persist.getCache().purge(NameGenerator.getTableName(o, persist.getAdapter()),tmpId);
+					return result;
 				}
 				else
 				{

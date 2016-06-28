@@ -356,7 +356,7 @@ public class ObjectTools
 				res = double.class;
 			}
 			// database-returned name, see if the adapter can help us.
-			else if (adapter != null)
+			else 
 			{
 				for (Class<?> c : classes)
 				{

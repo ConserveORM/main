@@ -5179,7 +5179,7 @@ public class PersistTest
 		assertEquals(50.5,avg,0.0001);
 		
 		//delete all AllPrimitives
-		pm.deleteObjects(cw,AllPrimitives.class,new All());
+		pm.dropTable(cw,AllPrimitives.class);
 
 		//test all integer types return a zero long value
 		functions = new AggregateFunction[]{
@@ -5248,5 +5248,67 @@ public class PersistTest
 		
 			pm.close();
 		}
+	}
+	
+	/**
+	 * Test updating an object that contains other objects.
+	 */
+	@Test
+	public void testUpdateComplexObject() throws Exception
+	{
+		PersistenceManager pm1 = new PersistenceManager(driver,database,login,password);
+		PersistenceManager pm2 = new PersistenceManager(driver,database,login,password);
+		ComplexObject orig = new ComplexObject();
+		SimplestObject simpleOrig= new SimplestObject();
+		simpleOrig.setFoo(42.0);
+		orig.setSimplestObject(simpleOrig);
+		pm1.saveObject(orig);
+		List<ComplexObject> list = pm2.getObjects(ComplexObject.class, new All());
+		assertEquals(1,list.size());
+		ComplexObject copy  = list.get(0);
+		
+		assertEquals(orig.getSimplestObject().getFoo(),copy.getSimplestObject().getFoo());
+		
+		//drop the enclosed object
+		orig.setSimplestObject(null);
+		pm1.saveObject(orig);
+		
+		//refresh the copy
+		assertTrue(pm2.hasChanged(copy));
+		pm2.refresh(copy);
+		assertNull(copy.getSimplestObject());
+		
+		//add a new simplestobject to the original
+		SimplestObject nuSimple = new SimplestObject();
+		nuSimple.setFoo(9000.1);
+		orig.setSimplestObject(nuSimple);
+		pm1.saveObject(orig);
+		
+		//make sure the change propagates
+		assertTrue(pm2.hasChanged(copy));
+		pm2.refresh(copy);
+		assertNotNull(copy.getSimplestObject());
+		assertEquals(orig.getSimplestObject().getFoo(),copy.getSimplestObject().getFoo());
+		
+		
+		//change from non-null to another non-null property
+		nuSimple = new SimplestObject();
+		nuSimple.setFoo(11.0);
+		orig.setSimplestObject(nuSimple);
+		pm1.saveObject(orig);
+		
+		//make sure the change propagates
+		assertTrue(pm2.hasChanged(copy));
+		pm2.refresh(copy);
+		assertNotNull(copy.getSimplestObject());
+		assertEquals(orig.getSimplestObject().getFoo(),copy.getSimplestObject().getFoo());
+		
+		//make sure we haven't inadvertently created new objects
+		assertEquals(1,pm1.getCount(SimplestObject.class, new All()));
+		assertEquals(1,pm1.getCount(ComplexObject.class, new All()));
+		assertEquals(2,pm1.getCount(Object.class, new All()));
+		
+		pm1.close();
+		pm2.close();
 	}
 }

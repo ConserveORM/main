@@ -27,8 +27,8 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.Tools;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.metadata.ObjectStack;
 
 /**

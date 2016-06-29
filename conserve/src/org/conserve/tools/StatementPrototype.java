@@ -39,7 +39,6 @@ import org.conserve.tools.metadata.ObjectStack;
  */
 public class StatementPrototype
 {
-	private List<Object> newValues = new ArrayList<Object>();
 	private AdapterBase adapter;
 	private String prePend = "";
 	private String append = "";
@@ -77,14 +76,6 @@ public class StatementPrototype
 		PreparedStatement ps = cw.prepareStatement(createString());
 		// set the values
 		int index = 0;
-		for (Object o : newValues)
-		{
-			if (ObjectTools.isDatabasePrimitive(o.getClass()))
-			{
-				index++;
-				addValue(ps, index, o);
-			}
-		}	
 		for (Object o : conditionalValues)
 		{
 			if (ObjectTools.isDatabasePrimitive(o.getClass()))

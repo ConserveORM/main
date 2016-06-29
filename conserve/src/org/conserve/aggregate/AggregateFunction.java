@@ -20,7 +20,7 @@ package org.conserve.aggregate;
 
 import java.lang.reflect.Method;
 
-import org.conserve.tools.NameGenerator;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 

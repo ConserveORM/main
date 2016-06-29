@@ -41,6 +41,7 @@ import org.conserve.connection.ConnectionWrapper;
 import org.conserve.connection.DataConnectionPool;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.select.All;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 import org.conserve.tools.metadata.DatabaseObjectRepresentation;
 import org.conserve.tools.metadata.FieldChangeDescription;
@@ -617,39 +618,33 @@ public class TableManager
 			// find all sub-classes
 			PreparedStatement ps = cw.prepareStatement("SELECT DISTINCT(SUBCLASS) FROM " + Defaults.IS_A_TABLENAME);
 			Tools.logFine(ps);
-			if (ps.execute())
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
 			{
-				ResultSet rs = ps.getResultSet();
-				while (rs.next())
+				String name = rs.getString(1);
+				Class<?> c = ObjectTools.lookUpClass(name, adapter);
+				res.add(c);
+				if (!existingClasses.contains(c))
 				{
-					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name, adapter);
-					res.add(c);
-					if (!existingClasses.contains(c))
-					{
-						existingClasses.add(c);
-					}
+					existingClasses.add(c);
 				}
 			}
 			ps.close();
 			// find all super-classes
 			ps = cw.prepareStatement("SELECT DISTINCT(SUPERCLASS) FROM " + Defaults.IS_A_TABLENAME);
 			Tools.logFine(ps);
-			if (ps.execute())
+			rs = ps.executeQuery();
+			while (rs.next())
 			{
-				ResultSet rs = ps.getResultSet();
-				while (rs.next())
+				String name = rs.getString(1);
+				Class<?> c = ObjectTools.lookUpClass(name, adapter);
+				if (!res.contains(c))
 				{
-					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name, adapter);
-					if (!res.contains(c))
-					{
-						res.add(c);
-					}
-					if (!existingClasses.contains(c))
-					{
-						existingClasses.add(c);
-					}
+					res.add(c);
+				}
+				if (!existingClasses.contains(c))
+				{
+					existingClasses.add(c);
 				}
 			}
 			ps.close();
@@ -679,16 +674,12 @@ public class TableManager
 			PreparedStatement ps = cw.prepareStatement(query.toString());
 			ps.setString(1, NameGenerator.getSystemicName(superclass));
 			Tools.logFine(ps);
-			if (ps.execute())
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
 			{
-				ResultSet rs = ps.getResultSet();
-				while (rs.next())
-				{
-					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name, adapter);
-					res.add(c);
-				}
-				rs.close();
+				String name = rs.getString(1);
+				Class<?> c = ObjectTools.lookUpClass(name, adapter);
+				res.add(c);
 			}
 			ps.close();
 		}
@@ -716,15 +707,11 @@ public class TableManager
 		PreparedStatement ps = cw.prepareStatement(query.toString());
 		ps.setString(1, NameGenerator.getSystemicName(superclass));
 		Tools.logFine(ps);
-		if (ps.execute())
+		ResultSet rs = ps.executeQuery();
+		while (rs.next())
 		{
-			ResultSet rs = ps.getResultSet();
-			while (rs.next())
-			{
-				String name = rs.getString(1);
-				res.add(name);
-			}
-			rs.close();
+			String name = rs.getString(1);
+			res.add(name);
 		}
 		ps.close();
 

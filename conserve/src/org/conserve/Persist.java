@@ -20,6 +20,7 @@ package org.conserve;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -59,13 +60,13 @@ import org.conserve.tools.ClassIdTuple;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.Duplicator;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectFactory;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.TableManager;
 import org.conserve.tools.Tools;
 import org.conserve.tools.Updater;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.generators.StatementPrototypeGenerator;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 import org.conserve.tools.metadata.MapEntry;
@@ -416,13 +417,13 @@ public class Persist
 			while (components.next())
 			{
 				String type = components.getString(1);
-				Long valueId = components.getLong(2);
 				Long compId = components.getLong(3);
 				Class<?> clazz = ObjectTools.lookUpClass(type, adapter);
 				String table = NameGenerator.getTableName(clazz, adapter);
 				protectionManager.unprotectObjectInternal(NameGenerator.getArrayTablename(adapter), id, compTable, compId, cw);
 				if (isObject)
 				{
+					Long valueId = components.getLong(2);
 					protectionManager.unprotectObjectInternal(compTable, compId, table, valueId, cw);
 					if (!protectionManager.isProtected(table, valueId, cw))
 					{
@@ -1077,10 +1078,8 @@ public class Persist
 					// stop immediately
 					return true;
 				}
-				if (containsOrderStatement(c.getSubclauses()))
-				{
-					return true;
-				}
+				//don't recurse, the only concrete classes that can contain Order objects are 
+				//Order, and they can only contain Sorter. Sorter can't contain sub-clauses.
 			}
 		}
 		return false;
@@ -1612,16 +1611,39 @@ public class Persist
 					Long nuDbId = nuCache.getDatabaseId(nuProperty);
 					if (origDbId.equals(nuDbId))
 					{
-						// the id, and therefore the objects, are unchanged.
-						// recurse
-						ObjectRepresentation origPropertyPresentation = new ConcreteObjectRepresentation(adapter, origProperty.getClass(),
-								origProperty, null);
-						ObjectRepresentation nuPropertyPresentation = new ConcreteObjectRepresentation(adapter, nuProperty.getClass(), nuProperty,
-								null);
-						if (!idList.contains(origDbId))
+						//the ids are unchanged
+						if(origProperty.getClass().isArray())
 						{
-							idList.add(origDbId);
-							refresh(origPropertyPresentation, origCache, nuPropertyPresentation, nuCache, idList);
+							//check if the arrays are of equal length
+							if(Array.getLength(origProperty)==Array.getLength(nuProperty))
+							{
+								//update all the values of the old array with the values of the new array
+								for(int t=0;t<Array.getLength(origProperty);t++)
+								{
+									Array.set(origProperty, t, Array.get(nuProperty, t));
+								}
+							}
+							else
+							{
+								//the array has changed size
+								//no way to recover old object gracefully, just set the new array
+								orig.setPropertyValue(x, nuProperty);
+							}
+						}
+						else
+						{
+							//the objects are not arrays
+							// the id, and therefore the objects, are unchanged.
+							// recurse
+							ObjectRepresentation origPropertyPresentation = new ConcreteObjectRepresentation(adapter, origProperty.getClass(),
+									origProperty, null);
+							ObjectRepresentation nuPropertyPresentation = new ConcreteObjectRepresentation(adapter, nuProperty.getClass(), nuProperty,
+									null);
+							if (!idList.contains(origDbId))
+							{
+								idList.add(origDbId);
+								refresh(origPropertyPresentation, origCache, nuPropertyPresentation, nuCache, idList);
+							}
 						}
 					}
 					else

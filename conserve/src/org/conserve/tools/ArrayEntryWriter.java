@@ -24,6 +24,7 @@ import java.sql.SQLException;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.protection.ProtectionManager;
 
 /**

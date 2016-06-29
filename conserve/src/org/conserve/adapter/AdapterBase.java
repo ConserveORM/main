@@ -27,7 +27,7 @@ import org.conserve.annotations.Indexed;
 import org.conserve.annotations.MaxLength;
 import org.conserve.annotations.MultiIndexed;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.NameGenerator;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * Base adapter. This class is the base for all adapters. Adapters are objects

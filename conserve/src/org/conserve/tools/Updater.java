@@ -30,6 +30,7 @@ import java.util.List;
 import org.conserve.Persist;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
@@ -389,20 +390,30 @@ public class Updater
 			Long propertyId = refValues.get(nValue);
 			if (propertyId != null)
 			{
-				ClassIdTuple actualNameId = persist.getRealTableNameAndId(cw, rep.getReturnType(nValue),
-								propertyId);
-				String tableName = actualNameId.getTableName(adapter);
-
+				Class<?>returnType = oStack.getRepresentation(nValue).getReturnType(nValue);
+				String tableName = null;
+				
+				if(returnType.isArray())
+				{
+					//the property is an array
+					tableName = NameGenerator.getArrayTablename(adapter);
+				}
+				else
+				{
+					ClassIdTuple actualNameId = persist.getRealTableNameAndId(cw, returnType,
+									propertyId);
+					tableName = actualNameId.getTableName(adapter);
+				}
+	
 				persist.getProtectionManager()
-						.unprotectObjectInternal(rep.getTableName(),rep.getId(),tableName,actualNameId.getId(), cw);
+						.unprotectObjectInternal(rep.getTableName(),rep.getId(),tableName,propertyId, cw);
 				if (!persist.getProtectionManager()
 						.isProtected(tableName,
-								actualNameId.getId(), cw))
+								propertyId, cw))
 				{
-					persist.deleteObject(cw,
-							actualNameId.getRepresentedClass(),
-							actualNameId.getId());
+					persist.deleteObject(cw,returnType,propertyId);
 				}
+				
 			}
 		}
 	}

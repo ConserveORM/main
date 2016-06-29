@@ -27,9 +27,9 @@ import java.util.List;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.Tools;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * Metadata about an object loaded from the database.

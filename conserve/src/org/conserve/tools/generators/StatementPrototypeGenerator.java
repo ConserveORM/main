@@ -42,7 +42,6 @@ import org.conserve.sort.Order;
 import org.conserve.sort.Sorter;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.metadata.ObjectRepresentation;

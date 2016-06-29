@@ -33,7 +33,16 @@ import org.conserve.tools.Tools;
  */
 public class ProtectionManager
 {
-
+	/**
+	 * Check if an object, identified by tablename and id, is protected
+	 * This checks references recursively because an object can contain itself.
+	 * 
+	 * @param tableName
+	 * @param databaseId
+	 * @param cw
+	 * @return
+	 * @throws SQLException
+	 */
 	public boolean isProtected(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		DependentSet depSet = new DependentSet(tableName, databaseId, cw);
@@ -253,7 +262,7 @@ public class ProtectionManager
 			String propertyTable, Long propertyId, String canonicalName, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
-		statement.append("SELECT PROPERTY_ID FROM ");
+		statement.append("SELECT COUNT(*) PROPERTY_ID FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ? AND OWNER_TABLE=? AND OWNER_ID=?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
@@ -264,8 +273,10 @@ public class ProtectionManager
 			ps.setString(3, ownerTable);
 			ps.setLong(4, ownerId);
 			Tools.logFine(ps);
+			ps.execute();
+			ResultSet rs = ps.executeQuery();
 			// check if the query returns no results
-			if (!ps.execute())
+			if (!rs.next() || rs.getLong(1)<=0)
 			{
 				protectObjectInternal(ownerTable, ownerId, relationName, propertyTable, propertyId, canonicalName, cw);
 			}

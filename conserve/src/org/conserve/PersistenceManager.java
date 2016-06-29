@@ -32,7 +32,7 @@ import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.select.Clause;
 import org.conserve.select.discriminators.Equal;
-import org.conserve.tools.NameGenerator;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * Object database interface. Saves to and retrieves from a persistence

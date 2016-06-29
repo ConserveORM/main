@@ -32,9 +32,9 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.Tools;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * Wrapper that encapsulates all ObjectRepresentations for an object.
@@ -312,16 +312,12 @@ public class ObjectStack
 			PreparedStatement ps = cw.prepareStatement(query.toString());
 			ps.setString(1, NameGenerator.getSystemicName(subClass));
 			Tools.logFine(ps);
-			if (ps.execute())
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
 			{
-				ResultSet rs = ps.getResultSet();
-				while (rs.next())
-				{
-					String name = rs.getString(1);
-					Class<?> c = ObjectTools.lookUpClass(name, adapter);
-					res.add(c);
-				}
-				rs.close();
+				String name = rs.getString(1);
+				Class<?> c = ObjectTools.lookUpClass(name, adapter);
+				res.add(c);
 			}
 			ps.close();
 		}

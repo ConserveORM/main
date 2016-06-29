@@ -25,6 +25,7 @@ import java.sql.SQLException;
 
 import org.conserve.Persist;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * This class performs the actual copying required by the Persist.duplicate()

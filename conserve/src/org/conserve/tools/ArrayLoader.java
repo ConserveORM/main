@@ -27,6 +27,7 @@ import java.util.List;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * Loads arrays, arrays of arrays and so on.

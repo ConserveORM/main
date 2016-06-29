@@ -33,8 +33,8 @@ import java.util.logging.Logger;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
-import org.conserve.tools.NameGenerator;
 import org.conserve.tools.ObjectTools;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.protection.ProtectionStack;
 
 /**

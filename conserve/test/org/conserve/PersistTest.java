@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -65,6 +66,7 @@ import org.conserve.objects.BadColumnNames;
 import org.conserve.objects.BaseInterface;
 import org.conserve.objects.BlobClobObject;
 import org.conserve.objects.Book;
+import org.conserve.objects.ColumnNameObject;
 import org.conserve.objects.ComplexArrayObject;
 import org.conserve.objects.ComplexObject;
 import org.conserve.objects.DateObject;
@@ -74,6 +76,7 @@ import org.conserve.objects.NonExistingClass;
 import org.conserve.objects.SelfContainingObject;
 import org.conserve.objects.SimpleObject;
 import org.conserve.objects.SimplestObject;
+import org.conserve.objects.StringArrayContainer;
 import org.conserve.objects.SubInterface;
 import org.conserve.objects.polymorphism.AbstractBar;
 import org.conserve.objects.polymorphism.ConcreteBar1;
@@ -137,7 +140,7 @@ import org.conserve.sort.Descending;
 import org.conserve.sort.Order;
 import org.conserve.test.TestTools;
 import org.conserve.tools.Defaults;
-import org.conserve.tools.NameGenerator;
+import org.conserve.tools.generators.NameGenerator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -5310,5 +5313,150 @@ public class PersistTest
 		
 		pm1.close();
 		pm2.close();
+	}
+	
+	/**
+	 * Test using queries with Order sub-clauses.
+	 */
+	@Test
+	public void testSubClauses() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		//add data with two sortable fields
+		for(int x = 0;x<100;x++)
+		{
+			long dec = x/10;
+			double rem = x%10;
+			SimpleObject so = new SimpleObject();
+			so.setAge(dec);
+			so.setScale(rem);
+			pm.saveObject(cw,so);
+		}
+		cw.commitAndDiscard();
+		SimpleObject sortAge=new SimpleObject();
+		sortAge.setAge(1l);
+		SimpleObject sortScale=new SimpleObject();
+		sortScale.setScale(1.0);
+		List<SimpleObject> list = pm.getObjects(SimpleObject.class,new All(),new Order(new Ascending(sortAge),new Descending(sortScale)));
+
+		for(int x = 0;x<list.size()-1;x++)
+		{
+			SimpleObject curr = list.get(x);
+			SimpleObject next = list.get(x+1);
+			if(curr.getAge().longValue()==next.getAge().longValue())
+			{
+				//we sorted scale descending
+				assertTrue(curr.getScale()>next.getScale());
+			}
+			else
+			{
+				//we sorted age ascending
+				assertEquals((long)curr.getAge()+1,(long)next.getAge());
+				assertEquals((double)curr.getScale()+9,(double)next.getScale(),0.00001);
+			}
+		}
+		
+		list = pm.getObjects(SimpleObject.class,new All(),new Order(new Ascending(sortAge),new Ascending(sortScale)));
+
+		for(int x = 0;x<list.size()-1;x++)
+		{
+			SimpleObject curr = list.get(x);
+			SimpleObject next = list.get(x+1);
+			if(curr.getAge().longValue()==next.getAge().longValue())
+			{
+				//we sorted scale descending
+				assertTrue(curr.getScale()<next.getScale());
+			}
+			else
+			{
+				//we sorted age ascending
+				assertEquals((long)curr.getAge()+1,(long)next.getAge());
+				assertEquals((double)curr.getScale()-9,(double)next.getScale(),0.00001);
+			}
+		}
+	
+		pm.close();
+	}
+	
+	/**
+	 * Test if naming a column via annotation works.
+	 * 
+	 */
+	@Test
+	public void testColumnNameAnnotation() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		//save an object with a known value
+		ColumnNameObject cno = new ColumnNameObject();
+		cno.setName("foo_bar");
+		pm.saveObject(cno);
+		//'manually' check if the value is there
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		String query = "SELECT COUNT(*) FROM ";
+		query += NameGenerator.getTableName(cno.getClass(), pm.getPersist().getAdapter());
+		query += " WHERE ALTERNATIVENAME = ?";
+		PreparedStatement ps = cw.prepareStatement(query);
+		ps.setString(1, cno.getName());
+		ResultSet rs = ps.executeQuery();
+		assertTrue(rs.next());
+		assertEquals(1,rs.getLong(1));
+		ps.close();
+		
+		cw.commitAndDiscard();
+		
+		pm.close();
+	}
+	
+	/**
+	 * Test save/load/update string arrays
+	 */
+	@Test
+	public void testStringArrays() throws Exception
+	{
+		PersistenceManager pm1 = new PersistenceManager(driver,database,login,password);
+		StringArrayContainer sac = new StringArrayContainer();
+		sac.setValues(new String[]{"Foo","bar","BAZ"});
+		pm1.saveObject(sac);
+		
+		//get the object from another PersistenceManager.
+		PersistenceManager pm2 = new PersistenceManager(driver,database,login,password);
+		List<StringArrayContainer> list = pm2.getObjects(StringArrayContainer.class,new All());
+		assertEquals(1,list.size());
+		StringArrayContainer copy = list.get(0);
+		assertEquals(sac.getValues().length,copy.getValues().length);
+		for(int x = 0;x<sac.getValues().length;x++)
+		{
+			assertEquals(sac.getValues()[x],copy.getValues()[x]);
+		}
+		
+		//change the original object's array contents
+		sac.getValues()[0]="Nonsense";
+		pm1.saveObject(sac);
+		//check that the change propagates
+		assertTrue(pm2.hasChanged(copy));
+		//get the refreshed copy
+		pm2.refresh(copy);
+		assertEquals(sac.getValues().length,copy.getValues().length);
+		for(int x = 0;x<sac.getValues().length;x++)
+		{
+			assertEquals(sac.getValues()[x],copy.getValues()[x]);
+		}
+		
+		//change the original object's length
+		sac.setValues(new String[]{"one","two","three","four"});
+		pm1.saveObject(sac);
+		//check that the change propagates
+		assertTrue(pm2.hasChanged(copy));
+		//get the refreshed copy
+		pm2.refresh(copy);
+		assertEquals(sac.getValues().length,copy.getValues().length);
+		for(int x = 0;x<sac.getValues().length;x++)
+		{
+			assertEquals(sac.getValues()[x],copy.getValues()[x]);
+		}
+		
+		pm2.close();
+		pm1.close();
 	}
 }

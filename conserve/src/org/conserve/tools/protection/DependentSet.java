@@ -22,7 +22,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.Tools;
@@ -39,8 +42,7 @@ public class DependentSet
 
 	private boolean protectedEntry;
 
-	private List<ProtectionEntry>cacheKey= new ArrayList<ProtectionEntry>();
-	private List<List<ProtectionEntry>>cacheValue= new ArrayList<List<ProtectionEntry>>();
+	private Map<ProtectionEntry,List<ProtectionEntry>>dependingCache=new HashMap<>();
 	
 	/**
 	 * Create and populate a new set of entries that are dependent on the given entry.
@@ -156,7 +158,7 @@ public class DependentSet
 	 */
 	private List<ProtectionEntry> listAllDependentEntries(ProtectionEntry entry, ConnectionWrapper cw) throws SQLException
 	{
-		ArrayList<ProtectionEntry> res = new ArrayList<ProtectionEntry>();
+		List<ProtectionEntry> res = new ArrayList<ProtectionEntry>();
 		StringBuilder statement = new StringBuilder(100);
 		statement.append("SELECT PROPERTY_TABLE, PROPERTY_ID FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
@@ -192,9 +194,8 @@ public class DependentSet
 	private List<ProtectionEntry> listAllDependingEntries(ProtectionEntry entry, ConnectionWrapper cw) throws SQLException
 	{
 
-		List<ProtectionEntry> res = null;
-		int index = cacheKey.indexOf(entry);
-		if (index<0)
+		List<ProtectionEntry> res = dependingCache.get(entry);
+		if (res==null)
 		{
 			res = new ArrayList<ProtectionEntry>();
 			StringBuilder statement = new StringBuilder(100);
@@ -218,12 +219,7 @@ public class DependentSet
 			{
 				ps.close();
 			}
-			cacheKey.add(entry);
-			cacheValue.add(res);
-		}
-		else
-		{
-			res = cacheValue.get(index);
+			dependingCache.put(entry, res);
 		}
 		return res;
 	}

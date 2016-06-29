@@ -19,6 +19,7 @@
 package org.conserve.tools;
 
 import org.conserve.adapter.AdapterBase;
+import org.conserve.tools.generators.NameGenerator;
 
 /**
  * A tuple containing a table name and the corresponding id.

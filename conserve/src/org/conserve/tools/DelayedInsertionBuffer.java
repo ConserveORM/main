@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.conserve.Persist;
 import org.conserve.connection.ConnectionWrapper;
+import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.protection.ProtectionManager;
 
 

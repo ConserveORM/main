@@ -1,12 +1,13 @@
 package org.conserve.tools;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import java.sql.Timestamp;
 import java.sql.Blob;
 import java.sql.Clob;
-import java.sql.Time;
 import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 
 import org.conserve.objects.ComplexObject;
 import org.conserve.objects.MyEnum;
@@ -14,7 +15,6 @@ import org.conserve.objects.MyOtherEnum;
 import org.conserve.objects.SimpleObject;
 import org.conserve.objects.SimplestObject;
 import org.conserve.objects.schemaupdate.copydown.AfterBottom;
-import org.conserve.objects.schemaupdate.copydown.BeforeBottom;
 import org.conserve.objects.schemaupdate.copydown.BeforeTop;
 import org.conserve.objects.schemaupdate.copydown.OriginalBottom;
 import org.conserve.objects.schemaupdate.copydown.OriginalMiddle;

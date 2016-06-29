@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.Serializable;
-import java.lang.reflect.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -70,8 +69,10 @@ import org.conserve.objects.ColumnNameObject;
 import org.conserve.objects.ComplexArrayObject;
 import org.conserve.objects.ComplexObject;
 import org.conserve.objects.DateObject;
+import org.conserve.objects.EnumContainer;
 import org.conserve.objects.LessSimpleObject;
 import org.conserve.objects.ListContainingObject;
+import org.conserve.objects.MyEnum;
 import org.conserve.objects.NonExistingClass;
 import org.conserve.objects.SelfContainingObject;
 import org.conserve.objects.SimpleObject;
@@ -5458,5 +5459,43 @@ public class PersistTest
 		
 		pm2.close();
 		pm1.close();
+	}
+	
+	/**
+	 * Test saving/loading enums.
+	 */
+	@Test
+	public void testEnums() throws Exception
+	{
+		PersistenceManager pm1 = new PersistenceManager(driver,database,login,password);
+		EnumContainer ec = new EnumContainer();
+		ec.setState(MyEnum.BAB);
+		pm1.saveObject(ec);
+		
+		//get the object from another PersistenceManager.
+		PersistenceManager pm2 = new PersistenceManager(driver,database,login,password);
+		List<EnumContainer> list = pm2.getObjects(EnumContainer.class, new All());
+		assertEquals(1,list.size());
+		EnumContainer copy = list.get(0);
+		assertEquals(ec.getState(),copy.getState());
+		
+		ec.setState(MyEnum.BOO);
+		pm1.saveObject(ec);
+		assertTrue(pm2.hasChanged(copy));
+		pm2.refresh(copy);
+		assertEquals(ec.getState(),copy.getState());
+		
+		ec.setState(null);
+		pm1.saveObject(ec);
+		assertTrue(pm2.hasChanged(copy));
+		pm2.refresh(copy);
+		assertNull(copy.getState());
+		
+		ec.setState(MyEnum.BOO);
+		pm1.saveObject(ec);
+		assertTrue(pm2.hasChanged(copy));
+		pm2.refresh(copy);
+		assertEquals(ec.getState(),copy.getState());
+		
 	}
 }

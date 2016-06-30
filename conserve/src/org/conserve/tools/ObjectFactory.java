@@ -70,8 +70,18 @@ public class ObjectFactory
 			else
 			{
 				// create a new object using the default constructor.
-				Constructor<T> constructor = resultClass.getConstructor();
+				Constructor<T> constructor = resultClass.getDeclaredConstructor();
+				boolean wasAccessible = constructor.isAccessible();
+				if(!wasAccessible)
+				{
+					//if the constructor is private, make it accessible
+					constructor.setAccessible(true);
+				}
 				T res = constructor.newInstance();
+				if(!wasAccessible)
+				{
+					constructor.setAccessible(wasAccessible);
+				}
 				// add object to cache
 				cache.storeObject(tableName, res, dbId);
 				fillObjectValues(adapter,cache, res, resultClass, map,cw);

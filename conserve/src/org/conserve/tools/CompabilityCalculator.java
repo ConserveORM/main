@@ -205,7 +205,8 @@ public class CompabilityCalculator
 			//enums can be converted to strings, but not the other way around
 			return true;
 		}
-		if(fromClass.isArray() || toClass.isArray())
+		if(fromClass.isArray() 
+				|| toClass.isArray())
 		{
 			//arrays can not be converted
 			return false;
@@ -219,7 +220,7 @@ public class CompabilityCalculator
 		{
 			return (toClass.equals(fromClass));
 		}
-		//enum can only be converted to another enum
+		//enum can be converted to another enum
 		if(fromClass.isEnum() || toClass.isEnum())
 		{
 			return (fromClass.isEnum() == toClass.isEnum());

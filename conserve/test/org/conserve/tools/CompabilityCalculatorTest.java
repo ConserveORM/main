@@ -18,8 +18,7 @@
  *******************************************************************************/
 package org.conserve.tools;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.sql.Blob;
 import java.sql.Clob;
@@ -45,6 +44,12 @@ import org.junit.Test;
  */
 public class CompabilityCalculatorTest
 {
+	@Test
+	public void testConstructor() throws Exception
+	{
+		CompabilityCalculator co = new CompabilityCalculator();
+		assertNotNull(co);
+	}
 
 	/**
 	 * Test method for {@link org.conserve.tools.CompabilityCalculator#calculate(java.lang.Class, java.lang.Class)}.
@@ -361,6 +366,30 @@ public class CompabilityCalculatorTest
 		assertTrue(CompabilityCalculator.calculate(Cloneable.class, OriginalTop.class));
 		assertTrue(CompabilityCalculator.calculate(OriginalTop.class, Cloneable.class));
 		
+		//check array conversion
+		//same array is possible
+		assertTrue(CompabilityCalculator.calculate(double[].class,double[].class));
+		assertTrue(CompabilityCalculator.calculate(int[].class,int[].class));
+		//different arrays is not possible
+		assertFalse(CompabilityCalculator.calculate(double[].class,Double[].class));
+		assertFalse(CompabilityCalculator.calculate(Double[].class,double[].class));
+		assertFalse(CompabilityCalculator.calculate(int[].class,double[].class));
+		assertFalse(CompabilityCalculator.calculate(double[].class,int[].class));
+		assertFalse(CompabilityCalculator.calculate(int[].class,String[].class));
+		assertFalse(CompabilityCalculator.calculate(String[].class,int[].class));
+		assertFalse(CompabilityCalculator.calculate(Object[].class,OriginalBottom[].class));
+		assertFalse(CompabilityCalculator.calculate(OriginalBottom[].class,Object[].class));
+		assertFalse(CompabilityCalculator.calculate(OriginalBottom.class,Object[].class));
+		assertFalse(CompabilityCalculator.calculate(OriginalBottom[].class,Object.class));
+		//can't convert between strings and chars
+		assertFalse(CompabilityCalculator.calculate(String[].class,char[].class));
+		assertFalse(CompabilityCalculator.calculate(String.class,char[].class));
+		assertFalse(CompabilityCalculator.calculate(char[].class,String[].class));
+		assertFalse(CompabilityCalculator.calculate(char[].class,String.class));
+		assertFalse(CompabilityCalculator.calculate(String[].class,char.class));
+		assertFalse(CompabilityCalculator.calculate(String.class,char.class));
+		assertFalse(CompabilityCalculator.calculate(char.class,String[].class));
+		assertFalse(CompabilityCalculator.calculate(char.class,String.class));
 	}
 
 }

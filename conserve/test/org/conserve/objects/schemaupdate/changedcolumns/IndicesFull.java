@@ -16,56 +16,53 @@
  *        You should have received a copy of the GNU Affero General Public License
  *        along with Conserve.  If not, see <https://www.gnu.org/licenses/agpl.html>.
  *******************************************************************************/
+
 package org.conserve.objects.schemaupdate.changedcolumns;
 
-import org.conserve.annotations.Indexed;
-import org.conserve.annotations.MaxLength;
 import org.conserve.annotations.MultiIndexed;
 
 /**
- * A class with a column with an index.
+ * An object where three properties together form indexes.
+ * Compare to IndexReduced.
+ * 
  * 
  * @author Erik Berglund
  *
  */
-public class WithIndex
+public class IndicesFull
 {
-	private String value;
-	private String otherValue;
-
-	/**
-	 * @return the value
-	 */
-	@Indexed("fooidx")
-	@MaxLength(125)
-	public String getValue()
+	private String foo;
+	private long bar;
+	private double baz;
+	
+	@MultiIndexed( {"indexa","indexb"} )
+	public String getFoo()
 	{
-		return value;
+		return foo;
 	}
-
-	/**
-	 * @param value the value to set
-	 */
-	public void setValue(String value)
+	public void setFoo(String foo)
 	{
-		this.value = value;
+		this.foo = foo;
 	}
-
-	/**
-	 * @return the otherValue
-	 */
-	@MultiIndexed({"fooidx","baridx"})
-	@MaxLength(125)
-	public String getOtherValue()
+	
+	@MultiIndexed( {"indexa","indexb"} )
+	public long getBar()
 	{
-		return otherValue;
+		return bar;
 	}
-
-	/**
-	 * @param otherValue the otherValue to set
-	 */
-	public void setOtherValue(String otherValue)
+	public void setBar(long bar)
 	{
-		this.otherValue = otherValue;
+		this.bar = bar;
 	}
+	
+	@MultiIndexed( {"indexa","indexb"} )
+	public double getBaz()
+	{
+		return baz;
+	}
+	public void setBaz(double baz)
+	{
+		this.baz = baz;
+	}
+	
 }

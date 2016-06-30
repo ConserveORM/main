@@ -44,5 +44,5 @@ public @interface MultiIndexed
     /**
      * @return the name of the index this field will be part of
      */
-    String []  values();
+    String []  value();
 }

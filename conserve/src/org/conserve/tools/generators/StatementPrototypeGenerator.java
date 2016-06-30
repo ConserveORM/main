@@ -436,7 +436,7 @@ public class StatementPrototypeGenerator
 	 * @param c
 	 * @return
 	 */
-	private Boolean isSorted(Class<?> c)
+	Boolean isSorted(Class<?> c)
 	{
 		Boolean res = null;
 		if (c.isArray())
@@ -506,7 +506,7 @@ public class StatementPrototypeGenerator
 	 * @param c
 	 * @return
 	 */
-	private Boolean isCollectionsObject(Class<?> c)
+	Boolean isCollectionsObject(Class<?> c)
 	{
 
 		Boolean res = false;

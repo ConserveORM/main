@@ -137,7 +137,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 					}
 					if (m.isAnnotationPresent(MultiIndexed.class))
 					{
-						String[] indices = m.getAnnotation(MultiIndexed.class).values();
+						String[] indices = m.getAnnotation(MultiIndexed.class).value();
 						for (String i : indices)
 						{
 							indexNames.add(i);

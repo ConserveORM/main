@@ -145,4 +145,9 @@ public class PostgreSqlAdapter extends AdapterBase
 		return statement.toString();
 	}
 	
+	@Override
+	public int getMaximumNameLength()
+	{
+		return 63;
+	}
 }

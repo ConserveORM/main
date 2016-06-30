@@ -106,10 +106,14 @@ import org.conserve.objects.schemaupdate.RemovedColumn;
 import org.conserve.objects.schemaupdate.RenamedColumn;
 import org.conserve.objects.schemaupdate.SubClass;
 import org.conserve.objects.schemaupdate.changedcolumns.ArrayToLong;
+import org.conserve.objects.schemaupdate.changedcolumns.IndicesFull;
+import org.conserve.objects.schemaupdate.changedcolumns.IndicesReduced;
 import org.conserve.objects.schemaupdate.changedcolumns.IntToLong;
+import org.conserve.objects.schemaupdate.changedcolumns.NarrowColumnObject;
 import org.conserve.objects.schemaupdate.changedcolumns.ObjectToLong;
 import org.conserve.objects.schemaupdate.changedcolumns.ObjectToSubclass;
 import org.conserve.objects.schemaupdate.changedcolumns.StringToLong;
+import org.conserve.objects.schemaupdate.changedcolumns.WideColumnObject;
 import org.conserve.objects.schemaupdate.changedcolumns.WithIndex;
 import org.conserve.objects.schemaupdate.changedcolumns.WithoutIndex;
 import org.conserve.objects.schemaupdate.copydown.AfterBottom;
@@ -5498,5 +5502,84 @@ public class PersistTest
 		pm2.refresh(copy);
 		assertEquals(ec.getState(),copy.getState());
 		
+		pm1.close();
+		pm2.close();
+		
+	}
+	
+	/**
+	 * Test resizing columns.
+	 */
+	@Test
+	public void testResizeColumn() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		
+		//try widening
+		NarrowColumnObject sco = new NarrowColumnObject();
+		sco.setValue("foo");
+		pm.saveObject(sco);
+		TestTools tt = new TestTools(pm.getPersist());
+		tt.changeName(NarrowColumnObject.class, WideColumnObject.class);
+		pm.updateSchema(WideColumnObject.class);
+		pm.close();
+		pm = new PersistenceManager(driver,database,login,password);
+		List<WideColumnObject> wlist = pm.getObjects(WideColumnObject.class,new All());
+		assertEquals(1,wlist.size());
+		WideColumnObject wnco = wlist.get(0);
+		assertEquals(sco.getValue(),wnco.getValue());
+		
+		//narrowing is not supported by all databases. 
+		
+		pm.close();
+		
+	}
+	
+	/**
+	 * Test adding and removing columns from indices.
+	 */
+	@Test
+	public void testAddRemoveIndices() throws Exception
+	{
+
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		
+		//save an object with a reduced index
+		IndicesReduced red = new IndicesReduced("foo");
+		pm.saveObject(red);
+
+		TestTools tt = new TestTools(pm.getPersist());
+		tt.changeName(IndicesReduced.class, IndicesFull.class);
+		pm.updateSchema(IndicesFull.class);
+		pm.close();
+		
+		//load the object, make sure it still exists
+		pm = new PersistenceManager(driver,database,login,password);
+		assertEquals(0,pm.getCount(IndicesReduced.class, new All()));
+		List<IndicesFull> list = pm.getObjects(IndicesFull.class, new All());
+		assertEquals(1,list.size());
+		IndicesFull ref = list.get(0);
+		assertEquals(red.getFoo(),ref.getFoo());
+		
+		//delete the object
+		pm.deleteObject(ref);
+		//create a new object, store it
+		ref = new IndicesFull();
+		ref.setFoo("bar");
+		pm.saveObject(ref);
+		tt = new TestTools(pm.getPersist());
+		tt.changeName(IndicesFull.class, IndicesReduced.class);
+		pm.updateSchema(IndicesReduced.class);
+		pm.close();
+		
+		//load the object, make sure it still exists
+		pm = new PersistenceManager(driver,database,login,password);
+		assertEquals(0,pm.getCount(IndicesFull.class, new All()));
+		List<IndicesReduced> listf = pm.getObjects(IndicesReduced.class, new All());
+		assertEquals(1,listf.size());
+		IndicesReduced copy = listf.get(0);
+		assertEquals(copy.getFoo(),ref.getFoo());
+		
+		pm.close();
 	}
 }

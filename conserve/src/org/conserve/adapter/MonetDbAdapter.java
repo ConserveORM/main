@@ -63,22 +63,6 @@ public class MonetDbAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#isValidColumnName(java.lang.String)
-	 */
-	@Override
-	public boolean isValidColumnName(String name)
-	{
-		if (name.equalsIgnoreCase("KEY"))
-		{
-			return false;
-		}
-		else
-		{
-			return super.isValidColumnName(name);
-		}
-	}
-
-	/**
 	 * @see org.conserve.adapter.AdapterBase#getAllowsEmptyStatements()
 	 */
 	@Override

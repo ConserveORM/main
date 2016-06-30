@@ -94,7 +94,7 @@ public class AdapterBase
 		{
 			return getDoubleTypeKeyword();
 		}
-		else if (c.equals(String.class))
+		else if (c.equals(String.class) || c.isEnum() || c.equals(Class.class))
 		{
 			if (m != null && m.isAnnotationPresent(MaxLength.class))
 			{
@@ -112,10 +112,6 @@ public class AdapterBase
 					return getVarCharKeyword();
 				}
 			}
-		}
-		else if (c.isEnum())
-		{
-			return getVarCharIndexed();
 		}
 		else if (c.equals(java.sql.Date.class))
 		{

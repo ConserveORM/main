@@ -262,7 +262,7 @@ public class ProtectionManager
 			String propertyTable, Long propertyId, String canonicalName, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
-		statement.append("SELECT COUNT(*) PROPERTY_ID FROM ");
+		statement.append("SELECT COUNT(*) FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ? AND OWNER_TABLE=? AND OWNER_ID=?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
@@ -273,7 +273,6 @@ public class ProtectionManager
 			ps.setString(3, ownerTable);
 			ps.setLong(4, ownerId);
 			Tools.logFine(ps);
-			ps.execute();
 			ResultSet rs = ps.executeQuery();
 			// check if the query returns no results
 			if (!rs.next() || rs.getLong(1)<=0)

@@ -2709,7 +2709,8 @@ public class PersistTest
 		{
 			ncList.get(0).setFoo(nu);
 			pm.saveObject(ncList.get(0));
-		} else if (ncList.get(1).getFoo() == null)
+		}
+		else if (ncList.get(1).getFoo() == null)
 		{
 			ncList.get(1).setFoo(nu);
 			pm.saveObject(ncList.get(1));

@@ -232,7 +232,7 @@ public class ObjectTools
 	 * Determine if a class is a 'database primitive'. A class is a database
 	 * primitive if its Class.isPrimitive method returns true, if it's an object
 	 * representation of a primitive class (e.g. Double, Integer), or if it is
-	 * String, Enum, or any of the java.sql.Time,Timestapm, or Date classes.
+	 * String, Enum, Class, or any of the java.sql.Time,Timestapm, or Date classes.
 	 * 
 	 * In short, a database primitive is any class that can be fully represented
 	 * in one column of an SQL database.
@@ -250,7 +250,11 @@ public class ObjectTools
 		{
 			return true;
 		}
-		else if (c.equals(Enum.class))
+		else if (c.isEnum())
+		{
+			return true;
+		}
+		else if (c.equals(Class.class))
 		{
 			return true;
 		}

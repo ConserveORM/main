@@ -52,6 +52,6 @@ public class ClassIdTuple
 
 	public String getTableName(AdapterBase adapter)
 	{
-		return NameGenerator.getTableName(representedClass,adapter);
+		return NameGenerator.getTableName(getRepresentedClass(),adapter);
 	}
 }

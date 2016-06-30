@@ -115,22 +115,6 @@ public class MySqlAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#isValidColumnName(java.lang.String)
-	 */
-	@Override
-	public boolean isValidColumnName(String name)
-	{
-		if (name.equalsIgnoreCase("KEY"))
-		{
-			return false;
-		}
-		else
-		{
-			return super.isValidColumnName(name);
-		}
-	}
-
-	/**
 	 * @see org.conserve.adapter.AdapterBase#isSupportsClob()
 	 */
 	@Override

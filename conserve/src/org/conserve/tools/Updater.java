@@ -96,7 +96,15 @@ public class Updater
 					Class<?> referenceType = rep.getReturnType(index);
 					updateStatement.append(name);
 					updateStatement.append(" = ? ");
-					if (ObjectTools.isDatabasePrimitive(referenceType))
+					if(referenceType.isEnum())
+					{
+						values.add(((Enum<?>)value).name());
+					}
+					else if(referenceType.equals(Class.class))
+					{
+						values.add(((Class<?>)value).getName());
+					}
+					else if (ObjectTools.isDatabasePrimitive(referenceType))
 					{
 						// put the new value in the statement
 						values.add(value);
@@ -176,7 +184,7 @@ public class Updater
 			}
 		}
 	}
-
+ 
 	/**
 	 * Get all reference (non-primitive) values for a given table entry.
 	 * 

@@ -276,9 +276,9 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 			for (int x = 0; x < this.getPropertyCount(); x++)
 			{
 				String mName = this.getPropertyName(x) + " ";
-				if (this.isReferenceType(x))
+				Class<?> returnType = getReturnType(x);
+				if (this.isReferenceType(x) && !returnType.isEnum() && !returnType.equals(Class.class))
 				{
-					Class<?> returnType = returnTypes.get(x);
 					mName += adapter.getReferenceType(returnType);
 				}
 				else
@@ -446,10 +446,21 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 				{
 					index++;
 					// find the type that best describes the object to store
-					if (ObjectTools.isDatabasePrimitive(c))
+					if(c.equals(Class.class))
+					{
+						//save the name of the class, let the classloader handle it
+						String name = ((Class<?>)value).getName();
+						Tools.setParameter(ps, String.class, index, name);
+					}
+					else if(c.isEnum())
+					{
+						String name = ((Enum<?>)value).name();
+						Tools.setParameter(ps, String.class, index, name);
+					}
+					else if (ObjectTools.isDatabasePrimitive(c))
 					{
 						Tools.setParameter(ps, c, index, value);
-					}
+					} 
 					else
 					{
 						Long id = adapter.getPersist().saveObjectUnprotected(cw, value, delayBuffer);

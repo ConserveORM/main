@@ -141,10 +141,35 @@ public class ObjectFactory
 					}
 					else
 					{
+						boolean wasAccessible = m.isAccessible();
+						if(!wasAccessible)
+						{
+							m.setAccessible(true);
+						}
 						// this is neither a map or collection content variable,
 						// so process it as usual.
-						// first, get the target class
-						if (rep.isPrimitive(x))
+						if(rep.getReturnType(x).isEnum())
+						{
+							String enumName = (String)o;
+							Class<? extends Enum<?>> enClass = (Class<? extends Enum<?>>) rep.getReturnType(x);
+							Enum<?>[] enConsts =enClass.getEnumConstants();
+							for(int t = 0;t<enConsts.length;t++)
+							{
+								if(enConsts[t].name().equals(enumName))
+								{
+									m.invoke(res, enConsts[t]);
+									break;
+								}
+							}
+						}
+						else if(rep.getReturnType(x).equals(Class.class))
+						{
+							//classes are stored as strings and loaded by the classloader
+							String className = (String)o;
+							Class<?> value = ObjectFactory.class.getClassLoader().loadClass(className);
+							m.invoke(res, value);
+						}
+						else if (rep.isPrimitive(x))
 						{
 							if (o instanceof Number)
 							{
@@ -179,13 +204,11 @@ public class ObjectFactory
 							if (object != null)
 							{
 								// save the retrieved
-								if (!m.isAccessible())
-								{
-									m.setAccessible(true);
-								}
 								m.invoke(res, object);
 							}
 						}
+						// set the old accessibility
+						m.setAccessible(wasAccessible);
 					}
 				}
 			}

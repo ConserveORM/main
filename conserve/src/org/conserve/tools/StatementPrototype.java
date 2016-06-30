@@ -78,9 +78,17 @@ public class StatementPrototype
 		int index = 0;
 		for (Object o : conditionalValues)
 		{
-			if (ObjectTools.isDatabasePrimitive(o.getClass()))
+			index++;
+			if(o.getClass().isEnum())
 			{
-				index++;
+				addValue(ps,index,((Enum<?>)o).name());
+			}
+			else if(o.getClass().equals(Class.class))
+			{
+				addValue(ps,index,((Class<?>)o).getName());
+			}
+			else if (ObjectTools.isDatabasePrimitive(o.getClass()))
+			{
 				addValue(ps, index, o);
 			}
 		}

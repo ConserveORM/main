@@ -49,11 +49,6 @@ public class ArrayLoader
 
 
 	/**
-	 * The id of the last array loaded by this loader.
-	 */
-	private Long lastArrayId;
-
-	/**
 	 * The database IDs of the relational table entries - corresponds to the
 	 * entries.
 	 */
@@ -75,7 +70,6 @@ public class ArrayLoader
 	 */
 	public void loadArray(Long arrayId) throws SQLException
 	{
-		this.lastArrayId = arrayId;
 		// first, get the array class
 		componentClassName = null;
 		StringBuilder statement = new StringBuilder("SELECT ");
@@ -350,47 +344,7 @@ public class ArrayLoader
 	 */
 	public ArrayList<Long> getRelationalIds()
 	{
-		if (relationalIds == null)
-		{
-			// this array was fetched from cache, so the relational ids do not
-			// exist any longer.
-			try
-			{
-				loadRelationalIds();
-			}
-			catch (SQLException e)
-			{
-				e.printStackTrace();
-				return null;
-			}
-		}
 		return relationalIds;
-	}
-
-	private void loadRelationalIds() throws SQLException
-	{
-		relationalIds = new ArrayList<Long>();
-		relationalTableName = NameGenerator.getArrayMemberTableName(array
-				.getClass().getComponentType(), adapter);
-		StringBuilder statement = new StringBuilder("SELECT ");
-		statement.append(Defaults.ID_COL);
-		statement.append(" FROM ");
-		statement.append(relationalTableName);
-		statement.append(" WHERE ");
-		statement.append(Defaults.ARRAY_MEMBER_ID);
-		statement.append(" = ? ORDER BY ");
-		statement.append(Defaults.ARRAY_POSITION);
-		statement.append(" ASC");
-		PreparedStatement ps = connectionWrapper.prepareStatement(statement
-				.toString());
-		ps.setLong(1, lastArrayId);
-		Tools.logFine(ps);
-		ResultSet rs = ps.executeQuery();
-		while (rs.next())
-		{
-			relationalIds.add(rs.getLong(1));
-		}
-		ps.close();
 	}
 
 }

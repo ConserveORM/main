@@ -16,34 +16,25 @@
  *        You should have received a copy of the GNU Affero General Public License
  *        along with Conserve.  If not, see <https://www.gnu.org/licenses/agpl.html>.
  *******************************************************************************/
-package org.conserve;
+package org.conserve.adapter;
 
-import org.conserve.tools.CaseInsensitiveStringMapTest;
-import org.conserve.tools.CompabilityCalculatorTest;
-import org.conserve.tools.ObjectRepresentationTest;
-import org.conserve.tools.ObjectToolsTest;
-import org.conserve.tools.UniqueIdGeneratorTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
+import org.conserve.Persist;
 
-@RunWith(Suite.class)
-@SuiteClasses({ 
-	DerbyPersistTest.class, 
-	FirebirdPersistTest.class, 
-	HsqldbPersistTest.class, 
-	//MariaDBPersistTest.class,
-	MonetDbPersistTest.class, 
-	MySQLPersistTest.class, 
-	PersistTest.class, 
-	PostgreSQLPersistTest.class,
-	SqLitePersistTest.class, 
-	ObjectRepresentationTest.class, 
-	ObjectToolsTest.class, 
-	UniqueIdGeneratorTest.class,
-	CompabilityCalculatorTest.class,
-	CaseInsensitiveStringMapTest.class})
-public class AllTests
+/**
+ * Adapter for the H2 database.
+ * 
+ * @author Erik Berglund
+ *
+ */
+public class H2Adapter extends AdapterBase
 {
+
+	/**
+	 * @param persist
+	 */
+	public H2Adapter(Persist persist)
+	{
+		super(persist);
+	}
 
 }

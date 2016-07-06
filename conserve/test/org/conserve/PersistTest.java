@@ -5250,8 +5250,7 @@ public class PersistTest
 			pm.close();
 			
 			pm = new PersistenceManager(driver,database,login,password);
-			ConnectionWrapper cw = pm.getConnectionWrapper();
-			SimpleObject sos = pm.getObject(cw,SimpleObject.class,id);
+			SimpleObject sos = pm.getObject(SimpleObject.class,id);
 			assertEquals(so.getAge(),sos.getAge());
 			assertEquals(so.getName(),sos.getName());
 		

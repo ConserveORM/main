@@ -318,7 +318,6 @@ public class TableManager
 	 */
 	private void upgradeSchema(int existingSchema, ConnectionWrapper cw) throws SQLException
 	{
-
 		// alter the schema
 		if (existingSchema < 2)
 		{

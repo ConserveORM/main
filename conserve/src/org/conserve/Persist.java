@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.adapter.DerbyAdapter;
 import org.conserve.adapter.FirebirdAdapter;
+import org.conserve.adapter.H2Adapter;
 import org.conserve.adapter.HsqldbAdapter;
 import org.conserve.adapter.MariaAdapter;
 import org.conserve.adapter.MonetDbAdapter;
@@ -203,11 +204,15 @@ public class Persist
 		{
 			res = new MonetDbAdapter(this);
 		}
+		else if(url.startsWith("jdbc:h2:"))
+		{
+			res = new H2Adapter(this);
+		}
 		// TODO: If you want to extend Conserve to handle a new RDBMS,
 		// add the case here and return a custom subclass of AdapterBase.
 		else
 		{
-			// use the default (H2) adapter.
+			// use the default adapter.
 			res = new AdapterBase(this);
 		}
 		return res;
@@ -1241,54 +1246,44 @@ public class Persist
 	 * @return a list of classes.
 	 * @throws SQLException
 	 */
-	public List<Class<?>> getClasses() throws SQLException
+	public List<Class<?>> getClasses(ConnectionWrapper cw) throws SQLException
 	{
 		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
 		// get all c__IS_A entries
 		String selectStmt = "SELECT * from " + Defaults.IS_A_TABLENAME;
-		ConnectionWrapper cw = getConnectionWrapper();
-		try
+		PreparedStatement ps = cw.prepareStatement(selectStmt);
+		ResultSet rs = ps.executeQuery();
+		while (rs.next())
 		{
-			PreparedStatement ps = cw.prepareStatement(selectStmt);
-			ResultSet rs = ps.executeQuery();
-			while (rs.next())
+			String superClassName = rs.getString("SUPERCLASS");
+			String subClassName = rs.getString("SUBCLASS");
+			try
 			{
-				String superClassName = rs.getString("SUPERCLASS");
-				String subClassName = rs.getString("SUBCLASS");
-				try
+				Class<?> superClass = ObjectTools.lookUpClass(superClassName, adapter);
+				if (superClass != null && !res.contains(superClass))
 				{
-					Class<?> superClass = ObjectTools.lookUpClass(superClassName, adapter);
-					if (superClass != null && !res.contains(superClass))
-					{
-						res.add(superClass);
-					}
+					res.add(superClass);
 				}
-				catch (ClassNotFoundException e)
-				{
-					LOGGER.log(Level.WARNING, "ClassNotFoundException: ", e);
-				}
-				try
-				{
-					Class<?> subClass = ObjectTools.lookUpClass(subClassName, adapter);
-					if (subClass != null && !res.contains(subClass))
-					{
-						res.add(subClass);
-					}
-				}
-				catch (ClassNotFoundException e)
-				{
-					LOGGER.log(Level.WARNING, "ClassNotFoundException: ", e);
-				}
-
 			}
-			ps.close();
-			cw.commitAndDiscard();
+			catch (ClassNotFoundException e)
+			{
+				LOGGER.log(Level.WARNING, "ClassNotFoundException: ", e);
+			}
+			try
+			{
+				Class<?> subClass = ObjectTools.lookUpClass(subClassName, adapter);
+				if (subClass != null && !res.contains(subClass))
+				{
+					res.add(subClass);
+				}
+			}
+			catch (ClassNotFoundException e)
+			{
+				LOGGER.log(Level.WARNING, "ClassNotFoundException: ", e);
+			}
+
 		}
-		catch (Exception e)
-		{
-			cw.rollbackAndDiscard();
-			throw new SQLException(e);
-		}
+		ps.close();
 
 		return res;
 	}

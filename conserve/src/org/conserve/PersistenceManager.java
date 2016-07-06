@@ -695,6 +695,37 @@ public class PersistenceManager
 	{
 		return persist.getObject(cw, clazz, id);
 	}
+	/**
+	 * Get the object of class clazz with the given database id. The actual
+	 * object returned may be an instance of a subclass.
+	 * This is a convenience method that handles the ConnectionWrapper for you.
+	 * 
+	 * @param clazz
+	 *            the class of the object to retrieve.
+	 * @param id
+	 *            the database id of the object at the level of clazz.
+	 *            
+	 * @return the matching object.
+	 * 
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	public <T> T getObject( Class<T> clazz, Long id) throws SQLException, ClassNotFoundException
+	{
+		T res = null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getObject(cw, clazz, id);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
+	}
 
 	/**
 	 * Get a list of all classes persisted in this database. It does not include
@@ -704,9 +735,37 @@ public class PersistenceManager
 	 * @return a list of classes.
 	 * @throws SQLException
 	 */
+	public List<Class<?>> getClasses(ConnectionWrapper cw) throws SQLException
+	{
+		return persist.getClasses(cw);
+	}
+	
+	/**
+	 * Get a list of all classes persisted in this database. It does not include
+	 * classes representing primitives, e.g. java.lang.Integer, or array
+	 * classes.
+	 * This is a convenience method that allocates a ConnectionWrapper for you.
+	 * 
+	 * @return a list of classes.
+	 * @throws SQLException
+	 */
 	public List<Class<?>> getClasses() throws SQLException
 	{
-		return persist.getClasses();
+		List<Class<?>>res=null;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = getClasses(cw);
+			cw.commitAndDiscard();
+		}
+		catch (Exception e)
+		{
+			// cancel the operation
+			cw.rollbackAndDiscard();
+			// re-throw the original exception
+			throw new SQLException(e);
+		}
+		return res;
 	}
 
 	/**
@@ -780,6 +839,7 @@ public class PersistenceManager
 	/**
 	 * Check if an object has been changed since it was loaded from the
 	 * database.
+	 * This is a convenience method that handles the ConnectionWrapper for you.
 	 * 
 	 * @param o
 	 *            the object to check for, will be unchanged.
@@ -789,58 +849,73 @@ public class PersistenceManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	public boolean hasChanged(Object o) throws SQLException, ClassNotFoundException
+	public boolean hasChanged( Object o) throws SQLException, ClassNotFoundException
+	{
+		boolean res = false;
+		ConnectionWrapper cw = getConnectionWrapper();
+		try
+		{
+			res = hasChanged(cw,o);
+			cw.commitAndDiscard();
+		}
+		catch(Exception e)
+		{
+			cw.rollbackAndDiscard();
+			throw new SQLException(e);
+		}
+		return res;
+	}
+
+	/**
+	 * Check if an object has been changed since it was loaded from the
+	 * database.
+	 * 
+	 * @param o
+	 *            the object to check for, will be unchanged.
+	 * 
+	 * @return true if the object or any of its properties has changed or been
+	 *         deleted, false otherwise.
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	public boolean hasChanged(ConnectionWrapper cw, Object o) throws SQLException, ClassNotFoundException
 	{
 		Long dbId = persist.getCache().getDatabaseId(o);
 		if (dbId != null)
 		{
-			ConnectionWrapper cw = null;
-			try
+			// Search using o as example, make sure returned object exists
+			// and has same table id number.
+			HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(cw, o.getClass(), null, new Equal(o), null);
+			List<Long> ids = res.get(o.getClass());
+			if (ids != null && ids.contains(dbId))
 			{
-				cw = getConnectionWrapper();
-				// Search using o as example, make sure returned object exists
-				// and has same table id number.
-				HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(cw,o.getClass(), null, new Equal(o),
-						null);
-				List<Long> ids = res.get(o.getClass());
-				if (ids!=null && ids.contains(dbId))
+				boolean result = true;
+				// get the object from the database
+				ObjectRowMap tmpCache = new ObjectRowMap();
+				tmpCache.start();
+				Object actual = persist.getObject(cw, Object.class, dbId, tmpCache);
+				tmpCache.stop();
+				tmpCache = new ObjectRowMap();
+				tmpCache.start();
+				// temporarily save the old object, bypassing the cache
+				long tmpId = persist.saveObject(cw, o, false, null, tmpCache);
+				// make sure the new object can be used to find the old object
+				res = persist.getObjectDescriptors(cw, o.getClass(), null, new Equal(actual), null);
+				ids = res.get(o.getClass());
+				if (ids != null && ids.contains(tmpId))
 				{
-					boolean result = true;
-					//get the object from the database
-					ObjectRowMap tmpCache = new ObjectRowMap();
-					tmpCache.start();
-					Object actual = persist.getObject(cw, Object.class, dbId,tmpCache);
-					tmpCache.stop();
-					tmpCache = new ObjectRowMap();
-					tmpCache.start();
-					//temporarily save the old object, bypassing the cache
-					long tmpId =persist.saveObject(cw,o,false,null,tmpCache);
-					//make sure the new object can be used to find the old object
-					res = persist.getObjectDescriptors(cw,o.getClass(), null, new Equal(actual),
-							null);
-					ids = res.get(o.getClass());
-					if(ids != null && ids.contains(tmpId))
-					{
-						result = false;
-					}
-					//delete the temporary object by rolling back the transaction
-					cw.rollback();
-					tmpCache.stop();
-					//purge temporary object from cache
-					persist.getCache().purge(NameGenerator.getTableName(o, persist.getAdapter()),tmpId);
-					return result;
+					result = false;
 				}
-				else
-				{
-					return true;
-				}
+				// delete the temporary object by rolling back the transaction
+				cw.rollback();
+				tmpCache.stop();
+				// purge temporary object from cache
+				persist.getCache().purge(NameGenerator.getTableName(o, persist.getAdapter()), tmpId);
+				return result;
 			}
-			finally
+			else
 			{
-				if (cw != null)
-				{
-					cw.commitAndDiscard();
-				}
+				return true;
 			}
 		}
 		return false;
@@ -951,13 +1026,20 @@ public class PersistenceManager
 	 * The following changes ARE supported:
 	 * <p/>
 	 * 
-	 * * Add a property.
-	 * <p/>
 	 * 
-	 * * Remove a property.
+	 * * Remove or remove a property.
 	 * <p/>
 	 * 
 	 * * Rename a property.
+	 * <p/>
+	 * 
+	 * * Add or remove an index.
+	 * <p/>
+	 * 
+	 * * Move a class from one superclass to another.
+	 * <p/>
+	 * 
+	 * * Add or remove an interface.
 	 * <p/>
 	 * 
 	 * * Change a property from a primitive to the corresponding reference type,
@@ -991,6 +1073,11 @@ public class PersistenceManager
 	 * want changed to this method. If you are changing a property from
 	 * primitive to reference or the other way, you do not even need to call
 	 * this method, just start using the new class.
+	 * <p/>
+	 * 
+	 * After calling this method the PersistenceManager should be closed and a new instance created.
+	 * Any other PersistenceManager objects should do the same - the integrity of objects that are loaded 
+	 * by other PersistenceManagers can not be guaranteed otherwise.
 	 * <p/>
 	 * 
 	 * If you wish to implement any other changes, you have to do this in a
@@ -1104,6 +1191,7 @@ public class PersistenceManager
 	{
 		return persist.calculateAggregate(cw,clazz,functions,where);
 	}
+	
 	/**
 	 * Convenience function that calculates the sum of one given field in all matching entries.
 	 * 
@@ -1120,6 +1208,7 @@ public class PersistenceManager
 		Number [] tmp = calculateAggregate(cw, clazz,new AggregateFunction []{function},where);
 		return tmp[0];
 	}
+	
 	/**
 	 * Returns an array containing the result of the SQL sum() function for each field.
 	 * If the field is an integer type, the corresponding entry is  Long, Integer, Byte, or Short type, whichever is appropriate.

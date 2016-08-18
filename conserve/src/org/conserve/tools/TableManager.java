@@ -42,6 +42,7 @@ import org.conserve.connection.DataConnectionPool;
 import org.conserve.exceptions.SchemaPermissionException;
 import org.conserve.select.All;
 import org.conserve.tools.generators.NameGenerator;
+import org.conserve.tools.metadata.ClassChangeList;
 import org.conserve.tools.metadata.ConcreteObjectRepresentation;
 import org.conserve.tools.metadata.DatabaseObjectRepresentation;
 import org.conserve.tools.metadata.FieldChangeDescription;
@@ -1340,10 +1341,11 @@ public class TableManager
 				InheritanceChangeCalculator calc = new InheritanceChangeCalculator(oldObjectStack, nuObjectStack);
 				InheritanceChangeDescription inheritanceChanges = calc.calculateDescription();
 				// create the new links
-				for (List<Node> nuClasses : inheritanceChanges.getAddedSuperClasses())
+				for (ClassChangeList nuClasses : inheritanceChanges.getAddedSuperClasses())
 				{
-					// add entries
-					addEntries(nuClasses, cw);
+					if (nuClasses.size()>0)
+						// add entries
+						addEntries(nuObjectStack.getActual(),nuClasses, cw);
 				}
 				// move moved fields
 				List<FieldChangeDescription> movedFields = inheritanceChanges.getMovedFields();
@@ -1353,10 +1355,11 @@ public class TableManager
 					moveFields(movedField, cw);
 				}
 				// delete entries in old tables
-				for (List<Node> deletedClasses : inheritanceChanges.getRemovedSuperClasses())
+				for (ClassChangeList deletedClasses : inheritanceChanges.getRemovedSuperClasses())
 				{
-					// remove entries
-					removeEntries(deletedClasses, cw);
+					if (deletedClasses.size()>0)
+						// remove entries
+						removeEntries(oldObjectStack.getActual(),deletedClasses, cw);
 				}
 
 				// get info on direct subclasses from database
@@ -1610,27 +1613,25 @@ public class TableManager
 	 * @throws SchemaPermissionException
 	 * @throws SQLException
 	 */
-	private void addEntries(List<Node> nuClasses, ConnectionWrapper cw) throws SQLException, SchemaPermissionException
+	private void addEntries(Node baseClass,ClassChangeList nuClasses, ConnectionWrapper cw) throws SQLException, SchemaPermissionException
 	{
 		// make sure all tables exists
-		for (int tableIdx = 1; tableIdx < nuClasses.size(); tableIdx++)
+		for (int tableIdx = 0; tableIdx < nuClasses.size(); tableIdx++)
 		{
-			Node n = nuClasses.get(tableIdx);
+			Node n = nuClasses.getNode(tableIdx);
 			ensureTableExists((ConcreteObjectRepresentation) n.getRepresentation(), cw);
 		}
 
 		// update the C_IS_A table to reflect new superclass
-		for (int tableIdx = 0; tableIdx < nuClasses.size(); tableIdx++)
+		for (int tableIdx = 1; tableIdx < nuClasses.size(); tableIdx++)
 		{
-			Node n = nuClasses.get(tableIdx);
-			for (Node sup : n.getSupers())
-			{
-				addClassRelation(n.getRepresentation().getSystemicName(), sup.getRepresentation().getSystemicName(), cw);
-			}
+			Node sub = nuClasses.getNode(tableIdx-1);
+			Node sup = nuClasses.getNode(tableIdx);
+			addClassRelation(sub.getRepresentation().getSystemicName(), sup.getRepresentation().getSystemicName(), cw);
 		}
 
 		// get the id of all entries in the fist class
-		String baseTable = nuClasses.get(0).getRepresentation().getTableName();
+		String baseTable = baseClass.getRepresentation().getTableName();
 		StringBuilder query = new StringBuilder();
 		query.append("SELECT ");
 		query.append(Defaults.ID_COL);
@@ -1638,56 +1639,50 @@ public class TableManager
 		query.append(baseTable);
 		PreparedStatement ps = cw.prepareStatement(query.toString());
 		Tools.logFine(ps);
+		//find out how far up the list to go
+		//if the list is shared, stop one step early and just re-point the remaining nodes
+		int stop = nuClasses.isShared()?nuClasses.size()-1:nuClasses.size();
 		ResultSet rs = ps.executeQuery();
 		while (rs.next())
 		{
 			long id = rs.getLong(1);
-			for (int x = 0; x < nuClasses.size(); x++)
+			for (int x = 1; x < stop; x++)
 			{
-				Node nuClass = nuClasses.get(x);
-				if (x > 0)
-				{
-					// if we're above the base table,
-					// add a new entry
-					StringBuilder insert = new StringBuilder();
-					insert.append("INSERT INTO ");
-					insert.append(nuClass.getRepresentation().getTableName());
-					insert.append("(");
-					insert.append(Defaults.ID_COL);
-					insert.append(",");
-					insert.append(Defaults.REAL_CLASS_COL);
-					insert.append(")values(?,?)");
-					PreparedStatement pInsert = cw.prepareStatement(insert.toString());
-					pInsert.setLong(1, id);
-					pInsert.setString(2, nuClasses.get(x - 1).getRepresentation().getSystemicName());
-					Tools.logFine(pInsert);
-					pInsert.executeUpdate();
-					pInsert.close();
-				}
-				// re-point all the relevant superclasses
-				List<Node> supers = nuClass.getSupers();
-				for (Node sup : supers)
-				{
-					if ((x >= nuClasses.size() - 1) || !sup.equals(nuClasses.get(x + 1)))
-					{
-						StringBuilder updateReal = new StringBuilder();
-						updateReal.append("UPDATE ");
-						updateReal.append(sup.getRepresentation().getTableName());
-						updateReal.append(" SET ");
-						updateReal.append(Defaults.REAL_CLASS_COL);
-						updateReal.append(" = ? WHERE ");
-						updateReal.append(Defaults.ID_COL);
-						updateReal.append(" = ?");
-						PreparedStatement pUpd = cw.prepareStatement(updateReal.toString());
-						pUpd.setString(1, nuClass.getRepresentation().getSystemicName());
-						pUpd.setLong(2, id);
-						Tools.logFine(pUpd);
-						pUpd.executeUpdate();
-						pUpd.close();
-					}
-				}
-
+				Node nuClass = nuClasses.getNode(x);
+				// add a new entry
+				StringBuilder insert = new StringBuilder();
+				insert.append("INSERT INTO ");
+				insert.append(nuClass.getRepresentation().getTableName());
+				insert.append("(");
+				insert.append(Defaults.ID_COL);
+				insert.append(",");
+				insert.append(Defaults.REAL_CLASS_COL);
+				insert.append(")values(?,?)");
+				PreparedStatement pInsert = cw.prepareStatement(insert.toString());
+				pInsert.setLong(1, id);
+				pInsert.setString(2, nuClasses.getNode(x-1).getRepresentation().getSystemicName());
+				Tools.logFine(pInsert);
+				pInsert.executeUpdate();
+				pInsert.close();
 			}
+		}
+		if(nuClasses.isShared())
+		{
+			Node sharedNode = nuClasses.getNode(nuClasses.size()-1);
+			StringBuilder reName = new StringBuilder();
+			reName.append("UPDATE ");
+			reName.append(sharedNode.getRepresentation().getTableName());
+			reName.append(" SET ");
+			reName.append(Defaults.REAL_CLASS_COL);
+			reName.append(" = ? WHERE " );
+			reName.append(Defaults.REAL_CLASS_COL);
+			reName.append(" = ?");
+			PreparedStatement pRename = cw.prepareStatement(reName.toString());
+			pRename.setString(1, nuClasses.getSharedSub().getRepresentation().getSystemicName());
+			pRename.setString(2, nuClasses.getNode(nuClasses.size()-2).getRepresentation().getSystemicName());
+			Tools.logFine(pRename);
+			pRename.executeUpdate();
+			pRename.close();
 		}
 		ps.close();
 
@@ -1699,11 +1694,11 @@ public class TableManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private void removeEntries(List<Node> deletedClasses, ConnectionWrapper cw) throws ClassNotFoundException, SQLException
+	private void removeEntries(Node baseClass,ClassChangeList deletedClasses, ConnectionWrapper cw) throws ClassNotFoundException, SQLException
 	{
 
-		// get the id of all entries in the fist class
-		String baseTable = deletedClasses.get(0).getRepresentation().getTableName();
+		// get the id of all entries in the first class
+		String baseTable = baseClass.getRepresentation().getTableName();
 		StringBuilder query = new StringBuilder();
 		query.append("SELECT ");
 		query.append(Defaults.ID_COL);
@@ -1711,13 +1706,14 @@ public class TableManager
 		query.append(baseTable);
 		PreparedStatement ps = cw.prepareStatement(query.toString());
 		Tools.logFine(ps);
+		int stop = deletedClasses.isShared()?deletedClasses.size()-1:deletedClasses.size();
 		ResultSet rs = ps.executeQuery();
 		while (rs.next())
 		{
 			long id = rs.getLong(1);
-			for (int x = 1; x < deletedClasses.size(); x++)
+			for (int x = 1; x < stop; x++)
 			{
-				Node nuClass = deletedClasses.get(x);
+				Node nuClass = deletedClasses.getNode(x);
 				// remove the entries
 				StringBuilder deleteStmt = new StringBuilder();
 				deleteStmt.append("DELETE FROM ");
@@ -1725,23 +1721,19 @@ public class TableManager
 				deleteStmt.append(" WHERE ");
 				deleteStmt.append(Defaults.ID_COL);
 				deleteStmt.append(" = ?");
-				PreparedStatement pInsert = cw.prepareStatement(deleteStmt.toString());
-				pInsert.setLong(1, id);
-				Tools.logFine(pInsert);
-				pInsert.executeUpdate();
-				pInsert.close();
+				PreparedStatement pDelete = cw.prepareStatement(deleteStmt.toString());
+				pDelete.setLong(1, id);
+				Tools.logFine(pDelete);
+				pDelete.executeUpdate();
+				pDelete.close();
 
 			}
 		}
 		ps.close();
 
-		if (deletedClasses.size() > 1)
-		{
-			// remove the immediate super-class IS_A relationship
-			Node n = deletedClasses.get(0);
-			Node sup = deletedClasses.get(1);
-			deleteClassRelation(sup.getRepresentation().getRepresentedClass(), n.getRepresentation().getRepresentedClass(), cw);
-		}
+		// remove the immediate super-class IS_A relationship
+		Node sup = deletedClasses.getNode(1);
+		deleteClassRelation(sup.getRepresentation().getRepresentedClass(), baseClass.getRepresentation().getRepresentedClass(), cw);
 
 	}
 

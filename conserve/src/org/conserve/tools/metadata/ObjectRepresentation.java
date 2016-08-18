@@ -787,7 +787,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		if(obj instanceof ObjectRepresentation)
 		{
 			ObjectRepresentation other = (ObjectRepresentation)obj;
-			if(other.getRepresentedClass().equals(getRepresentedClass()))
+			if(other.getRepresentedClass().getCanonicalName().equals(getRepresentedClass().getCanonicalName()))
 			{
 				return true;
 			}

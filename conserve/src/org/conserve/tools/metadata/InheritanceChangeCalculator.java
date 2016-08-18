@@ -18,7 +18,6 @@
  *******************************************************************************/
 package org.conserve.tools.metadata;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.conserve.tools.metadata.ObjectStack.Node;
@@ -47,8 +46,8 @@ public class InheritanceChangeCalculator
 	{
 		InheritanceChangeDescription res = new InheritanceChangeDescription();
 
-		recursiveFindDeleted(res, fromStack.getActual());
-		recursiveFindAdded(res, toStack.getActual());
+		findDeleted(res, fromStack.getActual());
+		findAdded(res, toStack.getActual());
 
 		// check if any field has moved from one superclass to another
 		List<String> fieldNames = fromStack.getAllPropertyNames();
@@ -80,16 +79,16 @@ public class InheritanceChangeCalculator
 
 	}
 
-	private void recursiveFindAdded(InheritanceChangeDescription res, Node actual)
+	private void findAdded(InheritanceChangeDescription res, Node actual)
 	{
-		List<List<Node>> addedList = res.getAddedSuperClasses();
-		recursiveFindChanged(addedList, actual, fromStack);
+		List<ClassChangeList> addedList = res.getAddedSuperClasses();
+		findChanged(addedList, actual, fromStack);
 	}
 
-	private void recursiveFindDeleted(InheritanceChangeDescription res, Node actual)
+	private void findDeleted(InheritanceChangeDescription res, Node actual)
 	{
-		List<List<Node>> deletedList = res.getRemovedSuperClasses();
-		recursiveFindChanged(deletedList, actual, toStack);
+		List<ClassChangeList> deletedList = res.getRemovedSuperClasses();
+		findChanged(deletedList, actual, toStack);
 	}
 
 	/**
@@ -102,22 +101,19 @@ public class InheritanceChangeCalculator
 	 * @param otherStack
 	 *            the stack to compare changes with.
 	 */
-	private void recursiveFindChanged(List<List<Node>> changedList, Node actual, ObjectStack otherStack)
+	private void findChanged(List<ClassChangeList> changedList, Node actual, ObjectStack otherStack)
 	{
 		// list all super-classes of actual
 		List<Node> supers = actual.getSupers();
 		for (Node s : supers)
 		{
-			List<Node> deletedNodes = new ArrayList<>();
-			deletedNodes.add(actual);
-			if (!otherStack.contains(s))
+			//check if the two nodes are directly connected
+			if (!otherStack.hasSuper(actual, s))
 			{
-				deletedNodes.add(s);
+				ClassChangeList deletedNodes = new ClassChangeList();
+				deletedNodes.addNode(actual);
+				deletedNodes.addNode(s);
 				recursiveFindChanged(changedList, s, otherStack, deletedNodes);
-			}
-			else
-			{
-				changedList.add(deletedNodes);
 			}
 		}
 	}
@@ -134,33 +130,44 @@ public class InheritanceChangeCalculator
 	 *            the object stack to compare to
 	 * @param deletedNodes
 	 */
-	private void recursiveFindChanged(List<List<Node>> changedList, Node sub, ObjectStack otherStack, List<Node> deletedNodes)
+	private void recursiveFindChanged(List<ClassChangeList> changedList, Node sub, ObjectStack otherStack, ClassChangeList deletedNodes)
 	{
 		List<Node> supers = sub.getSupers();
 		if (supers.size() == 0)
 		{
 			// no superclasses, this is the end of a chain of deleted
-			// interfaces.
-			List<Node> realDeleted = new ArrayList<>();
+			// interfaces or superclasses
+			ClassChangeList realDeleted = new ClassChangeList();
 			realDeleted.addAll(deletedNodes);
+			if(otherStack.contains(sub))
+			{
+				realDeleted.setShared(true);
+				//set the name of the class just below the shared class in the other stack
+				Node otherSub = otherStack.getSubNode(sub);
+				realDeleted.setSharedSub(otherSub);
+			}
 			changedList.add(realDeleted);
 		}
 		else
 		{
 			for (Node s : supers)
 			{
-				// the chain has re-merged with the new tree
-				List<Node> tmp = new ArrayList<>();
+				ClassChangeList tmp = new ClassChangeList();
 				tmp.addAll(deletedNodes);
-				if (otherStack.contains(s))
+				if(!otherStack.hasSuper(sub, s))
 				{
-					changedList.add(tmp);
+					// more deleted nodes, keep on recursing
+					tmp.addNode(s);
+					recursiveFindChanged(changedList, s, otherStack, tmp);
 				}
 				else
 				{
-					// more deleted nodes, keep on recursing
-					tmp.add(s);
-					recursiveFindChanged(changedList, s, otherStack, tmp);
+					// the chain has re-merged with the new tree, stop recursing
+					tmp.setShared(true);
+					//set the name of the class just below the shared class in the other stack
+					Node otherSub = otherStack.getSubNode(sub);
+					tmp.setSharedSub(otherSub);
+					changedList.add(tmp);
 				}
 			}
 		}

@@ -32,7 +32,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DerbyPersistTest.class, 
 	FirebirdPersistTest.class, 
 	HsqldbPersistTest.class, 
-	//MariaDBPersistTest.class,
+	MariaDBPersistTest.class,
 	MonetDbPersistTest.class, 
 	MySQLPersistTest.class, 
 	PersistTest.class, 

@@ -35,6 +35,7 @@ import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.Tools;
 import org.conserve.tools.generators.NameGenerator;
+import org.conserve.tools.metadata.ObjectStack.Node;
 
 /**
  * Wrapper that encapsulates all ObjectRepresentations for an object.
@@ -479,6 +480,24 @@ public class ObjectStack
 		}
 		return null;
 	}
+	
+	/**
+	 * Check if a given subnode has a given node among its supers.
+	 * @param sub the subnode.
+	 * @param possilbeSuper the node that we want to check among the supers.
+	 * 
+	 * @return false if possibleSuper is not a direct super of sub, or if sub is not in this ObjectStack.
+	 */
+	public boolean hasSuper(Node sub, Node possibleSuper)
+	{
+		Node localSub = getNode(sub.getRepresentation().getRepresentedClass());
+		if(localSub != null)
+		{
+			return localSub.hasSuper(possibleSuper);
+		}
+		return false;
+	}
+	
 
 
 	/**
@@ -747,6 +766,11 @@ public class ObjectStack
 		{
 			return superclasses;
 		}
+		
+		public boolean hasSuper(Node n)
+		{
+			return getSupers().contains(n);
+		}
 
 		public ObjectRepresentation getRepresentation()
 		{
@@ -760,6 +784,24 @@ public class ObjectStack
 		public String toString()
 		{
 			return representation.toString();
+		}
+		
+		/**
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj)
+		{
+			boolean res = false;
+			if(obj instanceof Node)
+			{
+				Node n = (Node)obj;
+				if(n.getRepresentation().equals(getRepresentation()))
+				{
+					res = true;
+				}
+			}
+			return res;
 		}
 	}
 
@@ -873,6 +915,26 @@ public class ObjectStack
 	public AdapterBase getAdapter()
 	{
 		return adapter;
+	}
+
+	/**
+	 * Get the one node that has sup as a super.
+	 * @param sup
+	 * @return
+	 */
+	public Node getSubNode(Node sup)
+	{
+		Node res = null;
+		List<Node>all =  representations.allNodes();
+		for(Node a:all)
+		{
+			if(hasSuper(a,sup))
+			{
+				res = a;
+				break;
+			}
+		}
+		return res;
 	}
 	
 

@@ -21,24 +21,24 @@ package org.conserve.tools.metadata;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.conserve.tools.metadata.ObjectStack.Node;
-
 /**
- * Describes the changes in the object model where one class has been moved from one superclass to another.
- * It also contains a list of fields that have been moved.
+ * Describes the changes in the object model where one class has been moved from
+ * one superclass to another. It also contains a list of fields that have been
+ * moved.
  * 
  * @author Erik Berglund
  *
  */
 public class InheritanceChangeDescription
 {
-	private List<List<Node>> removedSuperClasses = new ArrayList<>();
-	private List<List<Node>> addedSuperClasses = new ArrayList<>();
+	private List<ClassChangeList> removedSuperClasses = new ArrayList<>();
+	private List<ClassChangeList> addedSuperClasses = new ArrayList<>();
 	private List<FieldChangeDescription> movedFields = new ArrayList<>();
-	
+
 	/**
-	 * Get change descriptions for all fields that have been moved from an old superclass to a new one.
-	 * Never returns null - if there are no changed fields an empty list is returned.
+	 * Get change descriptions for all fields that have been moved from an old
+	 * superclass to a new one. Never returns null - if there are no changed
+	 * fields an empty list is returned.
 	 * 
 	 * @return
 	 */
@@ -46,22 +46,23 @@ public class InheritanceChangeDescription
 	{
 		return this.movedFields;
 	}
-	
 
 	/**
 	 * Get a list of former superclasses.
+	 * 
 	 * @return the removedSuperClasses
 	 */
-	public List<List<Node>> getRemovedSuperClasses()
+	public List<ClassChangeList> getRemovedSuperClasses()
 	{
 		return removedSuperClasses;
 	}
 
 	/**
 	 * Get a list of new superclasses.
+	 * 
 	 * @return the addedSuperClass
 	 */
-	public List<List<Node>> getAddedSuperClasses()
+	public List<ClassChangeList> getAddedSuperClasses()
 	{
 		return addedSuperClasses;
 	}
@@ -71,36 +72,36 @@ public class InheritanceChangeDescription
 	 */
 	public void addMovedField(FieldChangeDescription fcDesc)
 	{
-		this.movedFields.add(fcDesc);		
+		this.movedFields.add(fcDesc);
 	}
 
-
 	/**
-	 * True if the inheritance model has changed so much that checking for changes in the actual object is pointless.
+	 * True if the inheritance model has changed so much that checking for
+	 * changes in the actual object is pointless.
 	 * 
 	 * @return
 	 */
 	public boolean inheritanceModelChanged()
 	{
-		if(size(removedSuperClasses)>1 || size(addedSuperClasses)>1)
+		if (size(removedSuperClasses) > 0 || size(addedSuperClasses) > 0)
 		{
 			return true;
 		}
 		return false;
 	}
 
-
 	/**
 	 * Get the size of a list of lists
+	 * 
 	 * @param listoflists
 	 * @return
 	 */
-	private int size(List<List<Node>> listoflists)
+	private int size(List<ClassChangeList> listoflists)
 	{
 		int res = 0;
-		for(List<Node>list:listoflists)
+		for (ClassChangeList list : listoflists)
 		{
-			res+=list.size();
+			res += list.size();
 		}
 		return res;
 	}

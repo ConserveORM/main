@@ -18,13 +18,14 @@
  *******************************************************************************/
 package org.conserve.cache;
 
-import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Maintains a map between objects that have been loaded and their
@@ -36,25 +37,27 @@ import java.util.Map.Entry;
  */
 public class ObjectRowMap implements Runnable
 {
-	/**
-	 * Map from the systemHashCode to the database table and id
-	 */
-	private HashMap<Long, List<TableEntry>> classMap = new HashMap<Long, List<TableEntry>>();
-	/**
-	 * Map from the database table and database id to the object.
-	 */
-	private HashMap<String, HashMap<Long, WeakReference<Object>>> objectMap = new HashMap<String, HashMap<Long, WeakReference<Object>>>();
 
 	/**
-	 * Map that maps from a WeakReference to the systemHashCode it is mapped
-	 * under. This is to ensure safe deletion of the key.
+	 * Map from an object to its weak reference
 	 */
-	private HashMap<WeakReference<Object>, Long> inverseReferenceMap = new HashMap<WeakReference<Object>, Long>();
+	private WeakRefMap objectToRef = new WeakRefMap();
+
+	/**
+	 * Map from table entry (table name and database id) to an object.
+	 */
+	private ConcurrentHashMap<TableEntry, WeakReference<Object>> tableToReference = new ConcurrentHashMap<>();
+
+	/**
+	 * Map from a weak reference to the table entry (table name and database
+	 * id).
+	 */
+	private ConcurrentHashMap<WeakReference<Object>, TableEntry> referenceToTable = new ConcurrentHashMap<>();
 
 	/**
 	 * Reference queue where References for deleted objects are placed.
 	 */
-	private ReferenceQueue<Object> refQueue = new ReferenceQueue<Object>();
+	private ReferenceQueue<Object> deletedObjectQueue = new ReferenceQueue<Object>();
 	private boolean running = true;
 
 	/**
@@ -77,34 +80,17 @@ public class ObjectRowMap implements Runnable
 	/**
 	 * Store the identity of a given object in both directional maps.
 	 * 
-	 * @param o
+	 * @param obj
 	 * @param dbId
 	 */
-	public void storeObject(String tableName, Object o, long dbId)
+	public void storeObject(String tableName, Object obj, long dbId)
 	{
-		long id = System.identityHashCode(o);
 
-		// store the id -> dbId map
-		List<TableEntry> list = classMap.get(id);
-		if (list == null)
-		{
-			list = new ArrayList<TableEntry>();
-			classMap.put(id, list);
-		}
-		list.add(new TableEntry(tableName, dbId, o));
-
-		// store the dbId -> object map
-		WeakReference<Object> ref = new WeakReference<Object>(o, refQueue);
-		HashMap<Long, WeakReference<Object>> map = objectMap.get(tableName);
-		if (map == null)
-		{
-			map = new HashMap<Long, WeakReference<Object>>();
-			objectMap.put(tableName, map);
-		}
-		map.put(dbId, ref);
-
-		// store the object->id map
-		inverseReferenceMap.put(ref, id);
+		TableEntry te = new TableEntry(tableName, dbId);
+		WeakReference<Object> wref = new WeakReference<Object>(obj, deletedObjectQueue);
+		tableToReference.put(te, wref);
+		referenceToTable.put(wref, te);
+		objectToRef.put(obj, wref);
 	}
 
 	/**
@@ -112,25 +98,20 @@ public class ObjectRowMap implements Runnable
 	 * 
 	 * @param tableName
 	 *            the table name to look in.
-	 * @param id
+	 * @param dbId
 	 *            the identifier of the object within the table.
 	 * @return null if the object is not found.
 	 */
-	public Object getObject(String tableName, long id)
+	public Object getObject(String tableName, long dbId)
 	{
-		HashMap<Long, WeakReference<Object>> map = objectMap.get(tableName);
-		if (map == null)
+		Object res = null;
+		TableEntry te = new TableEntry(tableName, dbId);
+		WeakReference<Object> wref = tableToReference.get(te);
+		if (wref != null)
 		{
-			return null;
+			res = wref.get();
 		}
-		WeakReference<Object> ref = map.get(id);
-		if (ref == null || ref.isEnqueued())
-		{
-			// the object has been collected by the garbage collector, or is not
-			// known
-			return null;
-		}
-		return ref.get();
+		return res;
 	}
 
 	/**
@@ -143,63 +124,33 @@ public class ObjectRowMap implements Runnable
 	 */
 	public Long getDatabaseId(Object o)
 	{
-		long id = System.identityHashCode(o);
-		List<TableEntry> list = classMap.get(id);
-		if (list != null)
+		Long res = null;
+		WeakReference<Object> wref = objectToRef.get(o);
+		if (wref != null)
 		{
-			for (TableEntry entry : list)
+			TableEntry te = referenceToTable.get(wref);
+			if (te != null)
 			{
-				if (entry.referentEquals(o))
-				{
-					return entry.getDbId();
-				}
+				res = te.getDbId();
 			}
 		}
-		return null;
+		return res;
 	}
 
 	/**
-	 * Remove an object based on its identityHashCode.
-	 * 
-	 * @param id
-	 *            The identityHashCode of the object to purge
+	 * Remove an object from the map.
 	 */
-	public void purge(Object o)
+	public void purge(Object obj)
 	{
-		Long id = (long) System.identityHashCode(o);
-		// remove from the id -> dbId map, if exists
-		List<TableEntry> list = classMap.get(id);
-		if (list != null)
+		WeakReference<Object> wref = objectToRef.get(obj);
+		if (wref != null)
 		{
-			TableEntry toRemove = null;
-			for (TableEntry entry : list)
+			objectToRef.remove(obj);
+			TableEntry te = referenceToTable.get(wref);
+			if (te != null)
 			{
-				if (entry.referentEquals(o))
-				{
-					toRemove = entry;
-					break;
-				}
-			}
-			if (toRemove != null)
-			{
-				list.remove(toRemove);
-				if (list.isEmpty())
-				{
-					classMap.remove(id);
-				}
-
-				HashMap<Long, WeakReference<Object>> map = objectMap
-						.get(toRemove.getTableName());
-				WeakReference<Object> ref = map.get(toRemove.getDbId());
-				if (ref != null)
-				{
-					map.remove(toRemove.getDbId());
-					if (map.isEmpty())
-					{
-						objectMap.remove(toRemove.getTableName());
-					}
-					inverseReferenceMap.remove(ref);
-				}
+				tableToReference.remove(te);
+				referenceToTable.remove(wref);
 			}
 		}
 	}
@@ -212,42 +163,10 @@ public class ObjectRowMap implements Runnable
 	 */
 	public void purge(String tableName, Long dbId)
 	{
-		HashMap<Long, WeakReference<Object>> tableEntries = objectMap.get(tableName);
-		if(tableEntries!=null)
+		Object obj = getObject(tableName, dbId);
+		if (obj != null)
 		{
-			WeakReference<Object> weakRef = tableEntries.get(dbId);
-			if(weakRef != null)
-			{
-				//remove table entry
-				tableEntries.remove(dbId);
-				if(tableEntries.isEmpty())
-				{
-					//this is the last entry for this tablename
-					objectMap.remove(tableName);
-				}
-				Object o = weakRef.get();
-				Long id = (long) System.identityHashCode(o);
-				// remove from the id -> dbId map, if exists
-				List<TableEntry>toRemove = new ArrayList<>();
-				List<TableEntry> list = classMap.get(id);
-				if(list != null)
-				{
-					for(TableEntry entry:list)
-					{
-						if(entry.getDbId().equals(dbId))
-						{
-							toRemove.add(entry);
-						}
-					}
-					list.removeAll(toRemove);
-					if(list.isEmpty())
-					{
-						//the last object with this system has has been deleted
-						classMap.remove(id);
-					}
-				}
-				inverseReferenceMap.remove(weakRef);
-			}
+			purge(obj);
 		}
 	}
 
@@ -258,27 +177,37 @@ public class ObjectRowMap implements Runnable
 	 */
 	public void purge(String tableName)
 	{
-
-		HashMap<Long, WeakReference<Object>> map = objectMap.get(tableName);
-		List<Object> toRemove = new ArrayList<>();
-		if (map != null)
+		List<TableEntry> toRemove = new ArrayList<>();
+		Set<TableEntry> keySet = tableToReference.keySet();
+		for (TableEntry key : keySet)
 		{
-			for (Entry<Long, WeakReference<Object>> e : map.entrySet())
+			if (key.getTableName().equals(tableName))
 			{
-
-				WeakReference<Object> ref = e.getValue();
-				if (ref != null && !ref.isEnqueued())
-				{
-					toRemove.add(ref.get());
-				}
+				toRemove.add(key);
 			}
-			for (Object o : toRemove)
-			{
-				purge(o);
-			}
+		}
+		for (TableEntry remove : toRemove)
+		{
+			purge(remove.getTableName(), remove.getDbId());
 		}
 	}
 
+	/**
+	 * Purge an object based on its weak reference. This method is called after
+	 * garbage collection, so wref's referent does not exist.
+	 * 
+	 * @param wref
+	 */
+	private void purge(WeakReference<Object> wref)
+	{
+		TableEntry te = referenceToTable.get(wref);
+		if (te != null)
+		{
+			tableToReference.remove(te);
+			referenceToTable.remove(wref);
+		}
+		objectToRef.remove(wref);
+	}
 
 	public void stop()
 	{
@@ -295,15 +224,12 @@ public class ObjectRowMap implements Runnable
 				// get a reference from the queue
 				// this call blocks until a reference becomes available or it
 				// times out
-				Reference<? extends Object> ref = this.refQueue.remove(200);
+				@SuppressWarnings("unchecked")
+				WeakReference<Object> ref = (WeakReference<Object>) this.deletedObjectQueue.remove(2000);
 				if (ref != null)
 				{
 					// remove the reference from the map
-					Long key = inverseReferenceMap.get(ref);
-					if (key != null)
-					{
-						purge(key);
-					}
+					purge(ref);
 				}
 			}
 			catch (InterruptedException e)
@@ -321,18 +247,11 @@ public class ObjectRowMap implements Runnable
 	{
 		private String tableName;
 		private Long dbId;
-		private WeakReference<Object> ref;
 
-		public TableEntry(String tableName, Long dbId, Object o)
+		public TableEntry(String tableName, Long dbId)
 		{
 			this.tableName = tableName;
 			this.dbId = dbId;
-			this.ref = new WeakReference<Object>(o);
-		}
-
-		public boolean referentEquals(Object o)
-		{
-			return ref.get() == o;
 		}
 
 		public String getTableName()
@@ -345,6 +264,131 @@ public class ObjectRowMap implements Runnable
 			return dbId;
 		}
 
+		/**
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj)
+		{
+			boolean res = false;
+			if (obj instanceof TableEntry)
+			{
+				TableEntry other = (TableEntry) obj;
+				return other.tableName.equals(tableName) && other.dbId == dbId;
+			}
+			return res;
+		}
+
+		/**
+		 * @see java.lang.Object#hashCode()
+		 */
+		@Override
+		public int hashCode()
+		{
+			return tableName.hashCode() + dbId.hashCode();
+		}
+
+	}
+
+	/**
+	 * A class that maps an object to a weak reference. This class is not
+	 * reentrant, thread safety is handled by the enclosing class.
+	 * 
+	 */
+	private class WeakRefMap
+	{
+		private ConcurrentHashMap<Long, List<WeakReference<Object>>> buckets = new ConcurrentHashMap<>();
+
+		public void put(Object obj, WeakReference<Object> wr)
+		{
+			Long id = (long) obj.hashCode();
+			List<WeakReference<Object>> bucket = buckets.get(id);
+			if (bucket == null)
+			{
+				bucket = new ArrayList<>();
+				buckets.put(id, bucket);
+			}
+			if (!bucket.contains(wr))
+			{
+				bucket.add(wr);
+			}
+		}
+
+		public WeakReference<Object> get(Object obj)
+		{
+			WeakReference<Object> res = null;
+			Long id = (long) obj.hashCode();
+			List<WeakReference<Object>> bucket = buckets.get(id);
+			if (bucket != null)
+			{
+				// iterate over the references in the bucket until we find one
+				// that references obj
+				for (WeakReference<Object> ref : bucket)
+				{
+					if (ref.get().equals(obj))
+					{
+						res = ref;
+						break;
+					}
+				}
+			}
+			return res;
+		}
+
+		public void remove(Object obj)
+		{
+			Long id = (long) obj.hashCode();
+			List<WeakReference<Object>> bucket = buckets.get(id);
+			if (bucket != null)
+			{
+				// iterate over the references in the bucket until we find one
+				// that references obj
+				Iterator<WeakReference<Object>> iterator = bucket.iterator();
+				while (iterator.hasNext())
+				{
+					WeakReference<Object> ref = iterator.next();
+					if (ref.get().equals(obj))
+					{
+						iterator.remove();
+						break;
+					}
+				}
+				if (bucket.isEmpty())
+				{
+					buckets.remove(id);
+				}
+			}
+		}
+
+		/**
+		 * This is used to clean up after an object has been claimed by GC.
+		 * Since the referent is no longer availalbe we'll have to iterate over
+		 * the buckets until we find it.
+		 * 
+		 * @param wref
+		 */
+		public void remove(WeakReference<Object> wref)
+		{
+			Set<Entry<Long, List<WeakReference<Object>>>> entrySet = buckets.entrySet();
+			// iterate over the buckets
+			Iterator<Entry<Long, List<WeakReference<Object>>>> iterator = entrySet.iterator();
+			while (iterator.hasNext())
+			{
+				Entry<Long, List<WeakReference<Object>>> next = iterator.next();
+				List<WeakReference<Object>> value = next.getValue();
+				if (value.contains(wref))
+				{
+					value.remove(wref);
+					if (value.isEmpty())
+					{
+						// we've removed the last wref with this id, remove the
+						// bucket
+						iterator.remove();
+					}
+					break;
+				}
+			}
+		}
 	}
 
 }

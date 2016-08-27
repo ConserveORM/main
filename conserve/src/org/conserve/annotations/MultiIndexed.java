@@ -34,6 +34,8 @@ import java.lang.annotation.Target;
  * 
  * This annotation should be applied to the ACCESSOR method.
  * 
+ * If more than one index, separate their name with a comma: {"indexone","indextwo"}.
+ * 
  * @author Erik Berglund
  *
  */
@@ -42,7 +44,7 @@ import java.lang.annotation.Target;
 public @interface MultiIndexed
 {
     /**
-     * @return the name of the index this field will be part of
+     * @return the name of the indices this field will be part of
      */
     String []  value();
 }

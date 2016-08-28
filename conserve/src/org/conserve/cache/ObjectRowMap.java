@@ -325,7 +325,7 @@ public class ObjectRowMap implements Runnable
 				// that references obj
 				for (WeakReference<Object> ref : bucket)
 				{
-					if (ref.get().equals(obj))
+					if (obj.equals(ref.get()))
 					{
 						res = ref;
 						break;

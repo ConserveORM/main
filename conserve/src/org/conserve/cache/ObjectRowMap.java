@@ -308,9 +308,12 @@ public class ObjectRowMap implements Runnable
 				bucket = new ArrayList<>();
 				buckets.put(id, bucket);
 			}
-			if (!bucket.contains(wr))
+			synchronized (bucket)
 			{
-				bucket.add(wr);
+				if (!bucket.contains(wr))
+				{
+					bucket.add(wr);
+				}
 			}
 		}
 
@@ -321,14 +324,18 @@ public class ObjectRowMap implements Runnable
 			List<WeakReference<Object>> bucket = buckets.get(id);
 			if (bucket != null)
 			{
-				// iterate over the references in the bucket until we find one
-				// that references obj
-				for (WeakReference<Object> ref : bucket)
+				synchronized (bucket)
 				{
-					if (obj.equals(ref.get()))
+					// iterate over the references in the bucket until we find
+					// one
+					// that references obj
+					for (WeakReference<Object> ref : bucket)
 					{
-						res = ref;
-						break;
+						if (obj.equals(ref.get()))
+						{
+							res = ref;
+							break;
+						}
 					}
 				}
 			}
@@ -341,21 +348,25 @@ public class ObjectRowMap implements Runnable
 			List<WeakReference<Object>> bucket = buckets.get(id);
 			if (bucket != null)
 			{
-				// iterate over the references in the bucket until we find one
-				// that references obj
-				Iterator<WeakReference<Object>> iterator = bucket.iterator();
-				while (iterator.hasNext())
+				synchronized (bucket)
 				{
-					WeakReference<Object> ref = iterator.next();
-					if (ref.get().equals(obj))
+					// iterate over the references in the bucket until we find
+					// one
+					// that references obj
+					Iterator<WeakReference<Object>> iterator = bucket.iterator();
+					while (iterator.hasNext())
 					{
-						iterator.remove();
-						break;
+						WeakReference<Object> ref = iterator.next();
+						if (obj.equals(ref.get()))
+						{
+							iterator.remove();
+							break;
+						}
 					}
-				}
-				if (bucket.isEmpty())
-				{
-					buckets.remove(id);
+					if (bucket.isEmpty())
+					{
+						buckets.remove(id);
+					}
 				}
 			}
 		}
@@ -376,16 +387,22 @@ public class ObjectRowMap implements Runnable
 			{
 				Entry<Long, List<WeakReference<Object>>> next = iterator.next();
 				List<WeakReference<Object>> value = next.getValue();
-				if (value.contains(wref))
+				if (value != null)
 				{
-					value.remove(wref);
-					if (value.isEmpty())
+					synchronized (value)
 					{
-						// we've removed the last wref with this id, remove the
-						// bucket
-						iterator.remove();
+						if (value.contains(wref))
+						{
+							value.remove(wref);
+							if (value.isEmpty())
+							{
+								// we've removed the last wref with this id,
+								// remove the bucket
+								iterator.remove();
+							}
+							break;
+						}
 					}
-					break;
 				}
 			}
 		}

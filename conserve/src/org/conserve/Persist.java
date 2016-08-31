@@ -510,10 +510,11 @@ public class Persist
 	 */
 	private void deletePropertiesOf(ConnectionWrapper cw,Long id) throws SQLException
 	{
-		// find all properties
+		// find all properties, ignore arrays and array members
 		StringBuilder statement = new StringBuilder("SELECT OWNER_TABLE,PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_ID = ?");
+		//arrays have ARRAY_TABLENAME or ARRAY_MEMBER_TABLENAME* as OWNER_TABLE, null as RELATION_NAME
+		statement.append(" WHERE OWNER_ID = ? AND OWNER_TABLE IS NOT NULL  AND RELATION_NAME IS NOT NULL ");
 		PreparedStatement query = cw.prepareStatement(statement.toString());
 		query.setLong(1, id);
 		Tools.logFine(query);
@@ -521,11 +522,6 @@ public class Persist
 		while (subObjects.next())
 		{
 			String ownerTable = subObjects.getString(1);
-			if (ownerTable.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
-							|| ownerTable.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME) )
-			{
-				continue;
-			}
 			String propertyTable = subObjects.getString(2);
 			Long propertyId = subObjects.getLong(3);
 			String propertyClassName = subObjects.getString(4);
@@ -537,7 +533,7 @@ public class Persist
 				// delete the property itself
 				try
 				{
-					//check if the peroperty is an array
+					//check if the property is an array
 					if (propertyTable.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
 							|| propertyTable.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME) || propertyClassName.contains("["))
 					{

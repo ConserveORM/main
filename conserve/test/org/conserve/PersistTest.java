@@ -170,9 +170,10 @@ public class PersistTest
 	// create a log handler that outputs all warning events to the console
 	static
 	{
+		LOGGER.setUseParentHandlers(false);
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.WARNING;
+		Level level = Level.ALL;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}

@@ -1425,7 +1425,6 @@ public class PersistTest
 
 		// save everything
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		persist.dropTable(Object.class);
 		persist.saveObject(asimov);
 		persist.close();
 

@@ -225,7 +225,7 @@ public class ObjectRowMap implements Runnable
 				// this call blocks until a reference becomes available or it
 				// times out
 				@SuppressWarnings("unchecked")
-				WeakReference<Object> ref = (WeakReference<Object>) this.deletedObjectQueue.remove(2000);
+				WeakReference<Object> ref = (WeakReference<Object>) this.deletedObjectQueue.remove(200);
 				if (ref != null)
 				{
 					// remove the reference from the map
@@ -301,7 +301,7 @@ public class ObjectRowMap implements Runnable
 
 		public void put(Object obj, WeakReference<Object> wr)
 		{
-			Long id = (long) obj.hashCode();
+			Long id = (long) System.identityHashCode(obj);
 			List<WeakReference<Object>> bucket = buckets.get(id);
 			if (bucket == null)
 			{
@@ -320,7 +320,7 @@ public class ObjectRowMap implements Runnable
 		public WeakReference<Object> get(Object obj)
 		{
 			WeakReference<Object> res = null;
-			Long id = (long) obj.hashCode();
+			Long id = (long) System.identityHashCode(obj);
 			List<WeakReference<Object>> bucket = buckets.get(id);
 			if (bucket != null)
 			{
@@ -331,7 +331,7 @@ public class ObjectRowMap implements Runnable
 					// that references obj
 					for (WeakReference<Object> ref : bucket)
 					{
-						if (obj.equals(ref.get()))
+						if (obj == ref.get())
 						{
 							res = ref;
 							break;
@@ -344,7 +344,7 @@ public class ObjectRowMap implements Runnable
 
 		public void remove(Object obj)
 		{
-			Long id = (long) obj.hashCode();
+			Long id = (long) System.identityHashCode(obj);
 			List<WeakReference<Object>> bucket = buckets.get(id);
 			if (bucket != null)
 			{
@@ -357,7 +357,7 @@ public class ObjectRowMap implements Runnable
 					while (iterator.hasNext())
 					{
 						WeakReference<Object> ref = iterator.next();
-						if (obj.equals(ref.get()))
+						if (obj == ref.get())
 						{
 							iterator.remove();
 							break;

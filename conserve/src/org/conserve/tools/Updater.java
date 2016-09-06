@@ -224,6 +224,7 @@ public class Updater
 			query.append(" = ?");
 			PreparedStatement ps = cw.prepareStatement(query.toString());
 			ps.setLong(1, rep.getId());
+			Tools.logFine(ps);
 			try
 			{
 				ResultSet rs = ps.executeQuery();

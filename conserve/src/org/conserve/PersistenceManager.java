@@ -878,7 +878,7 @@ public class PersistenceManager
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	public boolean hasChanged(ConnectionWrapper cw, Object o) throws SQLException, ClassNotFoundException
+	private boolean hasChanged(ConnectionWrapper cw, Object o) throws SQLException, ClassNotFoundException
 	{
 		Long dbId = persist.getCache().getDatabaseId(o);
 		if (dbId != null)

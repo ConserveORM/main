@@ -163,10 +163,11 @@ public class ObjectRowMap implements Runnable
 	 */
 	public void purge(String tableName, Long dbId)
 	{
-		Object obj = getObject(tableName, dbId);
-		if (obj != null)
+		TableEntry te = new TableEntry(tableName, dbId);
+		WeakReference<Object> wref = tableToReference.get(te);
+		if (wref != null)
 		{
-			purge(obj);
+			purge(wref);
 		}
 	}
 

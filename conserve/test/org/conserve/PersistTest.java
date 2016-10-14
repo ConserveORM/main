@@ -1614,6 +1614,25 @@ public class PersistTest
 		assertEquals(0, l2s.size());
 
 		persist.close();
+		
+		//add some self-containing objects, make sure we can delete them with a general
+		//search on a superclass.
+
+		persist = new PersistenceManager(driver, database, login, password);
+		 l1 = new Layer1();
+		l1.setLayer2(new Layer2());
+		l1.getLayer2().setLayer3(new Layer3());
+		l1.getLayer2().getLayer3().setLayer1(l1);
+		persist.saveObject(l1);
+		persist.deleteObjects(SelfContainingObject.class,new All());
+		persist.close();
+		
+
+		persist = new PersistenceManager(driver, database, login, password);
+		assertEquals(3,persist.getCount(Object.class, new All()));
+		persist.deleteObjects(Object.class, new All());
+		assertEquals(0,persist.getCount(Object.class, new All()));
+		persist.close();
 
 	}
 

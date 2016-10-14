@@ -298,26 +298,28 @@ public class Persist
 			if(stack.canContainCircularReferences())
 			{
 				//circular references are possible, we must check each and every one of the remaining objects
-				objectDescr = getObjectDescriptors(cw, clazz, NameGenerator.getSystemicName(clazz), where,null);
-				for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
+				deletedCount+=deleteClassHelper(cw,clazz,where);
+			}
+			else
+			{
+				//if it can't contain circular references, can any of its subclasses?
+				//try them all to find out
+				//get all subclasses
+				List<Class<?>>allClasses = getClasses(cw);
+				for(Class<?> c:allClasses)
 				{
-					Class<?> c = en.getKey();
-					String tableName = NameGenerator.getTableName(c, adapter);
-					List<Long> ids = en.getValue();
-					for (Long id : ids)
+					if(clazz.isAssignableFrom(c) && c != clazz)
 					{
-						// delete objects from cache
-						cache.purge(tableName, id);
-						// check if objects are part of other object
-						if (!protectionManager.isProtected(tableName, id, cw))
+						stack = new ObjectStack(adapter, c);
+						if (stack.canContainCircularReferences())
 						{
-							// if not, delete
-							deleteObject(cw, c, id);
-							deletedCount++;
+							// circular references are possible, we must check
+							// each and every one of the remaining objects
+							deletedCount += deleteClassHelper(cw, c, where);
 						}
-
 					}
 				}
+				
 			}
 			res = deletedCount;
 		}
@@ -326,6 +328,42 @@ public class Persist
 			throw new SQLException(e);
 		}
 		return res;
+	}
+	
+	/**
+	 * Delete all instances of the given class that satisfy the given clause.
+	 * This is a helper method that is only called once the possibility of a circular reference has been indicated.
+	 * 
+	 * @param cw
+	 * @param clazz
+	 * @param where
+	 * @return
+	 * @throws SQLException
+	 * @throws ClassNotFoundException
+	 */
+	private int deleteClassHelper(ConnectionWrapper cw, Class<?> clazz, Clause where) throws SQLException, ClassNotFoundException
+	{
+		int deletedCount = 0;
+		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(cw, clazz, NameGenerator.getSystemicName(clazz), where, null);
+		for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
+		{
+			Class<?> cl = en.getKey();
+			String tableName = NameGenerator.getTableName(cl, adapter);
+			List<Long> ids = en.getValue();
+			for (Long id : ids)
+			{
+				// delete objects from cache
+				cache.purge(tableName, id);
+				// check if objects are part of other object
+				if (!protectionManager.isProtected(tableName, id, cw))
+				{
+					// if not, delete
+					deleteObject(cw, cl, id);
+					deletedCount++;
+				}
+			}
+		}
+		return deletedCount;
 	}
 
 

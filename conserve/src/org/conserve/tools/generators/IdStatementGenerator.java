@@ -30,6 +30,8 @@ import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.metadata.ObjectStack.Node;
 
 /**
+ * Generates a statements that does an inner join on all the tables in a stack.
+ * 
  * @author Erik Berglund
  * 
  */
@@ -119,6 +121,10 @@ public class IdStatementGenerator
 	}
 
 
+	/**
+	 * Generate a statement that lists all query tables and their short name, separated by commas.
+	 * @return
+	 */
 	public String generateAsStatement()
 	{
 		List<String> tables = new ArrayList<String>();
@@ -148,6 +154,11 @@ public class IdStatementGenerator
 			joinTables.add(tableName);
 			joinTableIds.add(asName);
 		}
+	}
+	
+	public void addLeftJoin(JoinDescriptor join)
+	{
+		asGenerator.addJoin(join);
 	}
 
 	/**
@@ -321,6 +332,17 @@ public class IdStatementGenerator
 	public List<ObjectRepresentation> getJoinRepresentations()
 	{
 		return joinRepresentations;
+	}
+
+
+
+	/**
+	 * Get values to be inserted in '?' places in the query.
+	 * @return
+	 */
+	public List<Object> getValues()
+	{
+		return asGenerator.getValues();
 	}
 
 }

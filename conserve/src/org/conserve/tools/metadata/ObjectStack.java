@@ -936,5 +936,53 @@ public class ObjectStack
 		return res;
 	}
 	
+	/**
+	 * Check if it is possible that any object of the represented class has a self-reference.
+	 * The method is recursive.
+	 * 
+	 * @return
+	 */
+	public boolean canContainCircularReferences()
+	{
+		//get the class that we want to check for circular references
+		Class<?> real = this.getActual().getRepresentation().getRepresentedClass();
+		List<Class<?>>checkedClasses = new ArrayList<>();
+		return canContainCircularReferences(real,checkedClasses);
+	}
+	
+	private boolean canContainCircularReferences(Class<?> realClass,List<Class<?>>checkedClasses)
+	{
+		
+		for(String property:this.getAllPropertyNames())
+		{
+			//get the representation that holds the given property
+			ObjectRepresentation rep = getRepresentation(property);
+			//check if the property is non-primitive
+			if(!rep.isPrimitive(property))
+			{
+				//get the property class
+				Class<?> propClass = rep.getReturnType(property);
+				if(propClass.isArray())
+				{
+					propClass = propClass.getComponentType();
+				}
+				if(!checkedClasses.contains(propClass))
+				{
+					if(ObjectTools.isA(realClass, propClass))
+					{
+						return true;
+					}
+					checkedClasses.add(propClass);
+					ObjectStack subStack = new ObjectStack(adapter, propClass);
+					if(subStack.canContainCircularReferences(realClass, checkedClasses))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
 
 }

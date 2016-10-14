@@ -32,6 +32,7 @@ public class AsStatementGenerator
 {
 
 	private AdapterBase adapter;
+	private List<JoinDescriptor> joins = new ArrayList<>();
 
 	/**
 	 * @param adapter
@@ -41,35 +42,80 @@ public class AsStatementGenerator
 		this.adapter = adapter;
 	}
 
+	public void addJoin(JoinDescriptor join)
+	{
+		joins.add(join);
+	}
+	
+	private JoinDescriptor getJoinDescriptorForTable(String table, String shortName)
+	{
+		JoinDescriptor res = null;
+		for(JoinDescriptor join:joins)
+		{
+			if(join.leftMatches(table, shortName))
+			{
+				res = join;
+				break;
+			}
+		}
+		return res;
+	}
 
 	/**
-	 * @param joinTableIds 
-	 * @param joinTables 
+	 * @param joinTableIds
+	 * @param joinTables
 	 * @param relationDescriptors
 	 * @return
 	 */
 	public String generate(List<String> joinTables, List<String> joinTableIds)
 	{
 		StringBuilder sb = new StringBuilder();
-		List<String>added = new ArrayList<String>();
-		
-		for(int x = 0;x<joinTables.size();x++)
+		List<String> added = new ArrayList<String>();
+
+		for (int x = 0; x < joinTables.size(); x++)
 		{
-			if(!added.contains(joinTableIds.get(x)))
+			if (!added.contains(joinTableIds.get(x)))
 			{
 				added.add(joinTableIds.get(x));
-				if(sb.length()>0)
+				if (sb.length() > 0)
 				{
 					sb.append(" ");
 					sb.append(adapter.getJoinKeyword());
 					sb.append(" ");
 				}
-				sb.append(joinTables.get(x));
-				sb.append(" AS ");
-				sb.append(joinTableIds.get(x));
-				
+				JoinDescriptor jd = getJoinDescriptorForTable(joinTables.get(x), joinTableIds.get(x));
+				if (jd != null)
+				{
+					sb.append(jd.toString());
+				}
+				else
+				{
+					sb.append(joinTables.get(x));
+					sb.append(" AS ");
+					sb.append(joinTableIds.get(x));
+				}
 			}
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * @return
+	 */
+	public List<Object> getValues()
+	{
+		List<Object>res = new ArrayList<>();
+		for(JoinDescriptor join:joins)
+		{
+			Object [] obj = join.getValues();
+			if(obj!=null)
+			{
+				for(Object o:obj)
+				{
+					res.add(o);
+				}
+			}
+		}
+		return res;
 	}
 }

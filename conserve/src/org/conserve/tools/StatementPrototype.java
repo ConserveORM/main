@@ -27,6 +27,7 @@ import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.select.Clause;
 import org.conserve.tools.generators.IdStatementGenerator;
+import org.conserve.tools.generators.JoinDescriptor;
 import org.conserve.tools.metadata.ObjectRepresentation;
 import org.conserve.tools.metadata.ObjectStack;
 
@@ -121,6 +122,7 @@ public class StatementPrototype
 		StringBuilder sb = new StringBuilder(prePend);
 		String idStatement = idGen.generate();
 		sb.append(idGen.generateAsStatement());
+		conditionalValues.addAll(0, idGen.getValues());
 
 		boolean whereAdded = false;
 
@@ -199,6 +201,17 @@ public class StatementPrototype
 		sb.append(append);
 		String queryString = sb.toString();
 		return queryString;
+	}
+	
+	/**
+	 * Set a string that will be added to the end of the statement.
+	 * It is the caller's responsibility to ensure the toAppend value starts with an appropriate spacing character.
+	 * 
+	 * @param toAppend
+	 */
+	public void setAppend(String toAppend)
+	{
+		this.append = toAppend;
 	}
 
 	private void addStatements(StringBuilder sb, StatementContainer container)
@@ -374,6 +387,23 @@ public class StatementPrototype
 	public IdStatementGenerator getIdStatementGenerator()
 	{
 		return this.idGen;
+	}
+
+
+
+
+	/** 
+	 * Add a left join where the left part is defined by the tablen name and a shortname,
+	 * and the right part is defined by a tablename, and their relationship is defined in the string onStatement.
+	 * 
+	 * @param leftTableName
+	 * @param leftShortName
+	 * @param rightTableName
+	 * @param onStatement
+	 */
+	public void addLeftJoin(String leftTableName, String leftShortName, String rightTableName, String onStatement, Object ... values)
+	{
+		idGen.addLeftJoin(new JoinDescriptor(leftTableName, leftShortName, rightTableName, onStatement,values));
 	}
 
 }

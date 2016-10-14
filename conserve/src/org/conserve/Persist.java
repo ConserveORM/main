@@ -274,9 +274,10 @@ public class Persist
 		try
 		{
 			int deletedCount = 0;
-			String className = NameGenerator.getSystemicName(clazz);
-			// find all matching objects
-			HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(cw,clazz, className, where, null);
+			//remove protection of all matching objects
+			unprotectObjectsExternal(cw,clazz,where);
+			// try the fast delete first
+			HashMap<Class<?>, List<Long>> objectDescr = getUnprotectedObjectDescriptors(cw,clazz, where);
 			for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
 			{
 				Class<?> c = en.getKey();
@@ -286,14 +287,34 @@ public class Persist
 				{
 					// delete objects from cache
 					cache.purge(tableName, id);
-					// unprotect the objects
-					protectionManager.unprotectObjectExternal(tableName, id, cw);
-					// check if objects are part of other object
-					if (!protectionManager.isProtected(tableName, id, cw))
+					if(deleteObject(cw,c, id))
 					{
-						// if not, delete
-						deleteObject(cw,c, id);
 						deletedCount++;
+					}
+				}
+			}
+			//check if the type of object we just deleted can contain circular references
+			ObjectStack stack = new ObjectStack(adapter, clazz);
+			if(stack.canContainCircularReferences())
+			{
+				//circular references are possible, we must check each and every one of the remaining objects
+				objectDescr = getObjectDescriptors(cw, clazz, NameGenerator.getSystemicName(clazz), where,null);
+				for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
+				{
+					Class<?> c = en.getKey();
+					String tableName = NameGenerator.getTableName(c, adapter);
+					List<Long> ids = en.getValue();
+					for (Long id : ids)
+					{
+						// delete objects from cache
+						cache.purge(tableName, id);
+						// check if objects are part of other object
+						if (!protectionManager.isProtected(tableName, id, cw))
+						{
+							// if not, delete
+							deleteObject(cw, c, id);
+							deletedCount++;
+						}
 
 					}
 				}
@@ -605,6 +626,154 @@ public class Persist
 		{
 			sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
 		}
+
+		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
+		statement.append(shortName);
+		statement.append(".");
+		statement.append(Defaults.ID_COL);
+		statement.append("),");
+		statement.append(shortName);
+		statement.append(".");
+		statement.append(Defaults.REAL_CLASS_COL);
+		statement.append(" FROM ");
+		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		ResultSet rs = ps.executeQuery();
+		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
+		ps.close();
+		// If a row has a REALCLASS entry, load data for the subclass
+		for (HashMap<String, Object> map : propertyVector)
+		{
+			Number n = (Number) map.get(Defaults.ID_COL);
+			if (n == null)
+			{
+				continue;
+			}
+			Long dbId = n.longValue();
+
+			// If a row has a REALCLASS entry, load the subclass
+			if (map.get(Defaults.REAL_CLASS_COL) != null)
+			{
+				// get the real class and id
+				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
+				// get the data for the real class
+				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw,null, subClassName, null, dbId);
+				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
+				{
+					Class<?> c = en.getKey();
+					List<Long> existingList = res.get(c);
+					if (existingList == null)
+					{
+						res.putAll(tmpRes);
+					}
+					else
+					{
+						existingList.addAll(en.getValue());
+					}
+				}
+			}
+			else
+			{
+				// no REAL_CLASS_COL found, which means this is the actual class
+				// of the object
+				List<Long> idVector = res.get(clazz);
+				if (idVector == null)
+				{
+					idVector = new ArrayList<Long>();
+					res.put(clazz, idVector);
+				}
+				idVector.add(dbId);
+			}
+		}
+		return res;
+
+	}
+
+
+	/**
+	 * Remove external protection from all objects that match the query. 
+	 * 
+	 * @param clazz
+	 *            the class to search for.
+	 * @param clause
+	 *            the clause to distinguish (can be null if id is given).
+	 * @param id the database id of the object to search for (can be null if
+	 *         clause is given).
+	 * @throws ClassNotFoundException
+	 * @throws SQLException
+	 */
+	private <T> void unprotectObjectsExternal(ConnectionWrapper cw, Class<T> clazz, Clause clause)
+			throws ClassNotFoundException, SQLException
+	{
+		if(clazz.isArray())
+		{
+			// can't have external protection of array classes, so ignore
+			return;
+		}
+		// check if the appropriate table exists
+		String tableName = NameGenerator.getTableName(clazz, adapter);
+		if (!tableManager.tableExists(tableName, cw))
+		{
+			return;
+		}
+
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+		whereGenerator.setClauses(clause);
+		StatementPrototype sp = whereGenerator.generate(clazz, clause != null);
+		// get the id of clazz
+		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
+		sp.addConditionalStatement(Defaults.HAS_A_TABLENAME+".PROPERTY_ID = " + shortName+"."+Defaults.ID_COL);
+		sp.addConditionalStatement(Defaults.HAS_A_TABLENAME+".OWNER_ID IS NULL");
+		sp.setAppend(")");
+
+		StringBuilder statement = new StringBuilder("DELETE FROM ");
+		statement.append(Defaults.HAS_A_TABLENAME);
+		statement.append(" WHERE EXISTS ( SELECT * FROM ");
+		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		ps.execute();
+		ps.close();
+	}
+	
+
+
+	/**
+	 * Get a list of the classes and ids that satisfy the clause, and do not have a protection entry.
+	 * 
+	 * 
+	 * 
+	 * @param clazz
+	 *            the class to search for .
+	 * @param clause
+	 *            the clause to distinguish (can be null if id is given).
+	 * @param id the database id of the object to search for (can be null if
+	 *         clause is given).
+	 * @throws ClassNotFoundException
+	 * @throws SQLException
+	 */
+	private <T> HashMap<Class<?>, List<Long>> getUnprotectedObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, Clause clause)
+			throws ClassNotFoundException, SQLException
+	{
+		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
+		if(clazz.isArray())
+		{
+			// can't load array classes, so ignore
+			return res;
+		}
+		// check if the appropriate table exists
+		String tableName = NameGenerator.getTableName(clazz, adapter);
+		if (!tableManager.tableExists(tableName, cw))
+		{
+			return res;
+		}
+
+		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+		whereGenerator.setClauses(clause);
+		StatementPrototype sp = whereGenerator.generate(clazz, clause != null);
+		// get the id of clazz
+		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
+		sp.addLeftJoin(whereGenerator.getTypeStack().getActualRepresentation().getTableName(), shortName, Defaults.HAS_A_TABLENAME,
+				shortName + "." + Defaults.ID_COL + " = " + Defaults.HAS_A_TABLENAME + ".PROPERTY_ID AND " + Defaults.HAS_A_TABLENAME
+						+ ".OWNER_TABLE <> ?",NameGenerator.getArrayTablename(adapter));
+		sp.addConditionalStatement(Defaults.HAS_A_TABLENAME + ".PROPERTY_ID IS NULL");
 
 		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
 		statement.append(shortName);

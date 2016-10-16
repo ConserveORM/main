@@ -24,9 +24,13 @@ import java.sql.Clob;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.conserve.adapter.AdapterBase;
+
+import sun.misc.JavaLangAccess;
+import sun.misc.SharedSecrets;
 
 public class Tools
 {
@@ -179,7 +183,166 @@ public class Tools
 	{
 		if (LOGGER.isLoggable(Level.FINE))
 		{
-			LOGGER.fine(stmt.toString());
+			LogRecord lr = new Tools.SqlStatementLogRecord(Level.FINE, stmt.toString());
+			LOGGER.log(lr);
 		}
 	}
+
+	/**
+	 * A subclass of LogRecord that allows Tools.logFine to print the name of
+	 * the calling method instead of itself.
+	 * 
+	 * This class contains a lot of code cut-n-pasted from LogRecord, since we
+	 * need to replace some private methods and that can only be done by
+	 * overriding the public methods that call them.
+	 * 
+	 * @author Erik Berglund
+	 *
+	 */
+	private static class SqlStatementLogRecord extends LogRecord
+	{
+		private boolean needToInferCaller = true;
+		private String sourceClassName;
+		private String sourceMethodName;
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 8482668962889077710L;
+
+		/**
+		 * @param level
+		 * @param msg
+		 */
+		public SqlStatementLogRecord(Level level, String msg)
+		{
+			super(level, msg);
+		}
+
+		/**
+		 * Get the name of the class that (allegedly) issued the logging
+		 * request.
+		 * <p>
+		 * Note that this sourceClassName is not verified and may be spoofed.
+		 * This information may either have been provided as part of the logging
+		 * call, or it may have been inferred automatically by the logging
+		 * framework. In the latter case, the information may only be
+		 * approximate and may in fact describe an earlier call on the stack
+		 * frame.
+		 * <p>
+		 * May be null if no information could be obtained.
+		 *
+		 * @return the source class name
+		 */
+		public String getSourceClassName()
+		{
+			if (needToInferCaller)
+			{
+				inferCaller();
+			}
+			return sourceClassName;
+		}
+
+		/**
+		 * Set the name of the class that (allegedly) issued the logging
+		 * request.
+		 *
+		 * @param sourceClassName
+		 *            the source class name (may be null)
+		 */
+		public void setSourceClassName(String sourceClassName)
+		{
+			this.sourceClassName = sourceClassName;
+			needToInferCaller = false;
+		}
+
+		/**
+		 * Get the name of the method that (allegedly) issued the logging
+		 * request.
+		 * <p>
+		 * Note that this sourceMethodName is not verified and may be spoofed.
+		 * This information may either have been provided as part of the logging
+		 * call, or it may have been inferred automatically by the logging
+		 * framework. In the latter case, the information may only be
+		 * approximate and may in fact describe an earlier call on the stack
+		 * frame.
+		 * <p>
+		 * May be null if no information could be obtained.
+		 *
+		 * @return the source method name
+		 */
+		public String getSourceMethodName()
+		{
+			if (needToInferCaller)
+			{
+				inferCaller();
+			}
+			return sourceMethodName;
+		}
+
+		/**
+		 * Set the name of the method that (allegedly) issued the logging
+		 * request.
+		 *
+		 * @param sourceMethodName
+		 *            the source method name (may be null)
+		 */
+		public void setSourceMethodName(String sourceMethodName)
+		{
+			this.sourceMethodName = sourceMethodName;
+			needToInferCaller = false;
+		}
+
+		// Private method to infer the caller's class and method names
+		private void inferCaller()
+		{
+			needToInferCaller = false;
+			JavaLangAccess access = SharedSecrets.getJavaLangAccess();
+			Throwable throwable = new Throwable();
+			int depth = access.getStackTraceDepth(throwable);
+
+			boolean lookingForLogger = true;
+			for (int ix = 0; ix < depth; ix++)
+			{
+				// Calling getStackTraceElement directly prevents the VM
+				// from paying the cost of building the entire stack frame.
+				StackTraceElement frame = access.getStackTraceElement(throwable, ix);
+				String cname = frame.getClassName();
+				boolean isLoggerImpl = isLoggerImplFrame(cname);
+				if (lookingForLogger)
+				{
+					// Skip all frames until we have found the first logger
+					// frame.
+					if (isLoggerImpl)
+					{
+						lookingForLogger = false;
+					}
+				}
+				else
+				{
+					if (!isLoggerImpl)
+					{
+						// skip reflection call
+						if (!cname.startsWith("java.lang.reflect.") && !cname.startsWith("sun.reflect."))
+						{
+							// We've found the relevant frame.
+							setSourceClassName(cname);
+							setSourceMethodName(frame.getMethodName());
+							return;
+						}
+					}
+				}
+			}
+			// We haven't found a suitable frame, so just punt. This is
+			// OK as we are only committed to making a "best effort" here.
+		}
+
+		private boolean isLoggerImplFrame(String cname)
+		{
+			// the log record could be created for a platform logger
+			//this is where we've changed from the original LogRecord implementation:
+			return (cname.equals("java.util.logging.Logger") || cname.equals("org.conserve.tools.Tools") || cname.startsWith("java.util.logging.LoggingProxyImpl")
+					|| cname.startsWith("sun.util.logging."));
+		}
+	}
+
 }

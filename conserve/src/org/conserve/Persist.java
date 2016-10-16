@@ -675,6 +675,7 @@ public class Persist
 		statement.append(Defaults.REAL_CLASS_COL);
 		statement.append(" FROM ");
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
@@ -767,6 +768,7 @@ public class Persist
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE EXISTS ( SELECT * FROM ");
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		Tools.logFine(ps);
 		ps.execute();
 		ps.close();
 	}
@@ -823,6 +825,7 @@ public class Persist
 		statement.append(Defaults.REAL_CLASS_COL);
 		statement.append(" FROM ");
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();

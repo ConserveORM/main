@@ -93,8 +93,6 @@ public class StatementPrototype
 				addValue(ps, index, o);
 			}
 		}
-
-		Tools.logFine(ps);
 		return ps;
 	}
 

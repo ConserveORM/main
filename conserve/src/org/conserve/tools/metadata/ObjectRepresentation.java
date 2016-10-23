@@ -836,6 +836,22 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 */
 	public abstract String getColumnType(String prop);
 
+	/**
+	 * @return
+	 */
+	public boolean hasNonPrimitiveProperty()
+	{
+		for(int x = 0;x<getPropertyCount();x++)
+		{
+			Class<?>prop = getReturnType(x);
+			if(!ObjectTools.isDatabasePrimitive(prop))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 
 	

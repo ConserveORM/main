@@ -983,6 +983,24 @@ public class ObjectStack
 		}
 		return false;
 	}
+
+	/**
+	 * Returns true if any of this stack's properties is not a database primitive.
+	 * 
+	 * @return
+	 */
+	public boolean hasNonPrimitiveProperty()
+	{
+		List<ObjectRepresentation> allRepresentations = this.getAllRepresentations();
+		for(ObjectRepresentation rep:allRepresentations)
+		{
+			if(rep.hasNonPrimitiveProperty())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 	
 
 }

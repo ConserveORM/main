@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -270,56 +271,77 @@ public class Persist
 	 */
 	public <T> int deleteObjects(ConnectionWrapper cw, Class<T> clazz, Clause where) throws SQLException
 	{
+		//get all classes that are subclasses of clazz, or equal to clazz
+		List<Class<?>> allClasses = getClasses(cw);
+		Iterator<Class<?>> iter = allClasses.iterator();
+		while(iter.hasNext())
+		{
+			Class<?> tmpClass = iter.next();
+			if(!clazz.isAssignableFrom(tmpClass))
+			{
+				iter.remove();
+			}
+		}
+		
 		int res = 0;
 		try
 		{
 			int deletedCount = 0;
-			//remove protection of all matching objects
-			unprotectObjectsExternal(cw,clazz,where);
+			// remove protection of all matching objects
+			unprotectObjectsExternal(cw, clazz, where);
 			// try the fast delete first
-			HashMap<Class<?>, List<Long>> objectDescr = getUnprotectedObjectDescriptors(cw,clazz, where);
+			HashMap<Class<?>, List<Long>> objectDescr = getUnprotectedObjectDescriptors(cw, clazz,allClasses, where);
 			for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
 			{
-				Class<?> c = en.getKey();
-				String tableName = NameGenerator.getTableName(c, adapter);
-				List<Long> ids = en.getValue();
-				for (Long id : ids)
+				Class<?> actualClass = en.getKey();
+				ObjectStack stack = new ObjectStack(adapter, actualClass);
+				String tableName = stack.getActualRepresentation().getTableName();
+				if (!stack.hasNonPrimitiveProperty())
 				{
-					// delete objects from cache
-					cache.purge(tableName, id);
-					if(deleteObject(cw,c, id))
+					List<Long> ids = en.getValue();
+					//the stack has no reference type properties, we can fast-delete it.
+					fastDelete(cw, actualClass,ids,new ArrayList<Class<?>>());
+					//then delete the ids from the cache
+					for (Long id : ids)
 					{
+						// delete objects from cache
+						cache.purge(tableName, id);
 						deletedCount++;
 					}
 				}
-			}
-			//check if the type of object we just deleted can contain circular references
-			ObjectStack stack = new ObjectStack(adapter, clazz);
-			if(stack.canContainCircularReferences())
-			{
-				//circular references are possible, we must check each and every one of the remaining objects
-				deletedCount+=deleteClassHelper(cw,clazz,where);
-			}
-			else
-			{
-				//if it can't contain circular references, can any of its subclasses?
-				//try them all to find out
-				//get all subclasses
-				List<Class<?>>allClasses = getClasses(cw);
-				for(Class<?> c:allClasses)
+				else
 				{
-					if(clazz.isAssignableFrom(c) && c != clazz)
+					List<Long> ids = en.getValue();
+					// a list of the object ids that have been successfully deleted
+					for (Long id : ids)
 					{
-						stack = new ObjectStack(adapter, c);
-						if (stack.canContainCircularReferences())
+						// delete objects from cache
+						cache.purge(tableName, id);
+						if (deleteObject(cw, actualClass, id))
 						{
-							// circular references are possible, we must check
-							// each and every one of the remaining objects
-							deletedCount += deleteClassHelper(cw, c, where);
+							deletedCount++;
 						}
 					}
 				}
-				
+			}
+			// iterate over all the possible result classes,
+			// to see if any can have circular references
+			for(Class<?>c:allClasses)
+			{
+				ObjectStack stack = new ObjectStack(adapter, c);
+
+				// check if the type of object we just deleted can contain
+				// circular references
+				if (stack.canContainCircularReferences())
+				{
+					// circular references are possible, we must check each
+					// and every one of the remaining objects
+					HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw, clazz, null, where, null);
+					for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
+					{
+						deletedCount += deleteClassHelper(cw,en.getKey(),en.getValue());
+					}
+				}
 			}
 			res = deletedCount;
 		}
@@ -332,7 +354,8 @@ public class Persist
 	
 	/**
 	 * Delete all instances of the given class that satisfy the given clause.
-	 * This is a helper method that is only called once the possibility of a circular reference has been indicated.
+	 * This is a helper method that is only called once the possibility of a
+	 * circular reference has been indicated.
 	 * 
 	 * @param cw
 	 * @param clazz
@@ -341,31 +364,24 @@ public class Persist
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private int deleteClassHelper(ConnectionWrapper cw, Class<?> clazz, Clause where) throws SQLException, ClassNotFoundException
+	private int deleteClassHelper(ConnectionWrapper cw, Class<?> clazz, List<Long> ids) throws SQLException, ClassNotFoundException
 	{
 		int deletedCount = 0;
-		HashMap<Class<?>, List<Long>> objectDescr = getObjectDescriptors(cw, clazz, NameGenerator.getSystemicName(clazz), where, null);
-		for (Entry<Class<?>, List<Long>> en : objectDescr.entrySet())
+		String tableName = NameGenerator.getTableName(clazz, adapter);
+		for (Long id : ids)
 		{
-			Class<?> cl = en.getKey();
-			String tableName = NameGenerator.getTableName(cl, adapter);
-			List<Long> ids = en.getValue();
-			for (Long id : ids)
+			// delete objects from cache
+			cache.purge(tableName, id);
+			// check if objects are part of other object
+			if (!protectionManager.isProtected(tableName, id, cw))
 			{
-				// delete objects from cache
-				cache.purge(tableName, id);
-				// check if objects are part of other object
-				if (!protectionManager.isProtected(tableName, id, cw))
-				{
-					// if not, delete
-					deleteObject(cw, cl, id);
-					deletedCount++;
-				}
+				// if not, delete
+				deleteObject(cw, clazz, id);
+				deletedCount++;
 			}
 		}
 		return deletedCount;
 	}
-
 
 	/**
 	 * Delete an object, recursively clearing corresponding entries in
@@ -774,6 +790,73 @@ public class Persist
 	}
 	
 
+	/**
+	 * Delete all listed entries in the given table.
+	 * 
+	 * @param clazz
+	 *            the class to delete from.
+	 * @param ids
+	 *            the C__ID entries to delete.
+	 *            
+	 *  
+	 * @throws ClassNotFoundException
+	 * @throws SQLException
+	 */
+	private <T> int  fastDelete(ConnectionWrapper cw, Class<T> clazz, List<Long>ids, List<Class<?>>deletedClasses)
+			throws ClassNotFoundException, SQLException
+	{
+		if(clazz.isArray())
+		{
+			// can't load array classes, so ignore
+			return 0 ;
+		}
+		// check if the appropriate table exists
+		String tableName = NameGenerator.getTableName(clazz, adapter);
+		if (!tableManager.tableExists(tableName, cw))
+		{
+			return 0;
+		}
+		
+
+		StringBuilder statement = new StringBuilder("DELETE FROM ");
+		statement.append(tableName);
+		statement.append(" WHERE " + Defaults.ID_COL +" IN (");
+		for(int x = 0;x<ids.size();x++)
+		{
+			if(x>0)
+			{
+				statement.append(",");
+			}
+			statement.append(ids.get(x));
+		}
+		statement.append(")");
+		PreparedStatement ps = cw.prepareStatement(statement.toString());
+		Tools.logFine(ps);
+		int res  = ps.executeUpdate();
+		ps.close();
+		
+		//get all direct superclasses, implemented interfaces of clazz, delete them too
+		List<Class<?>> directSupers = ObjectTools.getAllDirectInterfaces(clazz);
+		Class<?> sup = clazz.getSuperclass();
+		if(sup!=null)
+		{
+			directSupers.add(sup);
+		}
+		for (Class<?> c : directSupers)
+		{
+			if (!deletedClasses.contains(c))
+			{
+				deletedClasses.add(c);
+				int tmp = fastDelete(cw, c, ids, deletedClasses);
+				if (tmp != res)
+				{
+					throw new SQLException("Should have deleted " + res + " from " + c.getCanonicalName() + ", but deleted " + tmp);
+				}
+			}
+		}
+		return res;
+
+	}
 
 	/**
 	 * Get a list of the classes and ids that satisfy the clause, and do not have a protection entry.
@@ -781,15 +864,14 @@ public class Persist
 	 * 
 	 * 
 	 * @param clazz
-	 *            the class to search for .
+	 *            the class to search for.
+	 * @param classes classes that are subclasses of or equal to clazz
 	 * @param clause
-	 *            the clause to distinguish (can be null if id is given).
-	 * @param id the database id of the object to search for (can be null if
-	 *         clause is given).
+	 *            the clause to distinguish.
 	 * @throws ClassNotFoundException
 	 * @throws SQLException
 	 */
-	private <T> HashMap<Class<?>, List<Long>> getUnprotectedObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, Clause clause)
+	private <T> HashMap<Class<?>, List<Long>> getUnprotectedObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, List<Class<?>>classes, Clause clause)
 			throws ClassNotFoundException, SQLException
 	{
 		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
@@ -829,52 +911,138 @@ public class Persist
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
-		// If a row has a REALCLASS entry, load data for the subclass
-		for (HashMap<String, Object> map : propertyVector)
+		if (propertyVector.size() < classes.size())
 		{
-			Number n = (Number) map.get(Defaults.ID_COL);
-			if (n == null)
+			//we have few results or many classes, handle each individual result
+			
+			// If a row has a REALCLASS entry, load data for the subclass
+			for (HashMap<String, Object> map : propertyVector)
 			{
-				continue;
-			}
-			Long dbId = n.longValue();
+				Number n = (Number) map.get(Defaults.ID_COL);
+				if (n == null)
+				{
+					continue;
+				}
+				Long dbId = n.longValue();
 
-			// If a row has a REALCLASS entry, load the subclass
-			if (map.get(Defaults.REAL_CLASS_COL) != null)
-			{
-				// get the real class and id
-				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
-				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw,null, subClassName, null, dbId);
-				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
+				// If a row has a REALCLASS entry, load the subclass
+				if (map.get(Defaults.REAL_CLASS_COL) != null)
 				{
-					Class<?> c = en.getKey();
-					List<Long> existingList = res.get(c);
-					if (existingList == null)
+					// get the real class and id
+					String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
+					// get the data for the real class
+					HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw, null, subClassName, null, dbId);
+					for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 					{
-						res.putAll(tmpRes);
-					}
-					else
-					{
-						existingList.addAll(en.getValue());
+						Class<?> c = en.getKey();
+						List<Long> existingList = res.get(c);
+						if (existingList == null)
+						{
+							res.putAll(tmpRes);
+						}
+						else
+						{
+							existingList.addAll(en.getValue());
+						}
 					}
 				}
-			}
-			else
-			{
-				// no REAL_CLASS_COL found, which means this is the actual class
-				// of the object
-				List<Long> idVector = res.get(clazz);
-				if (idVector == null)
+				else
 				{
-					idVector = new ArrayList<Long>();
-					res.put(clazz, idVector);
+					// no REAL_CLASS_COL found, which means this is the actual
+					// class
+					// of the object
+					List<Long> idVector = res.get(clazz);
+					if (idVector == null)
+					{
+						idVector = new ArrayList<Long>();
+						res.put(clazz, idVector);
+					}
+					idVector.add(dbId);
 				}
-				idVector.add(dbId);
 			}
 		}
-		return res;
+		else
+		{
+			//we have many results or few classes, handle results on a class-by-class basis
+			
+			List<Long>remainingIds = new ArrayList<>();
+			//first, look at all results
+			for (HashMap<String, Object> map : propertyVector)
+			{
+				Number n = (Number) map.get(Defaults.ID_COL);
+				if (n == null)
+				{
+					continue;
+				}
+				Long dbId = n.longValue();
 
+				// If a row does not have a REALCLASS entry, use it straight up
+				if (map.get(Defaults.REAL_CLASS_COL) == null)
+				{
+					// no REAL_CLASS_COL found, which means this is the actual
+					// class
+					// of the object
+					List<Long> idVector = res.get(clazz);
+					if (idVector == null)
+					{
+						idVector = new ArrayList<Long>();
+						res.put(clazz, idVector);
+					}
+					idVector.add(dbId);
+				}
+				else
+				{
+					// we must find the real class of this object below
+					remainingIds.add(dbId);
+				}
+			}
+			if (!remainingIds.isEmpty())
+			{
+				for (Class<?> c : classes)
+				{
+					// clazz was already handled above
+					if (c != clazz && !remainingIds.isEmpty())
+					{
+						StringBuilder idQuery = new StringBuilder("SELECT ");
+						idQuery.append(Defaults.ID_COL);
+						idQuery.append(" FROM ");
+						idQuery.append(NameGenerator.getTableName(c, adapter));
+						idQuery.append(" WHERE " + Defaults.REAL_CLASS_COL + " IS NULL AND " + Defaults.ID_COL + " IN (");
+						for (int x = 0;x<remainingIds.size();x++)
+						{
+							if(x>0)
+							{
+								idQuery.append(",");
+							}
+							idQuery.append(remainingIds.get(x));
+						}
+						idQuery.append(")");
+						PreparedStatement idStatement = cw.prepareStatement(idQuery.toString());
+						Tools.logFine(idStatement);
+						ResultSet idResult = idStatement.executeQuery();
+						List<Long>idVector = new ArrayList<>();
+						while(idResult.next())
+						{
+							Long foundId = idResult.getLong(1);
+							idVector.add(foundId);
+							remainingIds.remove(foundId);
+						}
+						idStatement.close();
+						if(!idVector.isEmpty())
+						{
+							res.put(c, idVector);
+						}
+						//early stopping if we've found all the ids we were looking for
+						if(remainingIds.isEmpty())
+						{
+							break;
+						}
+					}
+				}
+			}
+
+		}
+		return res;
 	}
 
 	/**
@@ -1022,6 +1190,7 @@ public class Persist
 			whereGenerator.setClauses(clauses);
 			StatementPrototype sp = whereGenerator.generate(clazz, true);
 			PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
+			Tools.logFine(ps);
 			ResultSet rs = ps.executeQuery();
 			List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 			ps.close();
@@ -1155,6 +1324,7 @@ public class Persist
 				sp.setOffset(currentObject);
 				// query the database
 				PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
+				Tools.logFine(ps);
 				ResultSet rs = ps.executeQuery();
 				// get the property map
 				List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
@@ -1334,6 +1504,7 @@ public class Persist
 		sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
 
 		PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
@@ -1520,6 +1691,7 @@ public class Persist
 		StatementPrototype sp = whereGenerator.generate(clazz, false);
 		sp.addEqualsClause(Defaults.ID_COL, dbId);
 		PreparedStatement ps = sp.toPreparedStatement(cw, statement.toString());
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		if (propertyVector.size() != 1)
@@ -1949,6 +2121,7 @@ public class Persist
 
 				// generate query
 				PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());
+				Tools.logFine(ps);
 
 				// execute query
 				ResultSet rs = ps.executeQuery();

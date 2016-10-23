@@ -76,6 +76,7 @@ import org.conserve.objects.MyEnum;
 import org.conserve.objects.NonExistingClass;
 import org.conserve.objects.SelfContainingObject;
 import org.conserve.objects.SimpleObject;
+import org.conserve.objects.SimpleObjectContainer;
 import org.conserve.objects.SimplestObject;
 import org.conserve.objects.StringArrayContainer;
 import org.conserve.objects.SubInterface;
@@ -1633,6 +1634,7 @@ public class PersistTest
 		persist.deleteObjects(Object.class, new All());
 		assertEquals(0,persist.getCount(Object.class, new All()));
 		persist.close();
+		
 
 	}
 
@@ -3282,6 +3284,25 @@ public class PersistTest
 		assertFalse(pm1.deleteObject(so1));
 		assertFalse(pm1.deleteObject(so2));
 
+		pm1.close();
+		
+		pm1 = new PersistenceManager(driver, database, login, password);
+		//add a SimpleObject 
+		so1 = new SimpleObject();
+		so1.setCount(1);
+		pm1.saveObject(so1);
+		//add a SimpleObject as part of another object
+		so2 = new SimpleObject();
+		SimpleObjectContainer soc = new SimpleObjectContainer();
+		soc.setSimpleObject(so2);
+		pm1.saveObject(soc);
+		//delete all simpleobjects, make sure one is left
+		assertEquals(1,pm1.deleteObjects(SimpleObject.class, new All()));
+		assertEquals(1,pm1.getCount(SimpleObject.class, new All()));
+		//delete the containing object
+		pm1.deleteObject(soc);
+		//make sure the contained object is also gone
+		assertEquals(0,pm1.getCount(SimpleObject.class,new All()));
 		pm1.close();
 	}
 

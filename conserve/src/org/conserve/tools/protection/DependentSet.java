@@ -47,14 +47,14 @@ public class DependentSet
 	/**
 	 * Create and populate a new set of entries that are dependent on the given entry.
 	 * 
-	 * @param tableName
+	 * @param tableNameId
 	 * @param id
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public DependentSet(String tableName, Long id, ConnectionWrapper cw) throws SQLException
+	public DependentSet(Integer tableNameId, Long id, ConnectionWrapper cw) throws SQLException
 	{
-		ProtectionEntry candidate = new ProtectionEntry(tableName, id);
+		ProtectionEntry candidate = new ProtectionEntry(tableNameId, id);
 		List<ProtectionEntry> candidates = new ArrayList<ProtectionEntry>();
 		candidates.add(candidate);
 		List<ProtectionEntry> entries = new ArrayList<ProtectionEntry>(candidates);
@@ -164,7 +164,7 @@ public class DependentSet
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		ps.setString(1, entry.getPropertyTableName());
+		ps.setInt(1, entry.getPropertyTableNameId());
 		ps.setLong(2, entry.getPropertyId());
 		Tools.logFine(ps);
 		try
@@ -172,7 +172,7 @@ public class DependentSet
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 			{
-				ProtectionEntry nuEntry = new ProtectionEntry(rs.getString(1), rs.getLong(2));
+				ProtectionEntry nuEntry = new ProtectionEntry(rs.getInt(1), rs.getLong(2));
 				res.add(nuEntry);
 			}
 		}
@@ -203,7 +203,7 @@ public class DependentSet
 			statement.append(Defaults.HAS_A_TABLENAME);
 			statement.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
 			PreparedStatement ps = cw.prepareStatement(statement.toString());
-			ps.setString(1, entry.getPropertyTableName());
+			ps.setInt(1, entry.getPropertyTableNameId());
 			ps.setLong(2, entry.getPropertyId());
 			Tools.logFine(ps);
 			try
@@ -211,7 +211,7 @@ public class DependentSet
 				ResultSet rs = ps.executeQuery();
 				while (rs.next())
 				{
-					ProtectionEntry nuEntry = new ProtectionEntry(rs.getString(1), rs.getLong(2));
+					ProtectionEntry nuEntry = new ProtectionEntry(rs.getInt(1), rs.getLong(2));
 					res.add(nuEntry);
 				}
 			}

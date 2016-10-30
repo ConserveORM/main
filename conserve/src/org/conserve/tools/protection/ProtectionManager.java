@@ -21,42 +21,64 @@ package org.conserve.tools.protection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.conserve.Persist;
+import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.Tools;
 
 /**
  * Responsible for the reference-counting based protection scheme.
+ * This class uses table and class name identifiers instead of actual table and class names.
+ * To convert between table names and table name identifiers, class names and class name identifiers,
+ * and vice verse, @see org.conserve.tools.TableNameNumberMap and @see org.conserve.tools.ClassNameNumberMap.
  * 
  * @author Erik Berglund
  * 
  */
 public class ProtectionManager
 {
+	private AdapterBase adapter;
+
+	public ProtectionManager(AdapterBase adapter)
+	{
+		this.adapter = adapter;
+	}
 	/**
-	 * Check if an object, identified by tablename and id, is protected
+	 * Check if an object, identified by tablename id and id, is protected
 	 * This checks references recursively because an object can contain itself.
 	 * 
-	 * @param tableName
+	 * @param tableId
 	 * @param databaseId
 	 * @param cw
 	 * @return
 	 * @throws SQLException
 	 */
-	public boolean isProtected(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
+	public boolean isProtected(Integer tableId, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
-		DependentSet depSet = new DependentSet(tableName, databaseId, cw);
+		DependentSet depSet = new DependentSet(tableId, databaseId, cw);
 		return depSet.isProtected();
 	}
+	
 
-	public boolean isProtectedExternal(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
+	/**
+	 * Check if a given table id and db id combination is protected.
+	 * 
+	 * @param tableId the id of the table - @see org.conserve.tools.TableNameNumberMap 
+	 * @param databaseId
+	 * @param cw
+	 * @return
+	 * @throws SQLException
+	 */
+	public boolean isProtectedExternal(Integer tableId, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("SELECT * FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
 		statement.append(" WHERE OWNER_TABLE IS NULL AND OWNER_ID IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		ps.setString(1, tableName);
+		ps.setInt(1, tableId);
 		ps.setLong(2, databaseId);
 		Tools.logFine(ps);
 		try
@@ -77,12 +99,13 @@ public class ProtectionManager
 	/**
 	 * Label the object as having outside reference.
 	 * 
-	 * @param tableName
+	 * @param tableId the id of the table - @see org.conserve.tools.TableNameNumberMap 
 	 * @param databaseId
+	 * @param classNameId the id of the protected class, @see org.conserve.tools.ClassNameNumberMap
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public void protectObjectExternal(String tableName, Long databaseId, String className, ConnectionWrapper cw)
+	public void protectObjectExternal(Integer tableId, Long databaseId, Integer classNameId, ConnectionWrapper cw)
 			throws SQLException
 	{
 		// ensure that the object is labelled as coming from outside
@@ -90,9 +113,9 @@ public class ProtectionManager
 				+ " (PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS) values (?,?,?)");
 		try
 		{
-			ps.setString(1, tableName);
+			ps.setInt(1, tableId);
 			ps.setLong(2, databaseId);
-			ps.setString(3, className);
+			ps.setInt(3, classNameId);
 			Tools.logFine(ps);
 			ps.execute();
 		}
@@ -101,29 +124,51 @@ public class ProtectionManager
 			ps.close();
 		}
 	}
+	
+	/**
+	 * Convenience method that converts ownerTableName, propertyTableName, and propertyClassName to IDs before calling
+	 * {@link #protectObjectInternal(Integer, Long, String, Integer, Long, Integer, ConnectionWrapper)}
+	 * 
+	 * @param ownerTableName
+	 * @param ownerId
+	 * @param relationName
+	 * @param propertyTableName
+	 * @param propertyId
+	 * @param propertyClassName
+	 * @param cw
+	 * @throws SQLException 
+	 */
+	public void protectObjectInternal(String ownerTableName, Long ownerId, String relationName,
+			String propertyTableName, Long propertyId, String propertyClassName, ConnectionWrapper cw) throws SQLException
+	{
+		Persist p = adapter.getPersist();
+		Integer ownerTableNameId = p.getTableNameNumberMap().getNumber(cw, ownerTableName);
+		Integer propertyTableNameId = p.getTableNameNumberMap().getNumber(cw, propertyTableName);
+		Integer propertyClassNameId = p.getClassNameNumberMap().getNumber(cw, propertyClassName);
+		protectObjectInternal(ownerTableNameId, ownerId, relationName, propertyTableNameId, propertyId, propertyClassNameId, cw);
+	}
 
 	/**
 	 * Create a protection entry for the given owner-property relationship.
 	 * 
-	 * @param ownerTableName
-	 *            the table name of the owning object.
+	 * @param ownerTableNameId
+	 *            the id of the table name of the owning object.
 	 * @param ownerId
 	 *            the database id of the owning object.
 	 * @param relationName
 	 *            the name the property has within the owner.
-	 * @param propertyTableName
-	 *            the table name of the owned object, or JAVA_LANG_OBJECT if the
-	 *            class is an interface.
+	 * @param propertyTableNameId
+	 *            the table name id of the owned object.
 	 * @param propertyId
 	 *            the database id of the owned object.
-	 * @param propertyClass
-	 *            the canonical name of the actual property class.
+	 * @param propertyClassId
+	 *            the id of thecanonical name of the actual property class.
 	 * @param cw
 	 *            the connection to the database.
 	 * @throws SQLException
 	 */
-	public void protectObjectInternal(String ownerTableName, Long ownerId, String relationName,
-			String propertyTableName, Long propertyId, String propertyClass, ConnectionWrapper cw) throws SQLException
+	public void protectObjectInternal(Integer ownerTableNameId, Long ownerId, String relationName,
+			Integer propertyTableNameId, Long propertyId, Integer propertyClassId, ConnectionWrapper cw) throws SQLException
 	{
 		// ensure that the object is labelled as coming from inside
 		PreparedStatement ps = cw.prepareStatement("INSERT INTO " + Defaults.HAS_A_TABLENAME
@@ -131,17 +176,17 @@ public class ProtectionManager
 				+ ") values (?,?,?,?,?,?)");
 		try
 		{
-			ps.setString(1, ownerTableName);
+			ps.setInt(1, ownerTableNameId);
 			ps.setLong(2, ownerId);
-			ps.setString(3, propertyTableName);
+			ps.setInt(3, propertyTableNameId);
 			ps.setLong(4, propertyId);
-			if (propertyClass == null)
+			if (propertyClassId == null)
 			{
-				ps.setNull(5, java.sql.Types.VARCHAR);
+				ps.setNull(5, java.sql.Types.INTEGER);
 			}
 			else
 			{
-				ps.setString(5, propertyClass);
+				ps.setInt(5, propertyClassId);
 			}
 			ps.setString(6, relationName);
 			Tools.logFine(ps);
@@ -156,14 +201,14 @@ public class ProtectionManager
 	/**
 	 * Remove the outside-reference label from the given object.
 	 * 
-	 * @param tableName
+	 * @param tableNameId
 	 * @param databaseId
 	 * @param cw
 	 *            the connection object.
 	 * 
 	 * @throws SQLException
 	 */
-	public void unprotectObjectExternal(String tableName, Long databaseId, ConnectionWrapper cw) throws SQLException
+	public void unprotectObjectExternal(Integer tableNameId, Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("DELETE FROM ");
@@ -172,7 +217,7 @@ public class ProtectionManager
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setString(1, tableName);
+			ps.setInt(1, tableNameId);
 			ps.setLong(2, databaseId);
 			Tools.logFine(ps);
 			ps.execute();
@@ -188,9 +233,11 @@ public class ProtectionManager
 	 * 
 	 * @param ownerId the database id of the owner of the protection connection to delete.
 	 * @param propertyId the database id of the protected id to delete
+	 * @param propertyTableId the table id of the the property
+	 * @param ownerTableId the table id of the owner
 	 * @param cw
 	 */
-	public void unprotectObjectInternal(String ownerTable, Long ownerId, String propertyTable, Long propertyId,
+	public void unprotectObjectInternal(Integer ownerTableId, Long ownerId, Integer propertyTableId, Long propertyId,
 			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
@@ -200,9 +247,9 @@ public class ProtectionManager
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setString(1, ownerTable);
+			ps.setInt(1, ownerTableId);
 			ps.setLong(2, ownerId);
-			ps.setString(3, propertyTable);
+			ps.setInt(3, propertyTableId);
 			ps.setLong(4, propertyId);
 			Tools.logFine(ps);
 			ps.execute();
@@ -221,12 +268,12 @@ public class ProtectionManager
 	 * class corresponding to the given table name.
 	 * 
 	 * @param cw
-	 * @param propertyTable
+	 * @param propertyTableId
 	 *            the database table for which to remove all incoming
 	 *            dependencies.
 	 * @throws SQLException
 	 */
-	public void unprotectObjects(ConnectionWrapper cw, String propertyTable) throws SQLException
+	public void unprotectObjects(ConnectionWrapper cw, Integer propertyTableId) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(100);
 		statement.append("DELETE FROM ");
@@ -235,7 +282,7 @@ public class ProtectionManager
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setString(1, propertyTable);
+			ps.setInt(1, propertyTableId);
 			Tools.logFine(ps);
 			ps.execute();
 		}
@@ -250,16 +297,16 @@ public class ProtectionManager
 	 * Checks if a protection relationship exists before adding it. This is only
 	 * necessary on updating objects.
 	 * 
-	 * @param ownerTable
+	 * @param ownerTableId
 	 * @param ownerId
-	 * @param propertyTable
+	 * @param propertyTableId
 	 * @param propertyId
-	 * @param canonicalName
+	 * @param classNameId
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public void protectObjectInternalConditional(String ownerTable, Long ownerId, String relationName,
-			String propertyTable, Long propertyId, String canonicalName, ConnectionWrapper cw) throws SQLException
+	public void protectObjectInternalConditional(Integer ownerTableId, Long ownerId, String relationName,
+			Integer propertyTableId, Long propertyId, Integer classNameId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("SELECT COUNT(*) FROM ");
@@ -268,16 +315,16 @@ public class ProtectionManager
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setString(1, propertyTable);
+			ps.setInt(1, propertyTableId);
 			ps.setLong(2, propertyId);
-			ps.setString(3, ownerTable);
+			ps.setInt(3, ownerTableId);
 			ps.setLong(4, ownerId);
 			Tools.logFine(ps);
 			ResultSet rs = ps.executeQuery();
 			// check if the query returns no results
 			if (!rs.next() || rs.getLong(1)<=0)
 			{
-				protectObjectInternal(ownerTable, ownerId, relationName, propertyTable, propertyId, canonicalName, cw);
+				protectObjectInternal(ownerTableId, ownerId, relationName, propertyTableId, propertyId, classNameId, cw);
 			}
 		}
 		finally

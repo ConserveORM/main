@@ -275,7 +275,13 @@ public class ObjectRowMap implements Runnable
 			if (obj instanceof TableEntry)
 			{
 				TableEntry other = (TableEntry) obj;
-				return other.tableName.equals(tableName) && other.dbId == dbId;
+				if(other.tableName.equals(tableName))
+				{
+					if(other.dbId.equals(dbId))
+					{
+						res = true;
+					}
+				}
 			}
 			return res;
 		}

@@ -80,6 +80,7 @@ public class Updater
 			for(ObjectRepresentation rep:reps)
 			{
 				rep.setId(databaseId);
+				Integer tableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, rep.getTableName());
 				// get all existing reference values
 				HashMap<String, Long> refValues = getReferenceValues(cw, rep);
 				ArrayList<Object> values = new ArrayList<Object>();
@@ -128,13 +129,12 @@ public class Updater
 						adapter.getPersist()
 								.getProtectionManager()
 								.protectObjectInternalConditional(
-										rep.getTableName(),
-										rep.getId(),rep.getPropertyName(index),
-										NameGenerator.getTableName(
-												value.getClass(), adapter),
+										tableNameId,
+										rep.getId(),
+										rep.getPropertyName(index),
+										adapter.getPersist().getTableNameNumberMap().getNumber(cw,value.getClass()),
 										propertyId,
-										NameGenerator.getSystemicName(value
-												.getClass()), cw);
+										adapter.getPersist().getClassNameNumberMap().getNumber(cw, value.getClass()), cw);
 						// save the reference
 						values.add(propertyId);
 					}
@@ -300,6 +300,9 @@ public class Updater
 		Class<?> componentType = arrayLoader.getArray().getClass()
 				.getComponentType();
 		String arrayMemberTable = NameGenerator.getArrayMemberTableName(componentType, adapter);
+		//translate table names to corresponding IDs.
+		Integer arrayMemberTableId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, arrayMemberTable);
+		Integer arrayTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw,NameGenerator.getArrayTablename(adapter) );
 		// List all members of the existing array
 		ProtectionManager protecter = adapter.getPersist()
 				.getProtectionManager();
@@ -308,16 +311,17 @@ public class Updater
 			Object component = arrayLoader.getEntry(x);
 			// unprotect them
 			Long ownerId = arrayLoader.getRelationalIds().get(x);
-			protecter.unprotectObjectInternal(NameGenerator.getArrayTablename(adapter), databaseId, arrayMemberTable, ownerId, cw);
+			protecter.unprotectObjectInternal(arrayTableNameId, databaseId, arrayMemberTableId, ownerId, cw);
 				
 			// if they are non-primitive
 			if (!ObjectTools.isDatabasePrimitive(component.getClass()))
 			{
 				String propertyTable = NameGenerator.getTableName(component,
 						adapter);
+				Integer propertyTableId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, propertyTable);
 				Long propertyId = adapter.getPersist().getId(component);
-				protecter.unprotectObjectInternal(arrayMemberTable, ownerId, propertyTable,propertyId, cw);
-				if (!protecter.isProtected(propertyTable, propertyId, cw)
+				protecter.unprotectObjectInternal(arrayMemberTableId, ownerId, propertyTableId,propertyId, cw);
+				if (!protecter.isProtected(propertyTableId, propertyId, cw)
 						&& !nuIds.contains(new TableId(propertyTable,
 								propertyId)))
 				{
@@ -392,6 +396,7 @@ public class Updater
 			throw new SQLException("Wrong number of rows updated: "
 					+ updatedCount);
 		}
+		Integer repTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, rep.getTableName());
 		// unprotect and optionally delete discarded values of the object
 		Persist persist = adapter.getPersist();
 		for (String nValue : nullValues)
@@ -413,11 +418,12 @@ public class Updater
 									propertyId);
 					tableName = actualNameId.getTableName(adapter);
 				}
+				Integer tableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw,tableName);
 	
 				persist.getProtectionManager()
-						.unprotectObjectInternal(rep.getTableName(),rep.getId(),tableName,propertyId, cw);
+						.unprotectObjectInternal(repTableNameId,rep.getId(),tableNameId,propertyId, cw);
 				if (!persist.getProtectionManager()
-						.isProtected(tableName,
+						.isProtected(tableNameId,
 								propertyId, cw))
 				{
 					persist.deleteObject(cw,returnType,propertyId);

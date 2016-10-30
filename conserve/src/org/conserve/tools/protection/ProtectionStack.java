@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
 
 
@@ -35,11 +36,11 @@ import org.conserve.connection.ConnectionWrapper;
 public class ProtectionStack
 {
 	private List<ProtectionEntry> protectionEntries = new ArrayList<ProtectionEntry>();
-	private ProtectionManager protectionManager;
+	private AdapterBase adapter;
 
-	public ProtectionStack(ProtectionManager protectionManager)
+	public ProtectionStack(AdapterBase adapter)
 	{
-		this.protectionManager = protectionManager;
+		this.adapter = adapter;
 	}
 
 	/**
@@ -66,9 +67,10 @@ public class ProtectionStack
 	public void save(String ownerTableName, long ownerId, ConnectionWrapper cw)
 			throws SQLException
 	{
+		Integer ownerTableId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, ownerTableName);
 		for (ProtectionEntry pe : protectionEntries)
 		{
-			pe.save(ownerTableName, ownerId, protectionManager, cw);
+			pe.save(ownerTableId, ownerId, adapter.getPersist().getProtectionManager(), cw);
 		}
 	}
 

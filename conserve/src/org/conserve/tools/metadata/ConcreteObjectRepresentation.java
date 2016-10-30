@@ -54,7 +54,7 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 
 	public ConcreteObjectRepresentation(AdapterBase adapter, Class<?> c, Object o, DelayedInsertionBuffer delayBuffer)
 	{
-		this.protectionStack = new ProtectionStack(adapter.getPersist().getProtectionManager());
+		this.protectionStack = new ProtectionStack(adapter);
 		this.delayBuffer = delayBuffer;
 		this.adapter = adapter;
 		this.object = o;
@@ -192,7 +192,8 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	public void save(ConnectionWrapper cw, String subClassName, Long realId) throws SQLException
 	{
 		// store a reference to the subclass table entry
-		addValueTrio(Defaults.REAL_CLASS_COL, subClassName, String.class);
+		Integer subClassNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, subClassName);
+		addValueTrio(Defaults.REAL_CLASS_COL, subClassNameId, Integer.class);
 		if (realId != null)
 		{
 			id = realId;
@@ -266,13 +267,13 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 		if (this.clazz.isArray())
 		{
 			columnDescriptions.add(Defaults.ARRAY_MEMBER_ID + " " + adapter.getReferenceType(Defaults.ARRAY_TABLENAME));
-			columnDescriptions.add(Defaults.ARRAY_POSITION + " int ");
-			columnDescriptions.add(Defaults.COMPONENT_CLASS_COL + " " + adapter.getVarCharIndexed());
+			columnDescriptions.add(Defaults.ARRAY_POSITION + " " + adapter.getIntegerTypeKeyword());
+			columnDescriptions.add(Defaults.COMPONENT_CLASS_COL + " " + adapter.getIntegerTypeKeyword());
 			columnDescriptions.add(Defaults.VALUE_COL + " " + adapter.getColumnType(clazz.getComponentType(), null));
 		}
 		else
 		{
-			columnDescriptions.add(Defaults.REAL_CLASS_COL + " " + adapter.getVarCharIndexed());
+			columnDescriptions.add(Defaults.REAL_CLASS_COL + " " + adapter.getIntegerTypeKeyword());
 			for (int x = 0; x < this.getPropertyCount(); x++)
 			{
 				String mName = this.getPropertyName(x) + " ";
@@ -480,11 +481,12 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 							// ARRAY_TABLE_NAME row that represents them
 							if (value.getClass().isArray())
 							{
-								protectionStack.addEntry(new ProtectionEntry(NameGenerator.getArrayTablename(adapter), null, id, props.get(x)));
+								Integer tableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, NameGenerator.getArrayTablename(adapter));
+								protectionStack.addEntry(new ProtectionEntry(tableNameId, null, id, props.get(x)));
 							}
 							else
 							{
-								protectionStack.addEntry(new ProtectionEntry(value.getClass(), id, props.get(x), adapter));
+								protectionStack.addEntry(new ProtectionEntry(cw,value.getClass(), id, props.get(x), adapter));
 							}
 						}
 					}

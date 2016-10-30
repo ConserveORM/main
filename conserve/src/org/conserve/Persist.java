@@ -59,6 +59,7 @@ import org.conserve.sort.Order;
 import org.conserve.tools.ArrayEntryWriter;
 import org.conserve.tools.ArrayLoader;
 import org.conserve.tools.ClassIdTuple;
+import org.conserve.tools.ClassNameNumberMap;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.Duplicator;
@@ -66,6 +67,7 @@ import org.conserve.tools.ObjectFactory;
 import org.conserve.tools.ObjectTools;
 import org.conserve.tools.StatementPrototype;
 import org.conserve.tools.TableManager;
+import org.conserve.tools.TableNameNumberMap;
 import org.conserve.tools.Tools;
 import org.conserve.tools.Updater;
 import org.conserve.tools.generators.NameGenerator;
@@ -100,6 +102,8 @@ public class Persist
 	 */
 	private ObjectRowMap cache = new ObjectRowMap();
 	private TableManager tableManager;
+	private ClassNameNumberMap classNameNumberMap;
+	private TableNameNumberMap tableNameNumberMap;
 	private ProtectionManager protectionManager;
 	private Updater updater;
 	private ArrayEntryWriter arrayEntryWriter;
@@ -143,9 +147,10 @@ public class Persist
 		adapter = selectAdapter(connectionstring);
 		LOGGER.fine("Selected adapter: " + NameGenerator.getSystemicName(adapter.getClass()) + " for connection " + connectionstring);
 		// set up a new protection manager
-		protectionManager = new ProtectionManager();
+		protectionManager = new ProtectionManager(adapter);
 		// set up the object responsible for updating objects
 		updater = new Updater(adapter);
+		
 
 		arrayEntryWriter = new ArrayEntryWriter(adapter);
 
@@ -161,6 +166,12 @@ public class Persist
 			connectionPool = null;
 			throw new SQLException(e);
 		}
+		ConnectionWrapper cw = this.getConnectionWrapper();
+		tableNameNumberMap = new TableNameNumberMap(adapter);
+		tableNameNumberMap.initialise(cw);
+		classNameNumberMap = new ClassNameNumberMap(adapter);
+		classNameNumberMap.initialise(cw);
+		cw.commitAndDiscard();
 	}
 
 	/**
@@ -336,7 +347,7 @@ public class Persist
 				{
 					// circular references are possible, we must check each
 					// and every one of the remaining objects
-					HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw, clazz, null, where, null);
+					HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw, clazz, null,allClasses, where, null);
 					for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 					{
 						deletedCount += deleteClassHelper(cw,en.getKey(),en.getValue());
@@ -368,12 +379,13 @@ public class Persist
 	{
 		int deletedCount = 0;
 		String tableName = NameGenerator.getTableName(clazz, adapter);
+		Integer tableNameId = tableNameNumberMap.getNumber(cw, clazz);
 		for (Long id : ids)
 		{
 			// delete objects from cache
 			cache.purge(tableName, id);
 			// check if objects are part of other object
-			if (!protectionManager.isProtected(tableName, id, cw))
+			if (!protectionManager.isProtected(tableNameId, id, cw))
 			{
 				// if not, delete
 				deleteObject(cw, clazz, id);
@@ -482,7 +494,11 @@ public class Persist
 		{
 			String compType = rs.getString(2);
 			Class<?> compClass = ObjectTools.lookUpClass(compType, adapter).getComponentType();
+			String propertyTableName = NameGenerator.getTableName(compClass, adapter);
+			Integer propretyTableNameId = tableNameNumberMap.getNumber(cw, propertyTableName);
 			String compTable = NameGenerator.getArrayMemberTableName(compClass, adapter);
+			Integer compTableId = tableNameNumberMap.getNumber(cw, compTable);
+			Integer arrayTableNameId = tableNameNumberMap.getNumber(cw, NameGenerator.getArrayTablename(adapter));
 			boolean isObject = !ObjectTools.isDatabasePrimitive(compClass);
 
 			// all entries are actual objects, delete them
@@ -496,17 +512,18 @@ public class Persist
 			ResultSet components = componentStmt.executeQuery();
 			while (components.next())
 			{
-				String type = components.getString(1);
+				Integer compClassNameId = components.getInt(1);
 				Long compId = components.getLong(3);
-				Class<?> clazz = ObjectTools.lookUpClass(type, adapter);
-				String table = NameGenerator.getTableName(clazz, adapter);
-				protectionManager.unprotectObjectInternal(NameGenerator.getArrayTablename(adapter), id, compTable, compId, cw);
+				protectionManager.unprotectObjectInternal(arrayTableNameId, id, compTableId, compId, cw);
 				if (isObject)
 				{
 					Long valueId = components.getLong(2);
-					protectionManager.unprotectObjectInternal(compTable, compId, table, valueId, cw);
-					if (!protectionManager.isProtected(table, valueId, cw))
+					protectionManager.unprotectObjectInternal(compTableId, compId, propretyTableNameId, valueId, cw);
+					if (!protectionManager.isProtected(propretyTableNameId, valueId, cw))
 					{
+						String className = classNameNumberMap.getName(cw, compClassNameId);
+						Class<?>clazz = ObjectTools.lookUpClass(className, adapter);
+						//get the actual class from the class name id
 						deleteObject(cw,clazz, valueId);
 					}
 				}
@@ -596,23 +613,25 @@ public class Persist
 		ResultSet subObjects = query.executeQuery();
 		while (subObjects.next())
 		{
-			String ownerTable = subObjects.getString(1);
-			String propertyTable = subObjects.getString(2);
+			Integer ownerTableNameId = subObjects.getInt(1);
+			Integer propertyTableNameId = subObjects.getInt(2);
 			Long propertyId = subObjects.getLong(3);
-			String propertyClassName = subObjects.getString(4);
 			// unprotect the sub-object relative to the current object
-			protectionManager.unprotectObjectInternal(ownerTable,id, propertyTable, propertyId, cw);
+			protectionManager.unprotectObjectInternal(ownerTableNameId,id, propertyTableNameId, propertyId, cw);
 			// check if the property is unprotected
-			if (!protectionManager.isProtected(propertyTable, propertyId, cw))
+			if (!protectionManager.isProtected(propertyTableNameId, propertyId, cw))
 			{
+				String propertyClassName = classNameNumberMap.getName(cw, subObjects.getInt(4));
+				String propertyTableName = tableNameNumberMap.getName(cw, propertyTableNameId);
 				// delete the property itself
 				try
 				{
+					
 					//check if the property is an array
-					if (propertyTable.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
-							|| propertyTable.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME) || propertyClassName.contains("["))
+					if (propertyTableName.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
+							|| propertyTableName.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME) || propertyClassName.contains("["))
 					{
-						deleteObject(cw,propertyTable, propertyId);
+						deleteObject(cw,propertyTableName, propertyId);
 					}
 					else
 					{
@@ -643,6 +662,7 @@ public class Persist
 	 * @param className
 	 *            the name of the class to search for (can be null if clazz is
 	 *            given).
+	 * @param classes the list of all classes that can be assigned to clazz.
 	 * @param clause
 	 *            the clause to distinguish (can be null if id is given).
 	 * @param id the database id of the object to search for (can be null if
@@ -651,7 +671,7 @@ public class Persist
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, String className, Clause clause, Long id)
+	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, String className,List<Class<?>>classes, Clause clause, Long id)
 			throws ClassNotFoundException, SQLException
 	{
 		HashMap<Class<?>, List<Long>> res = new HashMap<Class<?>, List<Long>>();
@@ -695,50 +715,7 @@ public class Persist
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
-		// If a row has a REALCLASS entry, load data for the subclass
-		for (HashMap<String, Object> map : propertyVector)
-		{
-			Number n = (Number) map.get(Defaults.ID_COL);
-			if (n == null)
-			{
-				continue;
-			}
-			Long dbId = n.longValue();
-
-			// If a row has a REALCLASS entry, load the subclass
-			if (map.get(Defaults.REAL_CLASS_COL) != null)
-			{
-				// get the real class and id
-				String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
-				// get the data for the real class
-				HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw,null, subClassName, null, dbId);
-				for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
-				{
-					Class<?> c = en.getKey();
-					List<Long> existingList = res.get(c);
-					if (existingList == null)
-					{
-						res.putAll(tmpRes);
-					}
-					else
-					{
-						existingList.addAll(en.getValue());
-					}
-				}
-			}
-			else
-			{
-				// no REAL_CLASS_COL found, which means this is the actual class
-				// of the object
-				List<Long> idVector = res.get(clazz);
-				if (idVector == null)
-				{
-					idVector = new ArrayList<Long>();
-					res.put(clazz, idVector);
-				}
-				idVector.add(dbId);
-			}
-		}
+		populateObjectDescriptorsFromPropertyVector(cw,res,propertyVector,clazz,classes);
 		return res;
 
 	}
@@ -894,7 +871,7 @@ public class Persist
 		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
 		sp.addLeftJoin(whereGenerator.getTypeStack().getActualRepresentation().getTableName(), shortName, Defaults.HAS_A_TABLENAME,
 				shortName + "." + Defaults.ID_COL + " = " + Defaults.HAS_A_TABLENAME + ".PROPERTY_ID AND " + Defaults.HAS_A_TABLENAME
-						+ ".OWNER_TABLE <> ?",NameGenerator.getArrayTablename(adapter));
+						+ ".OWNER_TABLE <> ?",tableNameNumberMap.getNumber(cw, NameGenerator.getArrayTablename(adapter)));
 		sp.addConditionalStatement(Defaults.HAS_A_TABLENAME + ".PROPERTY_ID IS NULL");
 
 		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
@@ -911,6 +888,27 @@ public class Persist
 		ResultSet rs = ps.executeQuery();
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		ps.close();
+		populateObjectDescriptorsFromPropertyVector(cw,res,propertyVector,clazz,classes);
+		return res;
+	}
+	
+
+	/**
+	 * Helper method that goes through all the entries in propertyVector and finds the actual implementing class.
+	 * 
+	 * @param res the set of classes with associated database ids.
+	 * @param propertyVector the list of objects with name-value pairs.
+	 * @param clazz the class we searched for
+	 * @param classes all classes that a reference of type clazz can actually point to.
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	private void populateObjectDescriptorsFromPropertyVector(ConnectionWrapper cw,HashMap<Class<?>, 
+			List<Long>> res, 
+			List<HashMap<String, Object>> propertyVector,
+			Class<?> clazz, 
+			List<Class<?>> classes) throws ClassNotFoundException, SQLException
+	{
 		if (propertyVector.size() < classes.size())
 		{
 			//we have few results or many classes, handle each individual result
@@ -929,9 +927,10 @@ public class Persist
 				if (map.get(Defaults.REAL_CLASS_COL) != null)
 				{
 					// get the real class and id
-					String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
+					Integer subClassNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+					String subClassName = classNameNumberMap.getName(cw, subClassNameId);
 					// get the data for the real class
-					HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw, null, subClassName, null, dbId);
+					HashMap<Class<?>, List<Long>> tmpRes = getObjectDescriptors(cw, null, subClassName,classes, null, dbId);
 					for (Entry<Class<?>, List<Long>> en : tmpRes.entrySet())
 					{
 						Class<?> c = en.getKey();
@@ -1042,7 +1041,7 @@ public class Persist
 			}
 
 		}
-		return res;
+		
 	}
 
 	/**
@@ -1107,7 +1106,7 @@ public class Persist
 		Long id = (long) System.identityHashCode(object);
 		if (delayBuffer == null)
 		{
-			delayBuffer = new DelayedInsertionBuffer(adapter.getPersist());
+			delayBuffer = new DelayedInsertionBuffer(this);
 		}
 		else if (delayBuffer.isKnown(id, object))
 		{
@@ -1127,13 +1126,15 @@ public class Persist
 		}
 		// check if the object exists
 		Long databaseId = theCache.getDatabaseId(object);
+		Integer tableNameId  = tableNameNumberMap.getNumber(cw, tableName);
+		Integer classNameId = classNameNumberMap.getNumber(cw, object.getClass());
 		if (databaseId != null && objectExists(cw, object.getClass(), databaseId))
 		{
 			// the object exists in the database
 			res = databaseId;
-			if (protect && !protectionManager.isProtectedExternal(tableName, databaseId, cw))
+			if (protect && !protectionManager.isProtectedExternal(tableNameId, databaseId, cw))
 			{
-				protectionManager.protectObjectExternal(tableName, databaseId, NameGenerator.getSystemicName(object.getClass()), cw);
+				protectionManager.protectObjectExternal(tableNameId, databaseId, classNameId, cw);
 			}
 			updater.updateObject(cw, object, tableName, databaseId, delayBuffer);
 		}
@@ -1146,7 +1147,7 @@ public class Persist
 			// label the object as having been inserted by the outside
 			if (protect)
 			{
-				protectionManager.protectObjectExternal(tableName, res, NameGenerator.getSystemicName(object.getClass()), cw);
+				protectionManager.protectObjectExternal(tableNameId, res, classNameId, cw);
 			}
 		}
 		// insert the objects in the delay buffer
@@ -1201,7 +1202,8 @@ public class Persist
 				if (map.get(Defaults.REAL_CLASS_COL) != null)
 				{
 					// get the real class
-					String className = (String) map.get(Defaults.REAL_CLASS_COL);
+					Integer classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+					String className = classNameNumberMap.getName(cw, classNameId);
 					if (className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 					{
 						// arrays are not loaded in response to WHERE queries,
@@ -1220,7 +1222,8 @@ public class Persist
 							// get the subclass-specific data
 							getSubClassData(cw,map, clazz, dbId);
 							// load the real class info
-							className = (String) map.get(Defaults.REAL_CLASS_COL);
+							classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+							className = classNameNumberMap.getName(cw, classNameId);
 							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 						}
 						else
@@ -1338,7 +1341,8 @@ public class Persist
 					if (map.get(Defaults.REAL_CLASS_COL) != null)
 					{
 						// get the real class
-						String className = (String) map.get(Defaults.REAL_CLASS_COL);
+						Integer classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+						String className = classNameNumberMap.getName(cw, classNameId);
 						if (className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 						{
 							// arrays are not loaded in response to WHERE
@@ -1358,7 +1362,8 @@ public class Persist
 								// get the subclass-specific data
 								getSubClassData(cw,map, clazz, dbId);
 								// load the real class info
-								className = (String) map.get(Defaults.REAL_CLASS_COL);
+								classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+								className = classNameNumberMap.getName(cw, classNameId);
 								clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 							}
 							else
@@ -1515,7 +1520,8 @@ public class Persist
 			if (map.get(Defaults.REAL_CLASS_COL) != null)
 			{
 				// get the real class and id
-				className = (String) map.get(Defaults.REAL_CLASS_COL);
+				Integer classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+				className = classNameNumberMap.getName(cw, classNameId);
 				if (!className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 				{
 					// load the real class
@@ -1523,7 +1529,8 @@ public class Persist
 					// get the subclass-specific data
 					getSubClassData(cw,map, clazz, dbId);
 					// load the real class info
-					className = (String) map.get(Defaults.REAL_CLASS_COL);
+					classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+					className = classNameNumberMap.getName(cw, classNameId);
 				}
 			}
 
@@ -1629,6 +1636,7 @@ public class Persist
 		// get all c__IS_A entries
 		String selectStmt = "SELECT * from " + Defaults.IS_A_TABLENAME;
 		PreparedStatement ps = cw.prepareStatement(selectStmt);
+		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		while (rs.next())
 		{
@@ -1683,7 +1691,7 @@ public class Persist
 	private <T> void getSubClassData(ConnectionWrapper cw, HashMap<String, Object> map, Class<T> clazz, Long dbId)
 			throws ClassNotFoundException, SQLException
 	{
-		String realClassName = (String) map.get(Defaults.REAL_CLASS_COL);
+		Integer realClassNameId = (Integer) map.get(Defaults.REAL_CLASS_COL);
 		// erase the 'real' class entry
 		map.remove(Defaults.REAL_CLASS_COL);
 		StringBuilder statement = new StringBuilder("SELECT * FROM ");
@@ -1703,16 +1711,17 @@ public class Persist
 		// merge the two maps
 		map.putAll(subMap);
 		// check if we need to recurse down the class hierarchy
-		String subClassName = (String) map.get(Defaults.REAL_CLASS_COL);
-		if (subClassName != null)
+		Integer subClassId = (Integer)map.get(Defaults.REAL_CLASS_COL);
+		if (subClassId != null)
 		{
+			String subClassName = classNameNumberMap.getName(cw,subClassId);
 			Class<?> subClass = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
 			getSubClassData(cw,map, subClass, dbId);
 		}
 		else
 		{
 			// otherwise, put the real class name back
-			map.put(Defaults.REAL_CLASS_COL, realClassName);
+			map.put(Defaults.REAL_CLASS_COL, realClassNameId);
 		}
 	}
 
@@ -1863,8 +1872,8 @@ public class Persist
 		ResultSet rs = ps.executeQuery();
 		if (rs.next())
 		{
-			String realName = rs.getString(1);
-			if (realName == null)
+			Integer classNameId = rs.getInt(1);
+			if (rs.wasNull())
 			{
 				res = new ClassIdTuple(propertyClass, propertyId);
 			}
@@ -1873,6 +1882,7 @@ public class Persist
 				try
 				{
 					// convert to table name
+					String realName = classNameNumberMap.getName(cw, classNameId);
 					Class<?> realClass = ObjectTools.lookUpClass(realName, adapter);
 					res = getRealTableNameAndId(cw, realClass, propertyId);
 				}
@@ -2239,6 +2249,22 @@ public class Persist
 			throw new SQLException("Don't know how to " + function.getStringRepresentation(stack) + " as " + number);
 		}
 		return res;
+	}
+
+	/**
+	 * @return the classNameNumberMap
+	 */
+	public ClassNameNumberMap getClassNameNumberMap()
+	{
+		return classNameNumberMap;
+	}
+
+	/**
+	 * @return the tableNameNumberMap
+	 */
+	public TableNameNumberMap getTableNameNumberMap()
+	{
+		return tableNameNumberMap;
 	}
 
 }

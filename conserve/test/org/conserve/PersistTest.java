@@ -74,6 +74,7 @@ import org.conserve.objects.LessSimpleObject;
 import org.conserve.objects.ListContainingObject;
 import org.conserve.objects.MyEnum;
 import org.conserve.objects.NonExistingClass;
+import org.conserve.objects.ObjectArrayContainingObject;
 import org.conserve.objects.SelfContainingObject;
 import org.conserve.objects.SimpleObject;
 import org.conserve.objects.SimpleObjectContainer;
@@ -208,9 +209,8 @@ public class PersistTest
 	protected void deleteAll() throws SQLException
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		persist.dropTable(Object.class);
-		// persist.deleteObjects(new Object());// clear everything
-		persist.close();
+		persist.deleteObjects(new Object());// clear everything
+		persist.close(); 
 	}
 
 	/**
@@ -1085,10 +1085,25 @@ public class PersistTest
 		ComplexObject second = allObjects.get(1);
 		Integer[] a = (Integer[]) first.getObject();
 		Integer[] b = (Integer[]) second.getObject();
-
-		assertTrue((a[0] == 1 && b[0] == 5) || (b[0] == 1 && a[0] == 5));
-		assertTrue((a[1] == 20 && b[1] == 60) || (b[1] == 20 && a[1] == 60));
-		assertTrue((a[2] == 3 && b[2] == 7) || (b[2] == 3 && a[2] == 7));
+		if(a[0]==1)
+		{
+			assertEquals(1,(int)a[0]);
+			assertEquals(20,(int)a[1]);
+			assertEquals(3,(int)a[2]);
+			assertEquals(5,(int)b[0]);
+			assertEquals(60,(int)b[1]);
+			assertEquals(7,(int)b[2]);
+		}
+		else
+		{
+			assertEquals(1,(int)b[0]);
+			assertEquals(20,(int)b[1]);
+			assertEquals(3,(int)b[2]);
+			assertEquals(5,(int)a[0]);
+			assertEquals(60,(int)a[1]);
+			assertEquals(7,(int)a[2]);
+			
+		}
 
 		persist.close();
 	}
@@ -2989,16 +3004,16 @@ public class PersistTest
 		pm.dropTable(Object.class);
 
 		ListContainingObject a = new ListContainingObject();
-		a.addStr("1");
-		a.addStr("2");
-		a.addStr("3");
-		a.addStr("4");
+		a.addStr("one");
+		a.addStr("two");
+		a.addStr("three");
+		a.addStr("four");
 		pm.saveObject(a);
 		ListContainingObject b = new ListContainingObject();
-		b.addStr("5");
-		b.addStr("6");
-		b.addStr("7");
-		b.addStr("8");
+		b.addStr("five");
+		b.addStr("six");
+		b.addStr("seven");
+		b.addStr("eight");
 		pm.saveObject(b);
 		pm.close();
 
@@ -3013,6 +3028,14 @@ public class PersistTest
 			assertTrue(3 < r.getList().size());
 			assertNotNull(r.getList().get(0));
 		}
+		// make sure all objects are deleted
+		pm.deleteObjects(Object.class,new All());
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		ResultSet rs = cw.prepareStatement("SELECT COUNT(*) FROM "+Defaults.HAS_A_TABLENAME).executeQuery();
+		rs.next();
+		assertEquals(0,rs.getLong(1));
+		rs.close();
+		cw.commitAndDiscard();
 		pm.close();
 	}
 
@@ -3926,8 +3949,8 @@ public class PersistTest
 		PreparedStatement ps = cw.prepareStatement(query.toString());
 		AdapterBase adapter = pm.getPersist().getAdapter();
 		NameGenerator.getTableName(AfterTop.class, adapter);
-		ps.setString(1, NameGenerator.getTableName(AfterTop.class, adapter));
-		ps.setString(2, NameGenerator.getTableName(OriginalObject.class, adapter));
+		ps.setInt(1, adapter.getPersist().getTableNameNumberMap().getNumber(cw, AfterTop.class));
+		ps.setInt(2, adapter.getPersist().getTableNameNumberMap().getNumber(cw, OriginalObject.class));
 
 		ResultSet rs = ps.executeQuery();
 		if (rs.next())
@@ -3942,8 +3965,8 @@ public class PersistTest
 		
 		//check that the old protection entries are gone
 		ps = cw.prepareStatement(query.toString());
-		ps.setString(1, NameGenerator.getTableName(AfterBottom.class, adapter));
-		ps.setString(2, NameGenerator.getTableName(OriginalObject.class, adapter));
+		ps.setInt(1, adapter.getPersist().getTableNameNumberMap().getNumber(cw,AfterBottom.class));
+		ps.setInt(2, adapter.getPersist().getTableNameNumberMap().getNumber(cw,OriginalObject.class));
 		rs = ps.executeQuery();
 		if (rs.next())
 		{
@@ -5619,6 +5642,40 @@ public class PersistTest
 		IndicesReduced copy = listf.get(0);
 		assertEquals(copy.getFoo(),ref.getFoo());
 		
+		pm.close();
+	}
+	
+	/**
+	 * Test repeatedly inserting and deleting objects containing arrays.
+	 * 
+	 */
+	@Test
+	public void testInsertAndDeleteOfArrays() throws Exception
+	{
+
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		for(int x = 0;x<10;x++)
+		{
+			//insert 10 objects
+			for(int t = 0;t<10;t++)
+			{
+				ObjectArrayContainingObject aco = new ObjectArrayContainingObject();
+				aco.setData(new Object[]{x*10.0+t,2.0,3.0});
+				pm.saveObject(aco);
+			}
+			assertEquals(x*5+10,pm.getCount(ObjectArrayContainingObject.class, new All()));
+			//delete 5 objects
+			for(int t = 0;t<5;t++)
+			{
+				ObjectArrayContainingObject match = new ObjectArrayContainingObject();
+				match.setData(new Object[]{x*10.0+t});
+				pm.deleteObjects(ObjectArrayContainingObject.class, new Equal(match));
+			}
+			assertEquals((x+1)*5,pm.getCount(ObjectArrayContainingObject.class, new All()));
+		}
+		//delete all objects
+		pm.deleteObjects(ObjectArrayContainingObject.class, new All());
+		assertEquals(0, pm.getCount(ObjectArrayContainingObject.class, new All()));
 		pm.close();
 	}
 }

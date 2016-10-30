@@ -92,12 +92,13 @@ public class ArrayEntryWriter
 			{
 				// The array entry is a primitive type, add it directly
 				Tools.setParameter(ps, compType, 3, value);
-				ps.setString(4, NameGenerator.getSystemicName(compType));
+				Integer compTypeNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, compType);
+				ps.setInt(4, compTypeNameId);
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
 				// get the new id of the __ARRAY_MEMBER entry
-				long memberId = adapter.getPersist().getLastId(cw, tableName);
+				Long memberId = adapter.getPersist().getLastId(cw, tableName);
 				// add a protection entry for the __ARRAY table
 				protectionManager.protectObjectInternal(
 						NameGenerator.getArrayTablename(adapter), arrayId,null, NameGenerator
@@ -109,10 +110,10 @@ public class ArrayEntryWriter
 			else
 			{
 				// this is another type of object, insert a reference
-				ps.setString(4, NameGenerator.getSystemicName(value.getClass()));
+				ps.setInt(4, adapter.getPersist().getClassNameNumberMap().getNumber(cw,value.getClass()));
 				Long valueId = adapter.getPersist().saveObjectUnprotected(cw,
 						value, delayBuffer);
-				long memberId = 0;
+				Long memberId = null;
 				if (valueId == null)
 				{
 					// This means the object exists, either independently

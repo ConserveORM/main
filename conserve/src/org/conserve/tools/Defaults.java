@@ -36,6 +36,8 @@ public class Defaults
 	public static final String TYPE_TABLENAME = "C__TYPE_TABLE";
 	public static final String TABLE_NAME_TABLENAME = "C__TABLE_NAME";
 	public static final String INDEX_TABLENAME = "C__INDEX";
+	public static final String CLASS_NAME_MAP_TABLE = "C__CLASS_NAME_MAP";
+	public static final String TABLE_NAME_MAP_TABLE = "C__TABLE_NAME_MAP";
 
 	/**
 	 * Default columns.

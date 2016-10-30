@@ -22,7 +22,6 @@ import java.sql.SQLException;
 
 import org.conserve.adapter.AdapterBase;
 import org.conserve.connection.ConnectionWrapper;
-import org.conserve.tools.generators.NameGenerator;
 
 /**
  * @author Erik Berglund
@@ -31,8 +30,8 @@ import org.conserve.tools.generators.NameGenerator;
 public class ProtectionEntry
 {
 	private Long propertyId;
-	private String propertyTableName;
-	private String propertyClassName;
+	private Integer propertyTableNameId;
+	private Integer propertyClassNameId;
 	private String relationName;
 
 	/**
@@ -40,31 +39,37 @@ public class ProtectionEntry
 	 * @param propertyTableName table name of the property this entry protects.
 	 * @param propertyId database ID of the property this entry protects.
 	 */
-	public ProtectionEntry(String propertyTableName, Long propertyId)
+	public ProtectionEntry(Integer propertyTableNameId, Long propertyId)
 	{
-		this(propertyTableName, (String) null, propertyId, (String) null);
+		this(propertyTableNameId, (Integer) null, propertyId, (String) null);
 	}
 
-	public ProtectionEntry(String propertyTableName, String propertyClassName,
+	public ProtectionEntry(Integer propertyTableNameId, Integer propertyClassNameId,
+			Long propertyId)
+	{
+		this(propertyTableNameId, propertyClassNameId, propertyId, (String) null);
+	}
+
+	public ProtectionEntry(Integer propertyTableNameId, Integer propertyClassNameId,
 			Long propertyId, String relationName)
 	{
-		this.propertyTableName = propertyTableName;
-		this.propertyClassName = propertyClassName;
+		this.propertyTableNameId = propertyTableNameId;
+		this.propertyClassNameId = propertyClassNameId;
 		this.propertyId = propertyId;
 		this.relationName = relationName;
 	}
 
-	public ProtectionEntry(Class<?> propertyClass, Long propertyId,
-			String relationName, AdapterBase adapter)
+	public ProtectionEntry(ConnectionWrapper cw,Class<?> propertyClass, Long propertyId,
+			String relationName, AdapterBase adapter) throws SQLException
 	{
-		this(NameGenerator.getTableName(propertyClass, adapter), NameGenerator
-				.getSystemicName(propertyClass), propertyId, relationName);
+		this(adapter.getPersist().getTableNameNumberMap().getNumber(cw, propertyClass), 
+				adapter.getPersist().getClassNameNumberMap().getNumber(cw, propertyClass), propertyId, relationName);
 	}
 
 	/**
 	 * Save a HAS_A relationship for this object and the given owner object.
 	 * 
-	 * @param ownerTable
+	 * @param ownerTableId
 	 *            the database table name of the owner object.
 	 * @param ownerId
 	 *            the database id of the owner object.
@@ -74,13 +79,13 @@ public class ProtectionEntry
 	 *            the connection for the current transaction.
 	 * @throws SQLException
 	 */
-	public void save(String ownerTable, long ownerId,
+	public void save(Integer ownerTableId, long ownerId,
 			ProtectionManager protectionManager, ConnectionWrapper cw)
 			throws SQLException
 	{
-		protectionManager.protectObjectInternal(ownerTable, ownerId,
-				this.relationName, propertyTableName, propertyId,
-				propertyClassName, cw);
+		protectionManager.protectObjectInternal(ownerTableId, ownerId,
+				this.relationName, propertyTableNameId, propertyId,
+				propertyClassNameId, cw);
 	}
 
 	/**
@@ -93,10 +98,10 @@ public class ProtectionEntry
 		if (obj instanceof ProtectionEntry)
 		{
 			ProtectionEntry other = (ProtectionEntry) obj;
-			if ((this.propertyTableName == null && other.propertyTableName == null)
-					|| (this.propertyTableName != null && (this.propertyTableName
-							.equals(other.getPropertyTableName()) && this.propertyId
-							.equals(other.getPropertyId()))))
+			if ((this.propertyTableNameId == null && other.propertyTableNameId == null)
+					|| (this.propertyTableNameId != null 
+						&& (this.propertyTableNameId == other.propertyTableNameId 
+							&& this.propertyId.equals(other.getPropertyId()))))
 			{
 				res = true;
 			}
@@ -110,7 +115,7 @@ public class ProtectionEntry
 	@Override
 	public String toString()
 	{
-		return propertyTableName + " (" + propertyId + ")";
+		return propertyTableNameId + " (" + propertyId + ")";
 	}
 
 	public Long getPropertyId()
@@ -118,8 +123,13 @@ public class ProtectionEntry
 		return propertyId;
 	}
 
-	public String getPropertyTableName()
+	public Integer getPropertyTableNameId()
 	{
-		return propertyTableName;
+		return propertyTableNameId;
+	}
+	
+	public Integer getPropertyClassNameId()
+	{
+		return propertyClassNameId;
 	}
 }

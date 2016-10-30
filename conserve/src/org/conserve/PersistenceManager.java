@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -33,6 +34,7 @@ import org.conserve.connection.ConnectionWrapper;
 import org.conserve.select.Clause;
 import org.conserve.select.discriminators.Equal;
 import org.conserve.tools.generators.NameGenerator;
+import org.conserve.tools.protection.ProtectionManager;
 
 /**
  * Object database interface. Saves to and retrieves from a persistence
@@ -281,7 +283,13 @@ public class PersistenceManager
 		Long dbId = persist.getCache().getDatabaseId(toDelete);
 		if(dbId != null)
 		{
-			res = persist.deleteObject(cw,toDelete.getClass(), dbId);
+			Integer tableNameId = persist.getTableNameNumberMap().getNumber(cw, toDelete.getClass());
+			ProtectionManager pm = persist.getProtectionManager();
+			pm.unprotectObjectExternal(tableNameId, dbId, cw);
+			if(!pm.isProtected(tableNameId, dbId, cw))
+			{
+				res = persist.deleteObject(cw,toDelete.getClass(), dbId);
+			}
 		}
 		
 		return res;		
@@ -883,9 +891,21 @@ public class PersistenceManager
 		Long dbId = persist.getCache().getDatabaseId(o);
 		if (dbId != null)
 		{
+			Class<?>clazz = o.getClass();
+			//get all classes that are subclasses of clazz, or equal to clazz
+			List<Class<?>> allClasses = getClasses(cw);
+			Iterator<Class<?>> iter = allClasses.iterator();
+			while(iter.hasNext())
+			{
+				Class<?> tmpClass = iter.next();
+				if(!clazz.isAssignableFrom(tmpClass))
+				{
+					iter.remove();
+				}
+			}
 			// Search using o as example, make sure returned object exists
 			// and has same table id number.
-			HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(cw, o.getClass(), null, new Equal(o), null);
+			HashMap<Class<?>, List<Long>> res = persist.getObjectDescriptors(cw, clazz, null,allClasses, new Equal(o), null);
 			List<Long> ids = res.get(o.getClass());
 			if (ids != null && ids.contains(dbId))
 			{
@@ -900,7 +920,7 @@ public class PersistenceManager
 				// temporarily save the old object, bypassing the cache
 				long tmpId = persist.saveObject(cw, o, false, null, tmpCache);
 				// make sure the new object can be used to find the old object
-				res = persist.getObjectDescriptors(cw, o.getClass(), null, new Equal(actual), null);
+				res = persist.getObjectDescriptors(cw, clazz, null, allClasses,new Equal(actual), null);
 				ids = res.get(o.getClass());
 				if (ids != null && ids.contains(tmpId))
 				{

@@ -118,6 +118,8 @@ public class TestTools
 		// check if the table names has changed
 		if (!oldTableName.equals(newTableName))
 		{
+			Integer oldTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, oldTableName);
+			Integer newTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw,newTableName);
 			// update the cache
 			adapter.getPersist().getCache().purge(oldTableName);
 
@@ -130,8 +132,8 @@ public class TestTools
 					newArrayMemberTable,newClass, cw);
 
 			// Update ownership relations
-			updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
-			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", oldTableName, newTableName, cw);
+			updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableNameId, newTableNameId, cw);
+			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE",oldTableNameId, newTableNameId, cw);
 
 			// update type info table
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
@@ -144,6 +146,8 @@ public class TestTools
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))
 		{
+			Integer newClassNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, newClassName);
+			Integer oldClassNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, oldClassName);
 			// update inheritance relations
 			updateISArelation(oldClassName, newClassName, "SUPERCLASS", cw);
 			updateISArelation(oldClassName, newClassName, "SUBCLASS", cw);
@@ -164,13 +168,13 @@ public class TestTools
 			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
 			if (persist.getTableManager().tableExists(newArrayMemberTable, cw))
 			{
-				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
 				// update all C_ARRAY_MEMBER_<newName> entries
-				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
 			}
 
 			// Update ownership relations
-			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", oldClassName, newClassName, cw);
+			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", oldClassNameId, newClassNameId, cw);
 			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "CLASS", oldClassName, newClassName, cw);
 		}
 	}
@@ -213,8 +217,12 @@ public class TestTools
 					newArrayMemberTable,oldClass, cw);
 
 			// Update ownership relations
-			updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
-			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", oldTableName, newTableName, cw);
+			updateAllRelations(Defaults.HAS_A_TABLENAME, "OWNER_TABLE", 
+					adapter.getPersist().getTableNameNumberMap().getNumber(cw, oldTableName),
+					adapter.getPersist().getTableNameNumberMap().getNumber(cw,newTableName), cw);
+			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_TABLE", 
+					adapter.getPersist().getTableNameNumberMap().getNumber(cw, oldTableName),
+					adapter.getPersist().getTableNameNumberMap().getNumber(cw,newTableName), cw);
 
 			// update type info table
 			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", oldTableName, newTableName, cw);
@@ -249,7 +257,9 @@ public class TestTools
 			}
 
 			// Update ownership relations
-			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", oldClassName, newClassName, cw);
+			updateAllRelations(Defaults.HAS_A_TABLENAME, "PROPERTY_CLASS", 
+					adapter.getPersist().getClassNameNumberMap().getNumber(cw, oldClassName) , 
+					adapter.getPersist().getClassNameNumberMap().getNumber(cw, newClassName), cw);
 
 			// update tablename table
 			updateAllRelations(Defaults.TABLE_NAME_TABLENAME, "CLASS", oldClassName, newClassName, cw);
@@ -270,7 +280,9 @@ public class TestTools
 	{
 		if (persist.getTableManager().tableExists(superClassTableName, cw))
 		{
-			updateAllRelations(superClassTableName, Defaults.REAL_CLASS_COL, oldClassName, newClassName, cw);
+			Integer oldClassNameId = persist.getClassNameNumberMap().getNumber(cw, oldClassName);
+			Integer newClassNameId = persist.getClassNameNumberMap().getNumber(cw, newClassName);
+			updateAllRelations(superClassTableName, Defaults.REAL_CLASS_COL, oldClassNameId, newClassNameId, cw);
 		}
 	}
 
@@ -310,6 +322,33 @@ public class TestTools
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
 		ps.setString(1, newValue);
 		ps.setString(2, oldValue);
+		Tools.logFine(ps);
+		ps.execute();
+		ps.close();
+	}
+	/**
+	 * Change all rows of table where column matches oldValue to newValue.
+	 * 
+	 * @param table
+	 * @param column
+	 * @param oldValue
+	 * @param newValue
+	 * @param cw
+	 * @throws SQLException
+	 */
+	private void updateAllRelations(String table, String column, Integer oldValue, Integer newValue, ConnectionWrapper cw)
+			throws SQLException
+	{
+		StringBuilder stmt = new StringBuilder("UPDATE ");
+		stmt.append(table);
+		stmt.append(" SET ");
+		stmt.append(column);
+		stmt.append(" = ? WHERE ");
+		stmt.append(column);
+		stmt.append(" = ?");
+		PreparedStatement ps = cw.prepareStatement(stmt.toString());
+		ps.setInt(1, newValue);
+		ps.setInt(2, oldValue);
 		Tools.logFine(ps);
 		ps.execute();
 		ps.close();

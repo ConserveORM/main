@@ -481,7 +481,7 @@ public class Persist
 		boolean res = false;
 		// delete all the array's members before deleting the array itself
 		// find the array contents class
-		StringBuilder arrayQuery = new StringBuilder("SELECT COMPONENT_TABLE,COMPONENT_TYPE FROM ");
+		StringBuilder arrayQuery = new StringBuilder("SELECT " + Defaults.COMPONENT_CLASS_COL + " FROM ");
 		arrayQuery.append(NameGenerator.getArrayTablename(adapter));
 		arrayQuery.append(" WHERE ");
 		arrayQuery.append(Defaults.ID_COL);
@@ -492,7 +492,8 @@ public class Persist
 		ResultSet rs = aQuery.executeQuery();
 		if (rs.next())
 		{
-			String compType = rs.getString(2);
+			Integer compTypeId = rs.getInt(1);
+			String compType = adapter.getPersist().getClassNameNumberMap().getName(cw, compTypeId);
 			Class<?> compClass = ObjectTools.lookUpClass(compType, adapter).getComponentType();
 			String propertyTableName = NameGenerator.getTableName(compClass, adapter);
 			Integer propretyTableNameId = tableNameNumberMap.getNumber(cw, propertyTableName);
@@ -505,7 +506,7 @@ public class Persist
 			StringBuilder componentQuery = new StringBuilder(
 					"SELECT " + Defaults.COMPONENT_CLASS_COL + ", " + Defaults.VALUE_COL + ", " + Defaults.ID_COL + " FROM ");
 			componentQuery.append(compTable);
-			componentQuery.append(" WHERE C__ARRAY_MEMBER_ID = ?");
+			componentQuery.append(" WHERE " + Defaults.ARRAY_MEMBER_ID + " = ?");
 			PreparedStatement componentStmt = cw.prepareStatement(componentQuery.toString());
 			componentStmt.setLong(1, id);
 			Tools.logFine(componentStmt);
@@ -531,7 +532,7 @@ public class Persist
 			componentStmt.close();
 
 			// delete all entries in the comp table
-			String deleteCommand = "DELETE FROM " + compTable + " WHERE C__ARRAY_MEMBER_ID = ?";
+			String deleteCommand = "DELETE FROM " + compTable + " WHERE " + Defaults.ARRAY_MEMBER_ID + " = ?";
 			PreparedStatement deleteStmt = cw.prepareStatement(deleteCommand);
 			deleteStmt.setLong(1, id);
 			Tools.logFine(deleteStmt);

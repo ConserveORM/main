@@ -127,7 +127,7 @@ public class TestTools
 			persist.getTableManager().setTableName(oldTableName,oldClass, newTableName,newClass, cw);
 
 			// change the array tables
-			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_TABLE_COL, oldTableNameId, newTableNameId, cw);
 			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),oldClass,
 					newArrayMemberTable,newClass, cw);
 
@@ -165,7 +165,7 @@ public class TestTools
 				updateSuperClass(NameGenerator.getTableName(superClass, adapter), oldClassName, newClassName, cw);
 			}
 			// update array tables
-			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
 			if (persist.getTableManager().tableExists(newArrayMemberTable, cw))
 			{
 				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
@@ -200,6 +200,8 @@ public class TestTools
 	{
 		AdapterBase adapter = persist.getAdapter();
 		String oldTableName = NameGenerator.getTableName(oldClass, adapter);
+		Integer oldTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, oldTableName);
+		Integer newTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, newTableName);
 		String oldClassName = NameGenerator.getSystemicName(oldClass);
 
 		// check if the table names has changed
@@ -212,7 +214,7 @@ public class TestTools
 			persist.getTableManager().setTableName(oldTableName,oldClass, newTableName,oldClass ,cw);
 
 			// change the array tables
-			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_TABLE_COL, oldTableName, newTableName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_TABLE_COL, oldTableNameId, newTableNameId, cw);
 			persist.getTableManager().setTableName(NameGenerator.getArrayMemberTableName(oldClass, adapter),oldClass,
 					newArrayMemberTable,oldClass, cw);
 
@@ -236,9 +238,13 @@ public class TestTools
 		// check if the class name has changed
 		if (!newClassName.equals(oldClassName))
 		{
+			//get the class name reference identifiers
+			Integer oldClassNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, oldClassName);
+			Integer newClassNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, newClassName);
 			// update inheritance relations
 			updateISArelation(oldClassName, newClassName, "SUPERCLASS", cw);
 			updateISArelation(oldClassName, newClassName, "SUBCLASS", cw);
+			
 			// update superclasses
 			// if the old superclass is different from the old
 			Class<?> oldSuperClass = oldClass.getSuperclass();
@@ -248,12 +254,12 @@ public class TestTools
 			}
 
 			// update array tables
-			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+			updateAllRelations(NameGenerator.getArrayTablename(adapter), Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
 			if (persist.getTableManager().tableExists(newArrayMemberTable, cw))
 			{
-				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
 				// update all C_ARRAY_MEMBER_<newName> entries
-				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassName, newClassName, cw);
+				updateAllRelations(newArrayMemberTable, Defaults.COMPONENT_CLASS_COL, oldClassNameId, newClassNameId, cw);
 			}
 
 			// Update ownership relations

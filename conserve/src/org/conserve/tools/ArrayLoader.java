@@ -87,7 +87,8 @@ public class ArrayLoader
 
 		if (rs.next())
 		{
-			componentClassName = rs.getString(1);
+			Integer componentClassNameId = rs.getInt(1);
+			componentClassName = adapter.getPersist().getClassNameNumberMap().getName(connectionWrapper, componentClassNameId);
 			// then, load the array
 			try
 			{
@@ -204,7 +205,9 @@ public class ArrayLoader
 		ArrayList<String> classNames = new ArrayList<String>();
 		while (rs.next())
 		{
-			classNames.add(rs.getString(1));
+			Integer componentClassNameId = rs.getInt(1);
+			String componentClassName = adapter.getPersist().getClassNameNumberMap().getName(cw, componentClassNameId);
+			classNames.add(componentClassName);
 			tmpList.add(rs.getObject(2));
 			relationalIds.add(rs.getLong(3));
 

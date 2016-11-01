@@ -425,13 +425,16 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 	{
 		if (this.isArray())
 		{
-			ps.setString(1, NameGenerator.getTableName(clazz.getComponentType(), adapter));
+			String componentTableName =NameGenerator.getTableName(clazz.getComponentType(), adapter);
 			if (clazz.getComponentType().isArray())
 			{
-				ps.setString(1, NameGenerator.getArrayTablename(adapter));
+				componentTableName = NameGenerator.getArrayTablename(adapter);
 			}
-			// the table also contains the actual name of the class
-			ps.setString(2, NameGenerator.getSystemicName(clazz));
+			Integer componentTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, componentTableName);
+			ps.setInt(1, componentTableNameId);
+			// the table also contains a reference to the actual name of the class
+			Integer componentClassNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, clazz);
+			ps.setInt(2, componentClassNameId);
 			ps.setLong(3, id);
 
 		}

@@ -181,7 +181,7 @@ public class TableManager
 				// create the table with an identity column
 				createTable(Defaults.ARRAY_TABLENAME,
 					new String[] { Defaults.ID_COL, Defaults.COMPONENT_TABLE_COL, Defaults.COMPONENT_CLASS_COL },
-					new String[] { adapter.getLongTypeKeyword() + " PRIMARY KEY", adapter.getVarCharIndexed(), adapter.getVarCharIndexed() }, cw);
+					new String[] { adapter.getLongTypeKeyword() + " PRIMARY KEY", adapter.getIntegerTypeKeyword(), adapter.getIntegerTypeKeyword() }, cw);
 				// create an index on the id, as this is the one we
 				// will be searching for most frequently
 				createIndex(Defaults.ARRAY_TABLENAME, new String[] { Defaults.ID_COL }, Defaults.ARRAY_TABLENAME + "_INDEX", cw);
@@ -245,7 +245,7 @@ public class TableManager
 						create.append(" INT, ");
 						create.append(Defaults.COMPONENT_CLASS_COL);
 						create.append(" ");
-						create.append(adapter.getVarCharIndexed());
+						create.append(adapter.getIntegerTypeKeyword());
 						create.append(", ");
 						create.append(Defaults.VALUE_COL);
 						create.append(" ");

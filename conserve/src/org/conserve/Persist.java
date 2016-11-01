@@ -60,6 +60,7 @@ import org.conserve.tools.ArrayEntryWriter;
 import org.conserve.tools.ArrayLoader;
 import org.conserve.tools.ClassIdTuple;
 import org.conserve.tools.ClassNameNumberMap;
+import org.conserve.tools.ColumnNameNumberMap;
 import org.conserve.tools.Defaults;
 import org.conserve.tools.DelayedInsertionBuffer;
 import org.conserve.tools.Duplicator;
@@ -104,6 +105,7 @@ public class Persist
 	private TableManager tableManager;
 	private ClassNameNumberMap classNameNumberMap;
 	private TableNameNumberMap tableNameNumberMap;
+	private ColumnNameNumberMap columnNameNumberMap;
 	private ProtectionManager protectionManager;
 	private Updater updater;
 	private ArrayEntryWriter arrayEntryWriter;
@@ -171,6 +173,8 @@ public class Persist
 		tableNameNumberMap.initialise(cw);
 		classNameNumberMap = new ClassNameNumberMap(adapter);
 		classNameNumberMap.initialise(cw);
+		columnNameNumberMap = new ColumnNameNumberMap(adapter);
+		columnNameNumberMap.initialise(cw);
 		cw.commitAndDiscard();
 	}
 
@@ -2268,4 +2272,11 @@ public class Persist
 		return tableNameNumberMap;
 	}
 
+	/**
+	 * @return the map between column names and reference numbers.
+	 */
+	public ColumnNameNumberMap getColumnNameNumberMap()
+	{
+		return columnNameNumberMap;
+	}
 }

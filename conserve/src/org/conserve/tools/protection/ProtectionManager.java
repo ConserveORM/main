@@ -188,7 +188,14 @@ public class ProtectionManager
 			{
 				ps.setInt(5, propertyClassId);
 			}
-			ps.setString(6, relationName);
+			if(relationName == null)
+			{
+				ps.setNull(6, java.sql.Types.INTEGER);
+			}
+			else
+			{
+				ps.setInt(6, adapter.getPersist().getColumnNameNumberMap().getNumber(cw, relationName));
+			}
 			Tools.logFine(ps);
 			ps.execute();
 		}

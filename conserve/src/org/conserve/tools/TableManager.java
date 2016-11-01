@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.conserve.Persist;
 import org.conserve.adapter.AdapterBase;
 import org.conserve.annotations.AsBlob;
 import org.conserve.annotations.AsClob;
@@ -160,7 +161,7 @@ public class TableManager
 
 				createTable(Defaults.HAS_A_TABLENAME,
 						new String[] { "OWNER_TABLE", "OWNER_ID", Defaults.RELATION_NAME_COL, "PROPERTY_TABLE", "PROPERTY_ID", "PROPERTY_CLASS" },
-						new String[] { adapter.getIntegerTypeKeyword(), adapter.getLongTypeKeyword(), adapter.getVarCharKeyword(),
+						new String[] { adapter.getIntegerTypeKeyword(), adapter.getLongTypeKeyword(), adapter.getIntegerTypeKeyword(),
 								adapter.getIntegerTypeKeyword(), adapter.getLongTypeKeyword(), adapter.getIntegerTypeKeyword() },
 						cw);
 
@@ -1044,6 +1045,7 @@ public class TableManager
 			String ownerTable =tmpRes.getString(1);
 			Integer ownerTableId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, ownerTable);
 			String relationName = tmpRes.getString(2);
+			Integer relationNameId = adapter.getPersist().getColumnNameNumberMap().getNumber(cw, relationName);
 			// find all entries in C__HAS_A (protection entries) where owner
 			// and relation name is from the search results, and property is
 			// the new subclass
@@ -1052,7 +1054,7 @@ public class TableManager
 			query.append(" WHERE OWNER_TABLE=? AND RELATION_NAME=? AND PROPERTY_CLASS=?");
 			PreparedStatement innerStmt = cw.prepareStatement(query.toString());
 			innerStmt.setInt(1, ownerTableId);
-			innerStmt.setString(2, relationName);
+			innerStmt.setInt(2, relationNameId);
 			innerStmt.setInt(3, subClassId);
 			Tools.logFine(innerStmt);
 			ResultSet innerRes = innerStmt.executeQuery();
@@ -1305,14 +1307,15 @@ public class TableManager
 			ps.execute();
 			ps.close();
 
+			Persist pers = adapter.getPersist();
 			// Change name in C__HAS_A
 			stmt = new StringBuilder("UPDATE ");
 			stmt.append(Defaults.HAS_A_TABLENAME);
 			stmt.append(" SET RELATION_NAME = ? WHERE OWNER_TABLE  = ? AND RELATION_NAME = ?");
 			ps = cw.prepareStatement(stmt.toString());
-			ps.setString(1, nuName);
-			ps.setInt(2, adapter.getPersist().getTableNameNumberMap().getNumber(cw, tableName));
-			ps.setString(3, oldName);
+			ps.setInt(1, pers.getColumnNameNumberMap().getNumber(cw, nuName));
+			ps.setInt(2, pers.getTableNameNumberMap().getNumber(cw, tableName));
+			ps.setInt(3, pers.getColumnNameNumberMap().getNumber(cw, oldName));
 			Tools.logFine(ps);
 			ps.execute();
 			ps.close();
@@ -1583,27 +1586,28 @@ public class TableManager
 			ps.executeUpdate();
 
 		}
-		
-		//move protection entries
-		//move table names
+
+		Persist pers = adapter.getPersist();
+		// move protection entries
+		// move table names
 		StringBuilder sb = new StringBuilder("UPDATE ");
 		sb.append(Defaults.HAS_A_TABLENAME);
 		sb.append(" SET OWNER_TABLE = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
 		PreparedStatement ps = cw.prepareStatement(sb.toString());
-		ps.setInt(1,adapter.getPersist().getTableNameNumberMap().getNumber(cw, movedField.getToTable()));
-		ps.setInt(2, adapter.getPersist().getTableNameNumberMap().getNumber(cw, movedField.getFromTable()));
-		ps.setString(3, movedField.getFromName());
+		ps.setInt(1, pers.getTableNameNumberMap().getNumber(cw, movedField.getToTable()));
+		ps.setInt(2, pers.getTableNameNumberMap().getNumber(cw, movedField.getFromTable()));
+		ps.setInt(3, pers.getColumnNameNumberMap().getNumber(cw, movedField.getFromName()));
 		ps.executeUpdate();
 		ps.close();
-		
-		//move field names
+
+		// move field names
 		sb = new StringBuilder("UPDATE ");
 		sb.append(Defaults.HAS_A_TABLENAME);
 		sb.append(" SET RELATION_NAME = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
 		ps = cw.prepareStatement(sb.toString());
-		ps.setString(1, movedField.getToName());
-		ps.setInt(2, adapter.getPersist().getTableNameNumberMap().getNumber(cw,movedField.getToTable()));
-		ps.setString(3, movedField.getFromName());
+		ps.setInt(1, pers.getColumnNameNumberMap().getNumber(cw, movedField.getToName()));
+		ps.setInt(2, pers.getTableNameNumberMap().getNumber(cw, movedField.getToTable()));
+		ps.setInt(3, pers.getColumnNameNumberMap().getNumber(cw, movedField.getFromName()));
 		ps.executeUpdate();
 		ps.close();
 
@@ -1803,7 +1807,8 @@ public class TableManager
 
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		ps.setInt(1, tableNameId);
-		ps.setString(2, colName);
+		Integer colNameId = adapter.getPersist().getColumnNameNumberMap().getNumber(cw, colName);
+		ps.setInt(2, colNameId);
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		ProtectionManager pm = adapter.getPersist().getProtectionManager();
@@ -2096,6 +2101,7 @@ public class TableManager
 	 */
 	private void dropUprotectedReferences(Integer tableNameId, String column, ConnectionWrapper cw) throws SQLException, ClassNotFoundException
 	{
+		Integer columnNameId = adapter.getPersist().getColumnNameNumberMap().getNumber(cw, column);
 		// Get affected entries from HAS_A table
 		StringBuilder statement = new StringBuilder("SELECT OWNER_ID,PROPERTY_TABLE,PROPERTY_ID,PROPERTY_CLASS FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
@@ -2105,7 +2111,7 @@ public class TableManager
 
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		ps.setInt(1, tableNameId);
-		ps.setString(2, column);
+		ps.setInt(2, columnNameId);
 		Tools.logFine(ps);
 		ResultSet rs = ps.executeQuery();
 		ProtectionManager pm = adapter.getPersist().getProtectionManager();

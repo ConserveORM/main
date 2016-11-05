@@ -5722,17 +5722,6 @@ public class PersistTest
 		assertTrue(cap<cap2);
 		cw.discard();
 		
-		//delete everything
-		pm.deleteObjects(Object.class, new All());
-		// ...and insert one object
-		pm.saveObject(new SimpleObject());
-		//make sure we don't get capacity back
-		cw = pm.getConnectionWrapper();
-		double cap3 = pm.getUsedCapacity(cw);
-		assertTrue(cap3>0);
-		assertTrue(cap3<1);
-		assertEquals(cap2, cap3,0.000000001);
-		cw.discard();
 		pm.close();
 	}
 }

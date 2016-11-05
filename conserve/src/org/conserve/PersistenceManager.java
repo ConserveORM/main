@@ -1022,7 +1022,8 @@ public class PersistenceManager
 	 * empty, 1 means it's full.
 	 * 
 	 * Note that even if you delete everything in your database, this number
-	 * won't decrease, as used identifiers are not recycled.
+	 * won't necessarily decrease, as used identifiers may not be recycled.
+	 * This is database dependent.
 	 * 
 	 * Note that if you delete everything in your database, this method will incorrectly
 	 * return 0, even though some identifiers have been used up.

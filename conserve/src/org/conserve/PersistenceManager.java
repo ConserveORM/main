@@ -1021,14 +1021,14 @@ public class PersistenceManager
 	 * Returns a number in the range [0,1]. 0 indicates that the database is
 	 * empty, 1 means it's full.
 	 * 
-	 * Note that even if you delete everything in your database, this number
+	 * Note that even if you delete objects this number
 	 * won't necessarily decrease, as used identifiers may not be recycled.
-	 * This is database dependent.
+	 * This behaviour is database dependent.
 	 * 
 	 * Note that if you delete everything in your database, this method will incorrectly
 	 * return 0, even though some identifiers have been used up.
 	 * 
-	 * @return the fraction of total capacity that has been used, normalized to
+	 * @return the fraction of total capacity that has been used, normalised to
 	 *         the range [0,1].
 	 * @throws SQLException
 	 */

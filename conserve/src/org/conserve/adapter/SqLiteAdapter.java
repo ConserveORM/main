@@ -112,6 +112,13 @@ public class SqLiteAdapter extends AdapterBase
 		return false;
 	}
 	
-	
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getMaximumIdNumber()
+	 */
+	@Override
+	public long getMaximumIdNumber()
+	{
+		return Integer.MAX_VALUE;
+	}
 
 }

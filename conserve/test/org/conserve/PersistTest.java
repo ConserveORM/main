@@ -5678,4 +5678,61 @@ public class PersistTest
 		assertEquals(0, pm.getCount(ObjectArrayContainingObject.class, new All()));
 		pm.close();
 	}
+	
+	/**
+	 * Test if the capacity value appears sane.
+	 * @throws Exception
+	 */
+	@Test
+	public void testCapacityValue() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		//drop everything
+		pm.dropTable(Object.class);
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		assertEquals(0.0,pm.getUsedCapacity(cw),Math.ulp(0.0));
+		cw.discard();
+		
+		//insert a whole bunch of things
+		for(int x =0;x<10000;x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setName(Integer.toString(x));
+			pm.saveObject(so);
+		}
+		//make sure we've used some capacity
+		cw = pm.getConnectionWrapper();
+		double cap = pm.getUsedCapacity(cw);
+		assertTrue(cap>0);
+		assertTrue(cap<1);
+		cw.discard();
+		
+		//insert even more stuff
+		for(int x =10000;x<20000;x++)
+		{
+			SimpleObject so = new SimpleObject();
+			so.setName(Integer.toString(x));
+			pm.saveObject(so);
+		}
+		//make sure we've used even more capacity
+		cw = pm.getConnectionWrapper();
+		double cap2 = pm.getUsedCapacity(cw);
+		assertTrue(cap2>0);
+		assertTrue(cap2<1);
+		assertTrue(cap<cap2);
+		cw.discard();
+		
+		//delete everything
+		pm.deleteObjects(Object.class, new All());
+		// ...and insert one object
+		pm.saveObject(new SimpleObject());
+		//make sure we don't get capacity back
+		cw = pm.getConnectionWrapper();
+		double cap3 = pm.getUsedCapacity(cw);
+		assertTrue(cap3>0);
+		assertTrue(cap3<1);
+		assertEquals(cap2, cap3,0.000000001);
+		cw.discard();
+		pm.close();
+	}
 }

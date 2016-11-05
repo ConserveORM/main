@@ -735,5 +735,16 @@ public class AdapterBase
 		return false;
 	}
 
+	/**
+	 * Get the maximum allowed value for the C__ID column.
+	 * 
+	 * @return
+	 */
+	public long getMaximumIdNumber()
+	{
+		//default implementation is 2^63-1
+		return Long.MAX_VALUE;
+	}
+
 	
 }

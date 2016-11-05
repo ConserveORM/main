@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +35,8 @@ import org.conserve.cache.ObjectRowMap;
 import org.conserve.connection.ConnectionWrapper;
 import org.conserve.select.Clause;
 import org.conserve.select.discriminators.Equal;
+import org.conserve.tools.Defaults;
+import org.conserve.tools.Tools;
 import org.conserve.tools.generators.NameGenerator;
 import org.conserve.tools.protection.ProtectionManager;
 
@@ -998,6 +1002,53 @@ public class PersistenceManager
 	public void dropTable(ConnectionWrapper cw, Class<?> c) throws SQLException
 	{
 		persist.getTableManager().dropTableForClass(c, cw);
+	}
+	
+	/**
+	 * Get the amount of the total capacity that has been used. Since Conserve
+	 * stores objects with a unique, database generated identifier there is an
+	 * upper limit to the number of objects that can be stored. This number is
+	 * very, very large but nevertheless finite. As an example, most databases
+	 * allows 64-bit signed integers as auto-generated identifiers. This gives
+	 * 2^63-1 or 9,223,372,036,854,775,807 entries. That's nine quintillion, two
+	 * hundred twenty-three quadrillion, three hundred seventy-two trillion,
+	 * thirty-six billion, eight hundred fifty-four million, seven hundred
+	 * seventy-five thousand, eight hundred seven. If you add a thousand entries
+	 * every second it will take you more than 290 million years to run out.
+	 * Some database engines (notably SQLite and its derivatives) use a smaller
+	 * number here, so you can actually realistically run out.
+	 * 
+	 * Returns a number in the range [0,1]. 0 indicates that the database is
+	 * empty, 1 means it's full.
+	 * 
+	 * Note that even if you delete everything in your database, this number
+	 * won't decrease, as used identifiers are not recycled.
+	 * 
+	 * Note that if you delete everything in your database, this method will incorrectly
+	 * return 0, even though some identifiers have been used up.
+	 * 
+	 * @return the fraction of total capacity that has been used, normalized to
+	 *         the range [0,1].
+	 * @throws SQLException
+	 */
+	public double getUsedCapacity(ConnectionWrapper cw) throws SQLException
+	{
+		String objectTableName = NameGenerator.getTableName(Object.class, persist.getAdapter());
+		if (persist.getTableManager().tableExists(objectTableName, cw))
+		{
+			String query = "SELECT MAX(" + Defaults.ID_COL + ") FROM " + objectTableName;
+			PreparedStatement prepareStatement = cw.prepareStatement(query);
+			Tools.logFine(prepareStatement);
+			ResultSet rs = prepareStatement.executeQuery();
+			rs.next();
+			long count = rs.getLong(1);
+			return count / (double) persist.getAdapter().getMaximumIdNumber();
+		}
+		else
+		{
+			//if the table don't exist no capacity has been used
+			return 0;
+		}
 	}
 
 	/**

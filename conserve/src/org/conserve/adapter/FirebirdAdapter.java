@@ -267,5 +267,11 @@ public class FirebirdAdapter extends AdapterBase
 	{
 		return "TYPE";
 	}
+	
+	
+	@Override
+	public Integer getMaxMatchingValues() {
+		return 1500;
+	}
 
 }

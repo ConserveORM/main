@@ -138,24 +138,6 @@ public class ObjectRowMap implements Runnable
 	}
 
 	/**
-	 * Remove an object from the map.
-	 */
-	public void purge(Object obj)
-	{
-		WeakReference<Object> wref = objectToRef.get(obj);
-		if (wref != null)
-		{
-			objectToRef.remove(obj);
-			TableEntry te = referenceToTable.get(wref);
-			if (te != null)
-			{
-				tableToReference.remove(te);
-				referenceToTable.remove(wref);
-			}
-		}
-	}
-
-	/**
 	 * Remove an object based on its table name and database id.
 	 * 
 	 * @param tableName
@@ -349,34 +331,6 @@ public class ObjectRowMap implements Runnable
 			return res;
 		}
 
-		public void remove(Object obj)
-		{
-			Long id = (long) System.identityHashCode(obj);
-			List<WeakReference<Object>> bucket = buckets.get(id);
-			if (bucket != null)
-			{
-				synchronized (bucket)
-				{
-					// iterate over the references in the bucket until we find
-					// one
-					// that references obj
-					Iterator<WeakReference<Object>> iterator = bucket.iterator();
-					while (iterator.hasNext())
-					{
-						WeakReference<Object> ref = iterator.next();
-						if (obj == ref.get())
-						{
-							iterator.remove();
-							break;
-						}
-					}
-					if (bucket.isEmpty())
-					{
-						buckets.remove(id);
-					}
-				}
-			}
-		}
 
 		/**
 		 * This is used to clean up after an object has been claimed by GC.

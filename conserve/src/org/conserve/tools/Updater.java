@@ -414,9 +414,8 @@ public class Updater
 				}
 				else
 				{
-					ClassIdTuple actualNameId = persist.getRealTableNameAndId(cw, returnType,
-									propertyId);
-					tableName = actualNameId.getTableName(adapter);
+					Class<?> actualClass = persist.getRealClass(cw,returnType,propertyId);
+					tableName = NameGenerator.getTableName(actualClass, adapter);
 				}
 				Integer tableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw,tableName);
 	

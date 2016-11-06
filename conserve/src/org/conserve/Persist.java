@@ -58,7 +58,6 @@ import org.conserve.sort.DatabaseIDSorter;
 import org.conserve.sort.Order;
 import org.conserve.tools.ArrayEntryWriter;
 import org.conserve.tools.ArrayLoader;
-import org.conserve.tools.ClassIdTuple;
 import org.conserve.tools.ClassNameNumberMap;
 import org.conserve.tools.ColumnNameNumberMap;
 import org.conserve.tools.Defaults;
@@ -799,28 +798,60 @@ public class Persist
 			return 0;
 		}
 		
+		int res = 0;
 
-		StringBuilder statement = new StringBuilder("DELETE FROM ");
-		statement.append(tableName);
-		statement.append(" WHERE " + Defaults.ID_COL +" IN (");
-		for(int x = 0;x<ids.size();x++)
+		if (adapter.getMaxMatchingValues() != null)
 		{
-			if(x>0)
+			//there's an upper limit to the number of values we can delete at once,
+			//split the list of ids
+			int x = 0;
+			while(x<ids.size())
 			{
-				statement.append(",");
+				StringBuilder statement = new StringBuilder("DELETE FROM ");
+				statement.append(tableName);
+				statement.append(" WHERE " + Defaults.ID_COL + " IN (");
+				int count = 0;
+				for (; count < adapter.getMaxMatchingValues() && x<ids.size(); x++, count++)
+				{
+					if (count>0)
+					{
+						statement.append(",");
+					}
+					statement.append(ids.get(x));
+				}
+				statement.append(")");
+				PreparedStatement ps = cw.prepareStatement(statement.toString());
+				Tools.logFine(ps);
+				res += ps.executeUpdate();
+				ps.close();
 			}
-			statement.append(ids.get(x));
+
 		}
-		statement.append(")");
-		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		Tools.logFine(ps);
-		int res  = ps.executeUpdate();
-		ps.close();
-		
-		//get all direct superclasses, implemented interfaces of clazz, delete them too
+		else
+		{
+			StringBuilder statement = new StringBuilder("DELETE FROM ");
+			statement.append(tableName);
+			statement.append(" WHERE " + Defaults.ID_COL + " IN (");
+			for (int x = 0; x < ids.size(); x++)
+			{
+				if (x > 0)
+				{
+					statement.append(",");
+				}
+				statement.append(ids.get(x));
+			}
+			statement.append(")");
+			PreparedStatement ps = cw.prepareStatement(statement.toString());
+			Tools.logFine(ps);
+			res = ps.executeUpdate();
+			ps.close();
+		}
+
+		// get all direct superclasses, implemented interfaces of clazz, delete
+		// them too
 		List<Class<?>> directSupers = ObjectTools.getAllDirectInterfaces(clazz);
 		Class<?> sup = clazz.getSuperclass();
-		if(sup!=null)
+		if (sup != null)
 		{
 			directSupers.add(sup);
 		}
@@ -1007,35 +1038,48 @@ public class Persist
 					// clazz was already handled above
 					if (c != clazz && !remainingIds.isEmpty())
 					{
-						StringBuilder idQuery = new StringBuilder("SELECT ");
-						idQuery.append(Defaults.ID_COL);
-						idQuery.append(" FROM ");
-						idQuery.append(NameGenerator.getTableName(c, adapter));
-						idQuery.append(" WHERE " + Defaults.REAL_CLASS_COL + " IS NULL AND " + Defaults.ID_COL + " IN (");
-						for (int x = 0;x<remainingIds.size();x++)
+						int maxValue = remainingIds.size();
+						if(adapter.getMaxMatchingValues()!=null)
 						{
-							if(x>0)
-							{
-								idQuery.append(",");
-							}
-							idQuery.append(remainingIds.get(x));
+							maxValue = adapter.getMaxMatchingValues();
 						}
-						idQuery.append(")");
-						PreparedStatement idStatement = cw.prepareStatement(idQuery.toString());
-						Tools.logFine(idStatement);
-						ResultSet idResult = idStatement.executeQuery();
 						List<Long>idVector = new ArrayList<>();
-						while(idResult.next())
+						List<Long>toRemove = new ArrayList<>();
+						int x = 0;
+						
+						while(x<remainingIds.size())
 						{
-							Long foundId = idResult.getLong(1);
-							idVector.add(foundId);
-							remainingIds.remove(foundId);
+							StringBuilder idQuery = new StringBuilder("SELECT ");
+							idQuery.append(Defaults.ID_COL);
+							idQuery.append(" FROM ");
+							idQuery.append(NameGenerator.getTableName(c, adapter));
+							idQuery.append(" WHERE " + Defaults.REAL_CLASS_COL + " IS NULL AND " + Defaults.ID_COL + " IN (");
+							int count = 0;
+							for (;x<remainingIds.size() && count < maxValue;x++,count++)
+							{
+								if(count>0)
+								{
+									idQuery.append(",");
+								}
+								idQuery.append(remainingIds.get(x));
+							}
+							idQuery.append(")");
+							PreparedStatement idStatement = cw.prepareStatement(idQuery.toString());
+							Tools.logFine(idStatement);
+							ResultSet idResult = idStatement.executeQuery();
+							while(idResult.next())
+							{
+								Long foundId = idResult.getLong(1);
+								idVector.add(foundId);
+								toRemove.add(foundId);
+							}
+							idStatement.close();
 						}
-						idStatement.close();
 						if(!idVector.isEmpty())
 						{
 							res.put(c, idVector);
 						}
+						remainingIds.removeAll(toRemove);
 						//early stopping if we've found all the ids we were looking for
 						if(remainingIds.isEmpty())
 						{
@@ -1848,8 +1892,7 @@ public class Persist
 
 	/**
 	 * Recursively descend a dependency tree until the bottom is reached. This
-	 * method looks for the ultimate subclass of an object and returns its name
-	 * and the corresponding id.
+	 * method looks for the ultimate subclass of an object and returns it.
 	 * 
 	 * @param cw
 	 *            the ConnectionWrapper to use - will be passed on recursively.
@@ -1857,13 +1900,13 @@ public class Persist
 	 *            the class to look for subclasses of.
 	 * @param propertyId
 	 *            the database id corresponding to propertyClass.
-	 * @return the name of the table describing the ultimate subclass, and the
-	 *         id value for that table.
+	 * @return the class that implements the specific instance of propertyClass, 
+	 *         or propertyClass if it is the final subclass.
 	 * @throws SQLException
 	 */
-	public ClassIdTuple getRealTableNameAndId(ConnectionWrapper cw, Class<?> propertyClass, Long propertyId) throws SQLException
+	public Class<?> getRealClass(ConnectionWrapper cw, Class<?> propertyClass, Long propertyId) throws SQLException
 	{
-		ClassIdTuple res = null;
+		Class<?> res = null;
 		String propertyTable = NameGenerator.getTableName(propertyClass, adapter);
 		StringBuilder query = new StringBuilder("SELECT ");
 		query.append(Defaults.REAL_CLASS_COL);
@@ -1880,7 +1923,7 @@ public class Persist
 			Integer classNameId = rs.getInt(1);
 			if (rs.wasNull())
 			{
-				res = new ClassIdTuple(propertyClass, propertyId);
+				res = propertyClass;
 			}
 			else
 			{
@@ -1889,7 +1932,7 @@ public class Persist
 					// convert to table name
 					String realName = classNameNumberMap.getName(cw, classNameId);
 					Class<?> realClass = ObjectTools.lookUpClass(realName, adapter);
-					res = getRealTableNameAndId(cw, realClass, propertyId);
+					res = getRealClass(cw, realClass, propertyId);
 				}
 				catch (ClassNotFoundException e)
 				{

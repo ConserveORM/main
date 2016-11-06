@@ -745,6 +745,16 @@ public class AdapterBase
 		//default implementation is 2^63-1
 		return Long.MAX_VALUE;
 	}
-
+	
+	/**
+	 * The maximum number of matching values in an SQL statement.
+	 * Most database engines do not have a hard limit, so the default implementation simply 
+	 * returns null.
+	 * @return
+	 */
+	public Integer getMaxMatchingValues()
+	{
+		return null;
+	}
 	
 }

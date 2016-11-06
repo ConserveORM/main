@@ -5693,8 +5693,9 @@ public class PersistTest
 		assertEquals(0.0,pm.getUsedCapacity(cw),Math.ulp(0.0));
 		cw.discard();
 		
+		int x = 0;
 		//insert a whole bunch of things
-		for(int x =0;x<10000;x++)
+		for(;x<10000;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));
@@ -5708,7 +5709,7 @@ public class PersistTest
 		cw.discard();
 		
 		//insert even more stuff
-		for(int x =10000;x<20000;x++)
+		for(;x<20000;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));

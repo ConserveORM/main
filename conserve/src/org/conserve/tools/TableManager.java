@@ -536,16 +536,6 @@ public class TableManager
 		}
 	}
 
-	public void ensureColumnExists(String tableName, String columnName, Class<?> paramType, Long size, ConnectionWrapper cw) throws SQLException
-	{
-		if (createSchema)
-		{
-			if (!columnExists(tableName, columnName, cw))
-			{
-				createColumn(tableName, columnName, paramType,size, cw);
-			}
-		}
-	}
 
 	/**
 	 * Check that the table(s) to hold the object represented by objRes exists,

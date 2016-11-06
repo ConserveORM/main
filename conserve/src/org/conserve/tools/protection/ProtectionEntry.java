@@ -44,11 +44,6 @@ public class ProtectionEntry
 		this(propertyTableNameId, (Integer) null, propertyId, (String) null);
 	}
 
-	public ProtectionEntry(Integer propertyTableNameId, Integer propertyClassNameId,
-			Long propertyId)
-	{
-		this(propertyTableNameId, propertyClassNameId, propertyId, (String) null);
-	}
 
 	public ProtectionEntry(Integer propertyTableNameId, Integer propertyClassNameId,
 			Long propertyId, String relationName)
@@ -128,8 +123,4 @@ public class ProtectionEntry
 		return propertyTableNameId;
 	}
 	
-	public Integer getPropertyClassNameId()
-	{
-		return propertyClassNameId;
-	}
 }

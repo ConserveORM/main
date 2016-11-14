@@ -65,6 +65,7 @@ public abstract class AggregateFunction
 			Method method = stack.getActualRepresentation().getRepresentedClass().getMethod(methodName);
 			String colname = NameGenerator.getColumnName(method);
 			ObjectRepresentation rep = stack.getRepresentation(colname);
+			rep.setForceInclude(true);
 			res.append("(");
 			res.append(rep.getAsName());
 			res.append(".");

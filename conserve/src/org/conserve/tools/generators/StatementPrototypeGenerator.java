@@ -86,9 +86,12 @@ public class StatementPrototypeGenerator
 	 */
 	public StatementPrototype generate(Class<?> klass, boolean addJoins) throws SQLException
 	{
-		typeStack = new ObjectStack(adapter, klass);
-		typeIds = new UniqueIdTree(uidGenerator);
-		typeIds.nameStack(typeStack);
+		if(typeStack==null)
+		{
+			typeStack = new ObjectStack(adapter, klass);
+			typeIds = new UniqueIdTree(uidGenerator);
+			typeIds.nameStack(typeStack);
+		}
 
 		StatementPrototype res = new StatementPrototype(adapter, typeStack, typeStack.getActualRepresentation().getRepresentedClass(), clauses,
 				addJoins);
@@ -266,9 +269,10 @@ public class StatementPrototypeGenerator
 		{
 			sorted = isSorted(sel.getSelectionObject().getClass());
 		}
-
-		// get all possible paths from a superclass to the actual implementing
-		// class
+		ObjectRepresentation actualRep = oStack.getActual().getRepresentation();
+		actualRep.setForceInclude(true);
+		sp.getIdStatementGenerator().addPropertyTableToJoin(actualRep.getTableName(), actualRep.getAsName());
+		// get all possible paths from a superclass to the actual implementing class
 		TreePathLister tpl = new TreePathLister();
 		List<List<ObjectRepresentation>> allPaths = tpl.generateLists(oStack);
 		tpl.prunePaths(allPaths);
@@ -284,13 +288,12 @@ public class StatementPrototypeGenerator
 			for (int t = 0; t < path.size(); t++)
 			{
 				ObjectRepresentation rep = path.get(t);
-				// don't add link on first object, obviously
-				if (subRep != null)
+				if(rep.belongsInJoin())
 				{
-					sp.getIdStatementGenerator().addLinkStatement(rep, subRep);
+					sp.getIdStatementGenerator().addLinkStatement(rep, actualRep);
+					// make sure the class is in the link table
+					sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
 				}
-				// make sure the class is in the link table
-				sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
 				// prepare for next step
 				subRep = rep;
 				// store parameters
@@ -343,7 +346,7 @@ public class StatementPrototypeGenerator
 								&& !propertyClass.equals(property.getClass()))
 						{
 							// Then add linking statement
-							addLinkStatement(sp, propertyStack, propertyClass);
+							addLinkStatements(sp, propertyStack, propertyClass);
 						}
 						// create a new selection on the property
 						Selector nuSel = sel.duplicate(property, propertyClass);
@@ -363,35 +366,16 @@ public class StatementPrototypeGenerator
 	 * @param propertyStack
 	 * @param propertyClass
 	 */
-	private void addLinkStatement(StatementPrototype sp, ObjectStack propertyStack, Class<?> propertyClass)
+	private void addLinkStatements(StatementPrototype sp, ObjectStack propertyStack, Class<?> propertyClass)
 	{
 		Node objRep = propertyStack.getNode(propertyClass);
-		Node current = propertyStack.getActual();
-		List<Node> supers = propertyStack.getSupers(current);
-		while (supers.size() > 0)
+		Node actual = propertyStack.getActual();
+		sp.getIdStatementGenerator().addLinkStatement(objRep.getRepresentation(), actual.getRepresentation());
+		for(ObjectRepresentation currentRep:propertyStack.getAllRepresentations())
 		{
-			// find the representation that is part of propertyClass'
-			// inheritance
-			Node next = null;
-			for (Node s : supers)
+			if(currentRep.belongsInJoin())
 			{
-				if (ObjectTools.isA(current.getRepresentation().getRepresentedClass(), s.getRepresentation().getRepresentedClass()))
-				{
-					next = s;
-					break;
-				}
-			}
-			if (next == null)
-			{
-				// we're done
-				break;
-			}
-			else
-			{
-				// link the two representations, go up a level
-				sp.getIdStatementGenerator().addLinkStatement(next.getRepresentation(), current.getRepresentation());
-				current = next;
-				supers = propertyStack.getSupers(current);
+				sp.getIdStatementGenerator().addLinkStatement(currentRep, objRep.getRepresentation());
 			}
 		}
 		if (objRep.getRepresentation().isArray())
@@ -632,7 +616,7 @@ public class StatementPrototypeGenerator
 						if (!propertyClass.equals(o.getClass()))
 						{
 							// Then add linking statement
-							addLinkStatement(sp, propertyStack, propertyClass);
+							addLinkStatements(sp, propertyStack, propertyClass);
 						}
 						// recursively generate more of the query
 						Selector nuSel = sel.duplicate(o, propertyClass);
@@ -651,6 +635,13 @@ public class StatementPrototypeGenerator
 	public ObjectStack getTypeStack()
 	{
 		return typeStack;
+	}
+	
+	public void setTypeStack(ObjectStack stack)
+	{
+		this.typeStack = stack;
+		typeIds = new UniqueIdTree(uidGenerator);
+		typeIds.nameStack(typeStack);
 	}
 
 	public void setClauses(Clause... clause)

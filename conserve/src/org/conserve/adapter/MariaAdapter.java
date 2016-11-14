@@ -37,5 +37,14 @@ public class MariaAdapter extends MySqlAdapter
 		super(persist);
 	}
 
+	/**
+	 * @see org.conserve.adapter.AdapterBase#getKeyLength()
+	 */
+	@Override
+	public String getKeyLength()
+	{
+		// maximum allowed key length.
+		return "(191)";
+	}
 
 }

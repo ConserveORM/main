@@ -1236,8 +1236,18 @@ public class Persist
 
 		try
 		{
+			ObjectStack oStack = new ObjectStack(adapter, clazz);
 			StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 			whereGenerator.setClauses(clauses);
+			whereGenerator.setTypeStack(oStack);
+			//flag all entries in the stack that has properties as being important
+			for(ObjectRepresentation rep:oStack.getAllRepresentations())
+			{
+				if(rep.getPropertyCount()>0)
+				{
+					rep.setForceInclude(true);
+				}
+			}
 			StatementPrototype sp = whereGenerator.generate(clazz, true);
 			PreparedStatement ps = sp.toPreparedStatement(cw, sp.getSelectStartQuery());
 			Tools.logFine(ps);
@@ -1264,8 +1274,7 @@ public class Persist
 						// load the real class
 						clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
 						// primitives are not loaded in response to queries,
-						// only as
-						// parts of other objects
+						// only as parts of other objects
 						if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class)) && !(clazz.equals(Number.class)))
 						{
 							// get the subclass-specific data
@@ -1321,7 +1330,7 @@ public class Persist
 	 *            the object to process the search results.
 	 * @param clazz
 	 *            the class of returned objects.
-	 * @param clause
+	 * @param clause 
 	 *            the search parameters.
 	 * @throws SQLException
 	 */
@@ -1341,8 +1350,18 @@ public class Persist
 
 			boolean containsOrder = containsOrderStatement(clauses);
 
+			ObjectStack oStack = new ObjectStack(adapter, clazz);
 			StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
 			whereGenerator.setClauses(clauses);
+			whereGenerator.setTypeStack(oStack);
+			//flag all entries in the stack that has properties as being important
+			for(ObjectRepresentation rep:oStack.getAllRepresentations())
+			{
+				if(rep.getPropertyCount()>0)
+				{
+					rep.setForceInclude(true);
+				}
+			}
 			StatementPrototype sp = whereGenerator.generate(clazz, true);
 			long currentObject = 0;
 			long maxTotalCount = -1;
@@ -1356,6 +1375,7 @@ public class Persist
 				System.arraycopy(clauses, 0, nuClauses, 0, clauses.length);
 				nuClauses[nuClauses.length - 1] = order;
 				whereGenerator.setClauses(nuClauses);
+				whereGenerator.setTypeStack(oStack);
 				sp = whereGenerator.generate(clazz, true);
 			}
 			if (sp.getOffset() != null)
@@ -1551,7 +1571,17 @@ public class Persist
 			return res;
 		}
 
+		ObjectStack oStack= new ObjectStack(adapter, clazz);
+		//mark all representations that contain data
+		for(ObjectRepresentation rep:oStack.getAllRepresentations())
+		{
+			if(rep.getPropertyCount()>0)
+			{
+				rep.setForceInclude(true);
+			}
+		}
 		StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
+		whereGenerator.setTypeStack(oStack);
 		StatementPrototype sp = whereGenerator.generate(clazz, true);
 		String shortName = whereGenerator.getTypeStack().getRepresentation(clazz).getAsName();
 
@@ -2152,30 +2182,47 @@ public class Persist
 		Number[] res = null;
 		try
 		{
+			
 			// create an array to hold the results
 			res = new Number[functions.length];
 
 			// make sure the class exists
 			if (tableManager.tableExists(clazz, cw))
 			{
-
-				// generate the WHERE part of the statement
+				ObjectStack ostack = new ObjectStack(adapter, clazz);
 				StatementPrototypeGenerator whereGenerator = new StatementPrototypeGenerator(adapter);
-				whereGenerator.setClauses(where);
-				StatementPrototype sp = whereGenerator.generate(clazz, true);
-
+				whereGenerator.setTypeStack(ostack);
+				//if any function is COUNT, all ObjectrepResentations must be linked.
+				for(AggregateFunction f:functions)
+				{
+					if(f instanceof Count)
+					{
+						for(ObjectRepresentation rep:ostack.getAllRepresentations())
+						{
+							rep.setForceInclude(true);
+						}
+						break;
+					}
+				}
+				
 				// generate the SELECT part of the statement
+				// this MUST be done before the WHERE part of the statement is generated
 				StringBuilder selection = new StringBuilder("SELECT ");
 				for (int x = 0; x < functions.length; x++)
 				{
 					AggregateFunction af = functions[x];
-					selection.append(af.getStringRepresentation(whereGenerator.getTypeStack()));
+					selection.append(af.getStringRepresentation(ostack));
 					if (x < functions.length - 1)
 					{
 						selection.append(",");
 					}
 				}
 				selection.append(" FROM ");
+
+				// generate the WHERE part of the statement
+				whereGenerator.setClauses(where);
+				StatementPrototype sp = whereGenerator.generate(clazz, true);
+
 
 				// generate query
 				PreparedStatement ps = sp.toPreparedStatement(cw, selection.toString());

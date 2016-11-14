@@ -66,6 +66,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 
 	protected DelayedInsertionBuffer delayBuffer;
 	private Map<String, Long> columnSizes = new HashMap<>();
+	private boolean forceIncludeFlag;
 
 	/**
 	 * Default constructor for subclassing.
@@ -853,6 +854,55 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	}
 
 
+	/**
+	 * Check if the represented object has any property that isn't null.
+	 * @return
+	 */
+	public boolean hasNonNullProperty()
+	{
+		for(int x = 0;x<values.size();x++)
+		{
+			if(values.get(x)!=null)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Flag this object representation as forming part of an a query where it must be included regardless of 
+	 * whether it's got any values.
+	 * This will indicate that the object should be included in linking statements.
+	 * 
+	 * @param isAggregate
+	 */
+	public void setForceInclude(boolean isAggregate)
+	{
+		this.forceIncludeFlag = isAggregate;
+	}
+
+	/**
+	 * Return true if this object is part of an expression where it should be included
+	 * regardless of its contents.
+	 * This indicates that the object should be included in linking statements.
+	 * 
+	 * @return
+	 */
+	public boolean isForceInclude()
+	{
+		return forceIncludeFlag;
+	}
+
+	/**
+	 * Does this object belong in a join list statement?
+	 * 
+	 * @return
+	 */
+	public boolean belongsInJoin()
+	{
+		return isForceInclude()||hasNonNullProperty();
+	}
 
 	
 }

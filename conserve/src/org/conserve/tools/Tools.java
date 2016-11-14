@@ -155,7 +155,11 @@ public class Tools
 	 */
 	public static String getSequenceName(String tableName, AdapterBase adapter)
 	{
-		String res = tableName + "__seq";
+		String res = tableName + "__SEQ";
+		if(adapter.getTableNamesAreLowerCase())
+		{
+			res = res.toLowerCase();
+		}
 		while (res.length() > adapter.getMaximumNameLength() || res.startsWith("_"))
 		{
 			res = res.substring(1);

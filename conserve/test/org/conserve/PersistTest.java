@@ -5695,7 +5695,7 @@ public class PersistTest
 		
 		int x = 0;
 		//insert a whole bunch of things
-		for(;x<10000;x++)
+		for(;x<100;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));
@@ -5709,7 +5709,7 @@ public class PersistTest
 		cw.discard();
 		
 		//insert even more stuff
-		for(;x<20000;x++)
+		for(;x<200;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));

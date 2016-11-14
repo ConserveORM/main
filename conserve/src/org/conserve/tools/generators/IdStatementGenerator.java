@@ -62,7 +62,7 @@ public class IdStatementGenerator
 		this.addTablesToJoin(oStack);
 		if (addJoins)
 		{
-			// recursively add join tables
+			//  add join table links
 			addLinks(oStack, oStack.getActual());
 		}
 	}
@@ -70,21 +70,32 @@ public class IdStatementGenerator
 
 
 	/**
-	 * Recursively add link statements between each class and its superclass and
-	 * interfaces.
+	 * Add link statements between each class and its superclass and
+	 * interfaces, where appropriate.
 	 * 
 	 * @param oStack
-	 * @param rep
+	 * @param rep 
 	 *            the class to add links for.
 	 */
 	private void addLinks(ObjectStack oStack, Node rep)
 	{
-		List<Node> supers = oStack.getSupers(rep);
-		for (Node sup : supers)
+		ObjectRepresentation anchorRep = oStack.getRepresentation(Object.class);
+		if (anchorRep == null)
 		{
-			addLinkStatement(sup.getRepresentation(), rep.getRepresentation());
-			// recurse
-			addLinks(oStack, sup);
+			// no object rep? This is an interface-only stack, use actual
+			// instead
+			anchorRep = oStack.getActualRepresentation();
+		}
+		for (ObjectRepresentation currentRep : oStack.getAllRepresentations())
+		{
+			if (currentRep.belongsInJoin()
+					|| currentRep == oStack.getActualRepresentation())
+			{
+				if (rep.getRepresentation() != anchorRep)
+				{
+					addLinkStatement(rep.getRepresentation(), anchorRep);
+				}
+			}
 		}
 	}
 
@@ -98,7 +109,7 @@ public class IdStatementGenerator
 	{
 		StringBuilder tmp = new StringBuilder(100);
 		// generate the id statement
-		for (RelationDescriptor rdesc : getRelationDescriptors())
+		for (RelationDescriptor rdesc : relationDescriptors)
 		{
 			if (tmp.length() > 0)
 			{
@@ -113,11 +124,6 @@ public class IdStatementGenerator
 	public void addRelationDescriptor(RelationDescriptor desc)
 	{
 		this.relationDescriptors.add(desc);
-	}
-
-	public List<RelationDescriptor> getRelationDescriptors()
-	{
-		return this.relationDescriptors;
 	}
 
 
@@ -199,7 +205,8 @@ public class IdStatementGenerator
 			ObjectRepresentation objRep)
 	{
 		// check if the representations have already been joined
-		if (!isJoined(superRep.getAsName(), objRep.getAsName()))
+		if (!superRep.getAsName().equals(objRep.getAsName()) && 
+				!isJoined(superRep.getAsName(), objRep.getAsName()))
 		{
 			// if not, add a statement to join IDs
 			FieldDescriptor obj = new FieldDescriptor(objRep.getTableName(),
@@ -249,7 +256,7 @@ public class IdStatementGenerator
 	}
 
 	/**
-	 * Add all tables in stack, up to and including the table for propertyClass
+	 * Add all tables in stack, up to and including the table for propertyClass.
 	 * 
 	 * @param stack
 	 *            may be null.
@@ -273,7 +280,7 @@ public class IdStatementGenerator
 			List<ObjectRepresentation> allReps = stack.getAllRepresentations();
 			for (ObjectRepresentation rep : allReps)
 			{
-				if (!rep.equals(actual))
+				if (!rep.equals(actual) && (rep.belongsInJoin()||rep.getRepresentedClass().equals(Object.class)))
 				{
 					this.joinRepresentations.add(rep);
 					if (rep.isArray())

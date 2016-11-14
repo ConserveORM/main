@@ -298,7 +298,7 @@ public class StatementPrototype
 	/**
 	 * Generate the start of the SELECT * FROM type query. * will be replaced
 	 * with A.*, B.* or whatever is appropriate from the join tables.
-	 * 
+	 *  
 	 * @return a String representing the the start of a selection query.
 	 */
 	public String getSelectStartQuery()

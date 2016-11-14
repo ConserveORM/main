@@ -17,7 +17,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	HsqldbPersistTest.class, 
 	//MariaDBPersistTest.class,
 	MonetDbPersistTest.class, 
-	MySQLPersistTest.class, 
+	//MySQLPersistTest.class, 
 	PersistTest.class, 
 	PostgreSQLPersistTest.class,
 	SqLitePersistTest.class})

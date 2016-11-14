@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.Serializable;
+import java.net.URI;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -65,6 +66,7 @@ import org.conserve.objects.BadColumnNames;
 import org.conserve.objects.BaseInterface;
 import org.conserve.objects.BlobClobObject;
 import org.conserve.objects.Book;
+import org.conserve.objects.ClassContainingObject;
 import org.conserve.objects.ColumnNameObject;
 import org.conserve.objects.ComplexArrayObject;
 import org.conserve.objects.ComplexObject;
@@ -3025,7 +3027,7 @@ public class PersistTest
 		for (ListContainingObject r : res)
 		{
 			assertNotNull(r.getList());
-			assertTrue(3 < r.getList().size());
+			assertTrue("Size of should be greater than 3, was " + r.getList().size(),3 < r.getList().size());
 			assertNotNull(r.getList().get(0));
 		}
 		// make sure all objects are deleted
@@ -5695,7 +5697,7 @@ public class PersistTest
 		
 		int x = 0;
 		//insert a whole bunch of things
-		for(;x<10000;x++)
+		for(;x<100;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));
@@ -5709,7 +5711,7 @@ public class PersistTest
 		cw.discard();
 		
 		//insert even more stuff
-		for(;x<20000;x++)
+		for(;x<200;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));
@@ -5723,6 +5725,112 @@ public class PersistTest
 		assertTrue(cap<cap2);
 		cw.discard();
 		
+		//make sure deleting large numbers of objects works
+		pm.deleteObjects(SimpleObject.class, new All());
+		String query = "SELECT COUNT(*) FROM JAVA_LANG_OBJECT";
+		cw = pm.getConnectionWrapper();
+		ResultSet rs = cw.prepareStatement(query).executeQuery();
+		rs.next();
+		assertEquals(0,rs.getLong(1));
+		rs.close();
+		
 		pm.close();
 	}
+	
+	/**
+	 * Class properties are handled specially, test this here.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testObjectsWithClassProperties() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		ClassContainingObject one = new ClassContainingObject();
+		ClassContainingObject two = new ClassContainingObject();
+		one.setMyValue(1f);
+		one.setMyClass(Map.class);
+		two.setMyValue(2f);
+		two.setMyClass(URI.class);
+		pm.saveObject(one);
+		pm.saveObject(two);
+		pm.close();
+		
+		//test retrieving the objects
+		pm = new PersistenceManager(driver,database,login,password);
+		ClassContainingObject query = new ClassContainingObject();
+		query.setMyClass(Map.class);
+		List<ClassContainingObject> res = pm.getObjects(query);
+		assertEquals(1,res.size());
+		assertEquals(1f,res.get(0).getMyValue(),0.0001f);
+		query.setMyClass(URI.class);
+		res = pm.getObjects(query);
+		assertEquals(1,res.size());
+		assertEquals(2f,res.get(0).getMyValue(),0.0001f);
+		
+		//update an ojbect
+		ClassContainingObject toUpdate = res.get(0);
+		toUpdate.setMyValue(3f);
+		pm.saveObject(toUpdate);
+		pm.close();
+		pm = new PersistenceManager(driver,database,login,password);
+		//query object still correctly initialised from above...
+		res = pm.getObjects(query);
+		assertEquals(1,res.size());
+		assertEquals(3f,res.get(0).getMyValue(),0.0001f);
+		toUpdate = res.get(0);
+		toUpdate.setMyClass(Object.class);
+		pm.saveObject(toUpdate);
+		pm.close();
+		pm = new PersistenceManager(driver,database,login,password);
+		query.setMyClass(Object.class);
+		res = pm.getObjects(query);
+		assertEquals(1,res.size());
+		assertEquals(3f,res.get(0).getMyValue(),0.0001f);
+		
+		
+		//make sure deleting also works
+		pm.deleteObjects(ClassContainingObject.class, new All());
+		assertEquals(0,pm.getCount(ClassContainingObject.class, new All()));
+		pm.close();
+	}
+	
+	/**
+	 * Test saving an object with an array, then updating the array.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testUpdateObjectArray() throws Exception
+	{
+		String textToRemove = "Foo";
+		//save an object that contains a non-primitive array
+		ComplexArrayObject aco = new ComplexArrayObject();
+		ComplexObject[] data = new ComplexObject[2];
+		data[0] = new ComplexObject();
+		data[1] = new ComplexObject();
+		data[0].setObject(textToRemove);
+		data[1].setObject("Bar");
+		aco.setData(data);
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		pm.saveObject(aco);
+		
+		//change one of the objects of the array
+		data[0]=new ComplexObject();
+		data[0].setObject("Baz");
+		
+		//re-save the complex object to ensure the array is updated
+		pm.saveObject(aco);
+		
+		//make sure the overwritten object in the array is now gone
+		assertEquals(2,pm.getCount(ComplexObject.class, new All()));
+		List<ComplexObject>list = pm.getObjects(ComplexObject.class, new All());
+		assertEquals(2,list.size());
+		for(ComplexObject co:list)
+		{
+			assertFalse(textToRemove.equals((String)co.getObject()));
+		}
+		pm.close();
+	}
+
 }

@@ -713,7 +713,7 @@ public class TableManager
 	 * Helper method for {@link #dropTableForClass(Class, ConnectionWrapper)}.
 	 * 
 	 * 
-	 * @param c
+	 * @param c 
 	 * @param cw
 	 * @param classList
 	 *            the list of all classes known to the system
@@ -752,14 +752,7 @@ public class TableManager
 			{
 				// this adapter relies on sequences, so drop the corresponding
 				// sequence
-				String sequenceName = Tools.getSequenceName(tableName, adapter);
-				StringBuilder dropGeneratorQuery = new StringBuilder("DROP GENERATOR ");
-				dropGeneratorQuery.append(sequenceName);
-
-				PreparedStatement ps = cw.prepareStatement(dropGeneratorQuery.toString());
-				Tools.logFine(ps);
-				ps.execute();
-				ps.close();
+				dropSequenceIfExists(tableName, cw);
 			}
 			// find all classes that reference c, delete them.
 			ArrayList<Class<?>> referencingClasses = getReferencingClasses(c, classList);
@@ -1375,12 +1368,6 @@ public class TableManager
 						// drop the table
 						conditionalDelete(tableName, cw);
 						dropAllIndicesForTable(tableName, cw);
-						if (!adapter.isSupportsIdentity())
-						{
-							// this adapter relies on sequences, so drop the
-							// corresponding sequence
-							dropSequenceIfExists(tableName,cw);
-						}
 						// updating references not necessary, no class should have 
 						// reference to the removed class prior to removing it
 
@@ -2214,15 +2201,6 @@ public class TableManager
 						Tools.logFine(ps);
 						ps.execute();
 						ps.close();
-
-						if (!adapter.isSupportsIdentity())
-						{
-							if (objRep.getRepresentedClass().equals(Object.class)
-									||objRep.getRepresentedClass().isArray())
-							{
-								createTriggeredSequence(cw, objRep.getTableName());
-							}
-						}
 
 						if (adapter.isRequiresCommitAfterSchemaAlteration())
 						{

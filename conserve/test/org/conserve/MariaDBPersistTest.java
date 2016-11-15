@@ -31,8 +31,8 @@ public class MariaDBPersistTest extends PersistTest
 	public void setUp() throws Exception
 	{
 		driver = "org.mariadb.jdbc.Driver";
-		database = "jdbc:mariadb://localhost:3307/test";
-		secondDatabase = "jdbc:mariadb://localhost:3307/test2";
+		database = "jdbc:mariadb://localhost/test";
+		secondDatabase = "jdbc:mariadb://localhost/test2";
 		login = "test";
 		password = "test";
 		deleteAll();

@@ -142,6 +142,7 @@ import org.conserve.select.discriminators.Greater;
 import org.conserve.select.discriminators.GreaterOrEqual;
 import org.conserve.select.discriminators.Less;
 import org.conserve.select.discriminators.LessOrEqual;
+import org.conserve.select.discriminators.Like;
 import org.conserve.select.discriminators.NotNull;
 import org.conserve.select.discriminators.Null;
 import org.conserve.sort.Ascending;
@@ -5697,7 +5698,7 @@ public class PersistTest
 		
 		int x = 0;
 		//insert a whole bunch of things
-		for(;x<100;x++)
+		for(;x<1000;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));
@@ -5711,7 +5712,7 @@ public class PersistTest
 		cw.discard();
 		
 		//insert even more stuff
-		for(;x<200;x++)
+		for(;x<2000;x++)
 		{
 			SimpleObject so = new SimpleObject();
 			so.setName(Integer.toString(x));
@@ -5832,5 +5833,54 @@ public class PersistTest
 		}
 		pm.close();
 	}
+	
+	/**
+	 * Test queries using the LIKE operator.
+	 */
+	@Test
+	public void testLikeOperator() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		Book so = new Book();
+		so.setTitle("foobar");
+		pm.saveObject(so);
+		so = new Book();
+		so.setTitle("foo");
+		pm.saveObject(so);
+		so = new Book();
+		so.setTitle("foob");
+		pm.saveObject(so);
+		so = new Book();
+		so.setTitle("fooba");
+		pm.saveObject(so);
+		so = new Book();
+		so.setTitle("oobar");
+		pm.saveObject(so);
+		so = new Book();
+		so.setTitle("foar");
+		pm.saveObject(so); 
+		
+		Book query = new Book();
+		// get the objects matching the foo* pattern (4)
+		query.setTitle("foo%");
+		assertEquals(4,pm.getCount(Book.class,new Like(query)));
+		// get objects matching the *bar pattern (2)
+		query.setTitle("%bar");
+		assertEquals(2,pm.getCount(Book.class,new Like(query)));
+		// get objects matching the *ooba* pattern (3)
+		query.setTitle("%ooba%");
+		assertEquals(3,pm.getCount(Book.class,new Like(query)));
+		// get object matching the fo*ar pattern (2)
+		query.setTitle("fo%ar");
+		assertEquals(2,pm.getCount(Book.class,new Like(query)));
+		//get all 6 objects
+		query.setTitle("fo%");
+		Book query2 = new Book();
+		query2.setTitle("%ar");
+		assertEquals(6, pm.getCount(Book.class, new Or(new Like(query),new Like(query2))));
+		
+		pm.close();
+	}
+	 
 
 }

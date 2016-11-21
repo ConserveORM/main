@@ -26,17 +26,14 @@ package org.conserve;
  */
 public class MySQLPersistTest extends PersistTest
 {
-	/**
-	 * @see org.conserve.PersistTest#setUp()
-	 */
+
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
 		driver = "com.mysql.jdbc.Driver";
 		database = "jdbc:mysql://localhost/test";
 		secondDatabase = "jdbc:mysql://localhost/test2";
 		login = "test";
 		password = "test";
-		deleteAll();
 	}
 }

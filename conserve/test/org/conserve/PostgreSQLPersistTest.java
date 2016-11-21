@@ -26,18 +26,13 @@ package org.conserve;
  */
 public class PostgreSQLPersistTest extends PersistTest
 {
-
-	/**
-	 * @see org.conserve.PersistTest#setUp()
-	 */
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
 		driver = "org.postgresql.Driver";
 		database = "jdbc:postgresql://localhost/test";
 		secondDatabase = "jdbc:postgresql://localhost/test2";
 		login = "test";
 		password = "test";
-		deleteAll();
 	}
 }

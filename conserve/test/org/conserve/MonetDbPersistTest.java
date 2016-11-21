@@ -27,18 +27,14 @@ package org.conserve;
 public class MonetDbPersistTest extends PersistTest
 {
 
-	/**
-	 * @see org.conserve.DerbyPersistTest#setUp()
-	 */
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
 		driver = "nl.cwi.monetdb.jdbc.MonetDriver";
 		database = "jdbc:monetdb://localhost/test";
 		secondDatabase = "jdbc:monetdb://localhost/test2";
 		login = "monetdb";
 		password = "monetdb";
-		deleteAll();
 	}
 
 }

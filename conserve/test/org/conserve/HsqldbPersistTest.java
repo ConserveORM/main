@@ -28,11 +28,8 @@ package org.conserve;
 public class HsqldbPersistTest extends PersistTest
 {
 
-	/**
-	 * @see org.conserve.PersistTest#setUp()
-	 */
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
 		driver = "org.hsqldb.jdbcDriver";
 		database = "jdbc:hsqldb:file:hsqldbtest;shutdown=true";
@@ -42,6 +39,5 @@ public class HsqldbPersistTest extends PersistTest
 		//HSQLDB resets ALL loggers
 		//workaround:
 		System.setProperty("hsqldb.reconfig_logging", "false");
-		deleteAll();
 	}
 }

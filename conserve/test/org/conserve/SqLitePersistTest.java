@@ -25,18 +25,14 @@ package org.conserve;
 public class SqLitePersistTest extends PersistTest
 {
 
-	/**
-	 * @see org.conserve.PersistTest#setUp()
-	 */
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
 		driver = "org.sqlite.JDBC";
 		database = "jdbc:sqlite:sqlitetest.db";
 		secondDatabase = "jdbc:sqlite:sqlitetest2.db";
 		login = "sa";
 		password = "";
-		deleteAll();
 	}
 
 }

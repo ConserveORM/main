@@ -162,7 +162,7 @@ import org.junit.Test;
  * @author Erik Berglund
  * 
  */
-public class PersistTest
+public abstract class PersistTest
 {
 	// Settings for test
 	protected String driver;
@@ -184,21 +184,23 @@ public class PersistTest
 	}
 
 	/**
-	 * Classes overriding this method should set database connection strings
-	 * before calling deleteAll().
 	 * 
 	 * @throws java.lang.Exception
 	 */
 	@Before
 	public void setUp() throws Exception
 	{
-		driver = "org.h2.Driver";
-		database = "jdbc:h2:tcp://localhost/~/test";
-		secondDatabase = "jdbc:h2:tcp://localhost/~/test2";
-		login = "sa";
-		password = "";
+		setupConnectionConstants();
 		deleteAll();
 	}
+	
+	/**
+	 * Classes extending this one should set the database connection
+	 * values (password, username, driver, database URL) 
+	 * to suit the database engine being tested.
+	 * @return 
+	 */
+	protected abstract void setupConnectionConstants();
 
 	/**
 	 * @throws java.lang.Exception
@@ -294,9 +296,6 @@ public class PersistTest
 		persist.saveObject(lso);
 		// insert the same object again
 		persist.saveObject(lso);
-		persist.close();
-
-		persist = new PersistenceManager(driver, database, login, password);
 		// try getting all the objects
 		List<BaseInterface> obs = persist.getObjects(BaseInterface.class, new All());
 		assertEquals(1, obs.size());
@@ -361,9 +360,7 @@ public class PersistTest
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		// remove all existing data
 		persist.dropTable(Object.class);
-		persist.close();
 
-		persist = new PersistenceManager(driver, database, login, password);
 		// create a test object
 		SimpleObject so = new SimpleObject();
 		so.setAge(1000L);
@@ -516,10 +513,8 @@ public class PersistTest
 		ComplexArrayObject ob1 = res.get(0);
 		// check that the ComplexArrayObject contains 3 ComplexObjects
 		assertEquals(3, ob1.getData().length);
-		persist.close();
 
 		//delete the ComplexArrayObject, make sure one ComplexObject is untouched because of  external reference
-		persist = new PersistenceManager(driver, database, login, password);
 		persist.deleteObjects(new ComplexArrayObject());
 		List<ComplexObject> tmp = persist.getObjects(new ComplexObject());
 		assertEquals(1, tmp.size());
@@ -604,10 +599,8 @@ public class PersistTest
 		co.setObject(so);
 		persist.saveObject(co);
 		// close the persistence object
-		persist.close();
 
 		// re-open the persistence object
-		persist = new PersistenceManager(driver, database, login, password);
 		// create a SimplestObject so that no results will match
 		so = new SimplestObject();
 		so.setFoo(2.0);
@@ -875,9 +868,6 @@ public class PersistTest
 	{
 		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 		persist.dropTable(Object.class);
-		persist.close();
-
-		persist = new PersistenceManager(driver, database, login, password);
 
 		assertEquals(0, persist.getCount(Collection.class, new All()));
 		// store some ArrayLists in the database
@@ -1532,13 +1522,10 @@ public class PersistTest
 	@Test
 	public void testAuthorBookExample1() throws Exception
 	{
-		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		persist.dropTable(Object.class);
-		persist.close();
 
 		this.createAuthors();
 		// open a new connection
-		persist = new PersistenceManager(driver, database, login, password);
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 
 		// find all science fiction books
 		Book seekBook = new Book();
@@ -1561,13 +1548,10 @@ public class PersistTest
 	@Test
 	public void testAuthorBookExample2() throws Exception
 	{
-		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
-		persist.dropTable(Object.class);
-		persist.close();
 
 		this.createAuthors();
 		// open a new connection
-		persist = new PersistenceManager(driver, database, login, password);
+		PersistenceManager persist = new PersistenceManager(driver, database, login, password);
 
 		//find all books by authors that have written about crime
 		Author crimeAuthor = new Author();
@@ -1594,7 +1578,6 @@ public class PersistTest
 		sco.setSelf(sco);
 		persist.saveObject(sco);
 
-		persist = new PersistenceManager(driver, database, login, password);
 		List<SelfContainingObject> scos = persist.getObjects(SelfContainingObject.class, new All());
 		assertEquals(1, scos.size());
 		assertNotNull(scos.get(0).getSelf());
@@ -5881,6 +5864,4 @@ public class PersistTest
 		
 		pm.close();
 	}
-	 
-
 }

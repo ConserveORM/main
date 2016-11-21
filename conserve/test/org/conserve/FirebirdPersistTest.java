@@ -29,19 +29,15 @@ package org.conserve;
  */
 public class FirebirdPersistTest extends PersistTest
 {
-	/**
-	 * @see org.conserve.PersistTest#setUp()
-	 */
+
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
-		
 		database = "jdbc:firebirdsql://localhost/test";
 		secondDatabase = "jdbc:firebirdsql://localhost/test2";
 
 		driver = "org.firebirdsql.jdbc.FBDriver";
 		login = "test";
 		password = "test";
-		deleteAll();
 	}
 }

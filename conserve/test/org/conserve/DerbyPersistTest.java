@@ -28,18 +28,15 @@ package org.conserve;
 public class DerbyPersistTest extends PersistTest
 {
 
-	/**
-	 * @see org.conserve.PersistTest#setUp()
-	 */
 	@Override
-	public void setUp() throws Exception
+	protected void setupConnectionConstants()
 	{
 		driver = null;
 		database = "jdbc:derby:derbyDB;create=true";
 		secondDatabase = "jdbc:derby:derbyDB2;create=true";
 		login = "";
 		password = "";
-		deleteAll();
+		
 	}
 	
 }

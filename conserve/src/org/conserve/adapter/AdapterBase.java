@@ -736,9 +736,10 @@ public class AdapterBase
 	}
 
 	/**
-	 * Get the maximum allowed value for the C__ID column.
+	 * Get the maximum allowed value for the C__ID column. 
+	 * This is also the maximum number of objects that can be stored in the database.
 	 * 
-	 * @return
+	 * @return the highest possible database ID.
 	 */
 	public long getMaximumIdNumber()
 	{
@@ -750,11 +751,21 @@ public class AdapterBase
 	 * The maximum number of matching values in an SQL statement.
 	 * Most database engines do not have a hard limit, so the default implementation simply 
 	 * returns null.
-	 * @return
+	 * @return the maximum number of matching values.
 	 */
 	public Integer getMaxMatchingValues()
 	{
 		return null;
+	}
+
+	/**
+	 * When searching the schema for column names, will null work as a wildcard?
+	 * 
+	 * @return false if something else must be supplied.
+	 */
+	public boolean isNullValidColumnNamePattern()
+	{
+		return true;
 	}
 	
 }

@@ -38,7 +38,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	MySQLPersistTest.class, 
 	H2Test.class, 
 	PostgreSQLPersistTest.class,
-	SqLitePersistTest.class})
+	SqLitePersistTest.class
+	})
 public class IntegrationTests
 {
 

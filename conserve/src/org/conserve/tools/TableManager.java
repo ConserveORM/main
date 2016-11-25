@@ -1996,7 +1996,7 @@ public class TableManager
 
 		// get the old colums
 		Map<String, String> cols = this.getDatabaseColumns(oldTableName, cw);
-		// remove the columns in in columnsToDrop from nuCols
+		// remove the columns in columnsToDrop from nuCols
 		if (columnsToDrop != null)
 		{
 			for (String remCol : columnsToDrop)
@@ -2025,7 +2025,7 @@ public class TableManager
 			}
 			stmt.append(",");
 		}
-		// delete trailing comma
+		// delete trailing comma 
 		stmt.deleteCharAt(stmt.length() - 1);
 		stmt.append(")");
 		PreparedStatement ps = cw.prepareStatement(stmt.toString());
@@ -2134,11 +2134,15 @@ public class TableManager
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
 		Map<String, String> res = new HashMap<String, String>();
-
+		
 		Connection c = cw.getConnection();
-
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, null);
+		String columnPattern = null;
+		if(!adapter.isNullValidColumnNamePattern())
+		{
+			columnPattern = "";
+		}
+		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, columnPattern);
 		while (rs.next())
 		{
 			String columnName = rs.getString(4);

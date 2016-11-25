@@ -40,4 +40,13 @@ public class FirebirdPersistTest extends PersistTest
 		login = "test";
 		password = "test";
 	}
+	
+	@Override
+	public void tearDown() throws Exception
+	{
+		super.tearDown();
+		// we have to wait after closing connections so the database engine has time to 
+		// release resources
+		Thread.sleep(700);
+	}
 }

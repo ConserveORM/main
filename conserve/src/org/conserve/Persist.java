@@ -79,8 +79,7 @@ import org.conserve.tools.metadata.ObjectStack;
 import org.conserve.tools.protection.ProtectionManager;
 
 /**
- * Object database interface backend. Handles the requests issued by
- * PersistenceManager.
+ * Object database interface backend. Handles the requests issued by PersistenceManager.
  * 
  * 
  * @author Erik Berglund

@@ -2137,7 +2137,12 @@ public class TableManager
 		
 		Connection c = cw.getConnection();
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, null);
+		String columnPattern = null;
+		if(!adapter.isNullValidColumnNamePattern())
+		{
+			columnPattern = "";
+		}
+		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, columnPattern);
 		while (rs.next())
 		{
 			String columnName = rs.getString(4);

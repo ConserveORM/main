@@ -756,5 +756,10 @@ public class AdapterBase
 	public Integer getMaxMatchingValues()
 	{
 		return null;
+	}
+
+	public boolean isNullValidColumnNamePattern() 
+	{
+		return true;
 	}	
 }

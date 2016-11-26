@@ -166,4 +166,10 @@ public class MySqlAdapter extends AdapterBase
 	{
 		return 64;
 	}
+	
+	@Override
+	public boolean isNullValidColumnNamePattern()
+	{
+		return false;
+	}
 }

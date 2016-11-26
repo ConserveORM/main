@@ -30,7 +30,7 @@ public class MySQLPersistTest extends PersistTest
 	@Override
 	protected void setupConnectionConstants()
 	{
-		driver = "com.mysql.jdbc.Driver";
+		driver = "com.mysql.cj.jdbc.Driver";
 		database = "jdbc:mysql://localhost/test";
 		secondDatabase = "jdbc:mysql://localhost/test2";
 		login = "test";

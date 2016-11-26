@@ -756,16 +756,5 @@ public class AdapterBase
 	public Integer getMaxMatchingValues()
 	{
 		return null;
-	}
-
-	/**
-	 * When searching the schema for column names, will null work as a wildcard?
-	 * 
-	 * @return false if something else must be supplied.
-	 */
-	public boolean isNullValidColumnNamePattern()
-	{
-		return true;
-	}
-	
+	}	
 }

@@ -1214,11 +1214,10 @@ public class TableManager
 			{
 				// can't rename column
 
-				// get the old colums
-				Map<String, String> oldCols = this.getDatabaseColumns(tableName, cw);
+				// get the new columns
 				Map<String, String> nuCols = new HashMap<String, String>();
 				List<String> sameColums = new ArrayList<String>();
-				nuCols.putAll(oldCols);
+				nuCols.putAll(columns);
 				// rename the column in nuCols
 				nuCols.remove(oldName);
 				sameColums.addAll(nuCols.keySet());
@@ -1272,10 +1271,19 @@ public class TableManager
 
 				// drop old table
 				conditionalDelete(tableName, cw);
+				//drop entries in metadata table
+				String metaUpdate = "DELETE FROM " + Defaults.TYPE_TABLENAME + " WHERE OWNER_TABLE = ?";
+				PreparedStatement prepareStatement = cw.prepareStatement(metaUpdate);
+				prepareStatement.setString(1, tableName);
+				prepareStatement.execute();
+				prepareStatement.close();
+				
 				// rename new table
 				this.setTableName(temporaryName,clazz, tableName,clazz, cw);
 				objRep.setTableName(tableName);
 				createIndicesForTable(objRep, cw);
+				//make sure the metadata is in order
+				updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", temporaryName, tableName, cw);
 			}
 
 			// Change name in C__TYPE_TABLE
@@ -1964,6 +1972,8 @@ public class TableManager
 				tempTableName = tempTableName.substring(0, tempTableName.length() - 1);
 			}
 			setTableName(tableName,null, tempTableName,null, cw);
+			//make sure metadata is correctly updated
+			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", tableName, tempTableName, cw);
 
 			// 2. create a new table with same columns minus the one we want to
 			// remove and
@@ -1972,6 +1982,8 @@ public class TableManager
 
 			// 4. drop old table
 			conditionalDelete(tempTableName, cw);
+			// put the metadata back in order
+			updateAllRelations(Defaults.TYPE_TABLENAME, "OWNER_TABLE", tempTableName, tableName, cw);
 
 		}
 		removeTypeInfo(tableName, column, cw);
@@ -1993,7 +2005,6 @@ public class TableManager
 	 */
 	private void cloneTableWithoutColumns(String oldTableName, String nuTableName, String[] columnsToDrop, ConnectionWrapper cw) throws SQLException
 	{
-
 		// get the old colums
 		Map<String, String> cols = this.getDatabaseColumns(oldTableName, cw);
 		// remove the columns in columnsToDrop from nuCols
@@ -2133,23 +2144,30 @@ public class TableManager
 	 */
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException
 	{
-		Map<String, String> res = new HashMap<String, String>();
 		
-		Connection c = cw.getConnection();
-		DatabaseMetaData metaData = c.getMetaData();
-		String columnPattern = null;
-		if(!adapter.isNullValidColumnNamePattern())
-		{
-			columnPattern = "";
-		}
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, columnPattern);
+		Map<String,String>res = new HashMap<>();
+		res.put(Defaults.ID_COL, adapter.getLongTypeKeyword());
+		res.put(Defaults.REAL_CLASS_COL, adapter.getIntegerTypeKeyword());
+		String query = "SELECT COLUMN_NAME,COLUMN_CLASS FROM "+Defaults.TYPE_TABLENAME+" WHERE  OWNER_TABLE=?";
+		PreparedStatement prepareStatement = cw.prepareStatement(query);
+		prepareStatement.setString(1, tableName);
+		Tools.logFine(prepareStatement);
+		ResultSet rs = prepareStatement.executeQuery();
 		while (rs.next())
 		{
-			String columnName = rs.getString(4);
-			//columns are always uppercase internally
-			columnName = columnName.toUpperCase();
-			res.put(columnName, rs.getString(6));
+			String columnName = rs.getString(1);
+			String className = rs.getString(2);
+			try
+			{
+				String type = adapter.getColumnType(ObjectTools.lookUpClass(className, adapter), null);
+				res.put(columnName, type);
+			}
+			catch (ClassNotFoundException e)
+			{
+				throw new SQLException(e);
+			}
 		}
+		prepareStatement.close();
 		return res;
 	}
 

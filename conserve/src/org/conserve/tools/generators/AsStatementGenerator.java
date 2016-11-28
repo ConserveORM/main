@@ -64,8 +64,7 @@ public class AsStatementGenerator
 	/**
 	 * @param joinTableIds
 	 * @param joinTables
-	 * @param relationDescriptors
-	 * @return
+	 * @return a string representing the relationships.
 	 */
 	public String generate(List<String> joinTables, List<String> joinTableIds)
 	{

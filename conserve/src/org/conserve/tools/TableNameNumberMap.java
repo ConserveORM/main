@@ -35,7 +35,6 @@ public class TableNameNumberMap extends NameNumberMap
 
 	/**
 	 * @param adapter
-	 * @param tableName
 	 */
 	public TableNameNumberMap(AdapterBase adapter)
 	{

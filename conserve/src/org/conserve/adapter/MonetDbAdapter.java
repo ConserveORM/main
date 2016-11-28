@@ -101,7 +101,7 @@ public class MonetDbAdapter extends AdapterBase
 	}
 	
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.String,java.lang.Class)
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String, java.lang.Class, java.lang.String,java.lang.Class)
 	 */
 	@Override
 	public String[] getTableRenameStatements(String oldTableName,Class<?>oldClass, String newTableName,Class<?>newClass)

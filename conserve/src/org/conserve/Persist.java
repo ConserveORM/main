@@ -1320,8 +1320,8 @@ public class Persist
 	 *            the object to process the search results.
 	 * @param clazz
 	 *            the class of returned objects.
-	 * @param clause
-	 *            the search parameters.
+	 * @param clauses
+	 *            the optional search parameters.
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")

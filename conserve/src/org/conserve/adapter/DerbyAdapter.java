@@ -152,7 +152,7 @@ public class DerbyAdapter extends AdapterBase
 	}
 
 	/**
-	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String,
+	 * @see org.conserve.adapter.AdapterBase#getTableRenameStatements(java.lang.String,java.lang.Class,
 	 *      java.lang.String,java.lang.Class)
 	 */
 	@Override

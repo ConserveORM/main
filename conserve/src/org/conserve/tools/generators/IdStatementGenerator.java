@@ -91,7 +91,6 @@ public class IdStatementGenerator
 	/**
 	 * Generate an id statement.
 	 * 
-	 * @param oStack
 	 * @return
 	 */
 	public String generate()

@@ -483,7 +483,7 @@ public class ObjectStack
 	/**
 	 * Check if a given subnode has a given node among its supers.
 	 * @param sub the subnode.
-	 * @param possilbeSuper the node that we want to check among the supers.
+	 * @param possibleSuper the node that we want to check among the supers.
 	 * 
 	 * @return false if possibleSuper is not a direct super of sub, or if sub is not in this ObjectStack.
 	 */

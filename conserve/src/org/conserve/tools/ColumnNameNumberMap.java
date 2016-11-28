@@ -30,7 +30,6 @@ public class ColumnNameNumberMap extends NameNumberMap
 
 	/**
 	 * @param adapter
-	 * @param tableName
 	 */
 	public ColumnNameNumberMap(AdapterBase adapter)
 	{

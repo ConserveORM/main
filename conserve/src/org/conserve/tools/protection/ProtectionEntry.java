@@ -36,7 +36,7 @@ public class ProtectionEntry
 
 	/**
 	 * Create a new protection entry for the given property.
-	 * @param propertyTableName table name of the property this entry protects.
+	 * @param propertyTableNameId id of the table name of the property this entry protects.
 	 * @param propertyId database ID of the property this entry protects.
 	 */
 	public ProtectionEntry(Integer propertyTableNameId, Long propertyId)

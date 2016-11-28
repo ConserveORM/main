@@ -315,7 +315,7 @@ public class NameGenerator
 	/**
 	 * Get the name of the table that stores arrays.
 	 * @param adapter
-	 * @return
+	 * @return the name of the array table, in the implementation-specific appropriate case.
 	 */
 	public static String getArrayTablename(AdapterBase adapter)
 	{

@@ -46,7 +46,7 @@ public class JoinDescriptor
 	 * Check if this join description matches a given table and shortname.
 	 * @param table
 	 * @param shortName
-	 * @return
+	 * @return true the given name and shortname matches the left side of this join.
 	 */
 	public boolean leftMatches(String table, String shortName)
 	{
@@ -55,7 +55,7 @@ public class JoinDescriptor
 	
 	/**
 	 * Get the values to be inserted in the statement in place of '?' markers.
-	 * @return
+	 * @return the object values that forms the join.
 	 */
 	public Object [] getValues()
 	{

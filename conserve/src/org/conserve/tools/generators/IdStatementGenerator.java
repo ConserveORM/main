@@ -91,7 +91,7 @@ public class IdStatementGenerator
 	/**
 	 * Generate an id statement.
 	 * 
-	 * @return
+	 * @return the identity statement as a string.
 	 */
 	public String generate()
 	{
@@ -114,6 +114,12 @@ public class IdStatementGenerator
 		this.relationDescriptors.add(desc);
 	}
 
+	/**
+	 * Get a reference to the relationship descriptors in this object.
+	 * Changing the returned value will change this object.
+	 * 
+	 * @return a reference to the list of relationship descriptors in this object.
+	 */
 	public List<RelationDescriptor> getRelationDescriptors()
 	{
 		return this.relationDescriptors;
@@ -122,7 +128,7 @@ public class IdStatementGenerator
 
 	/**
 	 * Generate a statement that lists all query tables and their short name, separated by commas.
-	 * @return
+	 * @return a piece of SQL that describes the short names of tables.
 	 */
 	public String generateAsStatement()
 	{
@@ -163,10 +169,10 @@ public class IdStatementGenerator
 	/**
 	 * Set a and b as joined by this statement.
 	 * 
-	 * @param a
-	 * @param b
+	 * @param a a table shortname.
+	 * @param b a table shortname.
 	 */
-	public void setJoined(String a, String b)
+	private void setJoined(String a, String b)
 	{
 		// insert both the a->b and the b->a combination, as this makes queries
 		// faster.
@@ -194,6 +200,12 @@ public class IdStatementGenerator
 		}
 	}
 
+	/**
+	 * Indicate that superRep and objRep are joined.
+	 * 
+	 * @param superRep
+	 * @param objRep
+	 */
 	public void addLinkStatement(ObjectRepresentation superRep,
 			ObjectRepresentation objRep)
 	{
@@ -216,7 +228,7 @@ public class IdStatementGenerator
 	/**
 	 * Add all tables in propertyStack.
 	 * 
-	 * @param propertyStack
+	 * @param propertyStack the stack to join.
 	 */
 	public void addPropertyTablesToJoin(ObjectStack propertyStack)
 	{
@@ -250,8 +262,7 @@ public class IdStatementGenerator
 	/**
 	 * Add all tables in stack, up to and including the table for propertyClass
 	 * 
-	 * @param stack
-	 *            may be null.
+	 * @param stack the stack to join, may not be null.
 	 */
 	public void addTablesToJoin(ObjectStack stack)
 	{

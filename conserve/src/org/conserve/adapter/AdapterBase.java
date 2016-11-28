@@ -614,7 +614,7 @@ public class AdapterBase
 	 * the allowed changes include all changes used by Conserve.
 	 * 
 	 * 
-	 * @return
+	 * @return true if the database engine natively supports changing the type of existing columns.
 	 */
 	public boolean canChangeColumnType()
 	{
@@ -622,8 +622,8 @@ public class AdapterBase
 	}
 
 	/**
-	 * Return true if the underlying database allows us to drop a column, false otherwise.
-	 * @return
+	 * Check if the underlying database allows us to drop a column.
+	 * @return true if the database engine natively supports dropping a column, false otherwise.
 	 */
 	public boolean canDropColumn()
 	{
@@ -635,7 +635,7 @@ public class AdapterBase
 	 * 
 	 * @param table the table to drop the index from
 	 * @param indexName the index to drop.
-	 * @return
+	 * @return an array of statements that, collectively, will drop the named index.
 	 */
 	public String[] getDropIndexStatements(String table, String indexName)
 	{
@@ -649,8 +649,7 @@ public class AdapterBase
 	}
 
 	/**
-	 * Return true if the underlying database can handle joins in UPDATE statements.
-	 * @return
+	 * @return true if the underlying database can handle joins in UPDATE statements.
 	 */
 	public boolean isSupportsJoinInUpdate()
 	{
@@ -658,8 +657,7 @@ public class AdapterBase
 	}
 
 	/**
-	 * Return true if the AVG() function requires integer types to be cast to floats, false otherwise.
-	 * @return
+	 * @return true if the AVG() function requires integer types to be cast to floats, false otherwise.
 	 */
 	public boolean averageRequiresCast()
 	{
@@ -667,8 +665,7 @@ public class AdapterBase
 	}
 
 	/**
-	 * Get the keyword used to alter column definitions.
-	 * @return
+	 * @return the keyword used to alter column definitions.
 	 */
 	public Object getColumnModificationKeyword()
 	{
@@ -678,7 +675,7 @@ public class AdapterBase
 	/**
 	 * Does the column modification statement require a special keyword between the column name and the type?
 	 * If so, return it here.
-	 * @return
+	 * @return the string to go between a column name and the type identifier.
 	 */
 	public Object getColumnModificationTypeKeyword()
 	{
@@ -688,7 +685,7 @@ public class AdapterBase
 	/**
 	 * For most databases renaming a table preserves indices. 
 	 * If this is not the case, the indices must be recreated and this method returns true.
-	 * @return
+	 * @return true if we must recreate indices after renaming a table.
 	 */
 	public boolean indicesMustBeRecreatedAfterRename()
 	{
@@ -702,7 +699,7 @@ public class AdapterBase
 	 * via a few static commands, but will return false if dynamic or complex commands are needed.
 	 * 
 	 * 
-	 * @return
+	 * @return true if the database engine natively supports table renaming.
 	 */
 	public boolean canRenameTable()
 	{
@@ -716,8 +713,8 @@ public class AdapterBase
 	 * 
 	 * @see AdapterBase#isSupportsIdentity()
 	 * 
-	 * @param sequenceName
-	 * @return
+	 * @param sequenceName the named sequence we want to remove.
+	 * @return a statement that will remove the named sequence.
 	 */
 	public String getSequenceExistsStatement(String sequenceName)
 	{
@@ -728,7 +725,7 @@ public class AdapterBase
 	/**
 	 * Some database engines don't automatically drop indices when a table is dropped, which can waste space and will create problems
 	 * when the table is recreated after a rename.
-	 * @return
+	 * @return true if we must manually drop indices after a table is dropped.
 	 */
 	public boolean indicesMustBeManuallyDropped()
 	{

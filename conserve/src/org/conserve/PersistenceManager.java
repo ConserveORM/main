@@ -386,10 +386,17 @@ public class PersistenceManager
 	/**
 	 * Add an object to the database. If the object already exists, it will be
 	 * updated. Convenience method that does not require the user to supply a
-	 * ConnectionWrapper.
+	 * ConnectionWrapper. The method returns the database id of the object. The
+	 * database id is invariant across {@link PersistenceManager} instances.
+	 * It's safe to ignore the return value.
+	 * 
+	 * This is a convenience method that handles getting and discarding the connection
+	 * wrapper for you.
 	 * 
 	 * @param object
 	 *            the object to save.
+	 * 
+	 * @return the database id of the saved object, or null if it could not be saved.
 	 * 
 	 * @throws SQLException
 	 */
@@ -399,10 +406,10 @@ public class PersistenceManager
 		ConnectionWrapper cw = getConnectionWrapper();
 		try
 		{
-			res = saveObject(cw,object);
+			res = saveObject(cw, object);
 			cw.commitAndDiscard();
 		}
-		catch(Exception e)
+		catch (Exception e)
 		{
 			cw.rollbackAndDiscard();
 			throw new SQLException(e);
@@ -412,16 +419,21 @@ public class PersistenceManager
 
 	/**
 	 * Add an object to the database. If the object already exists, it will be
-	 * updated.
+	 * updated. The method returns the database id of the object. The database
+	 * id is invariant across {@link PersistenceManager} instances. It's safe to
+	 * ignore the return value.
 	 * 
 	 * @param object
 	 *            the object to save.
 	 * @param cw
 	 *            the connection wrapper to use for this operation.
+	 *            
+	 * @return the database id of the saved object, or null if it could not be saved.
 	 * 
 	 * @throws SQLException
 	 */
-	public Long saveObject(ConnectionWrapper cw, Object object) throws SQLException
+	public Long saveObject(ConnectionWrapper cw, Object object)
+			throws SQLException
 	{
 		return persist.saveObject(cw, object, true, null);
 	}
@@ -1244,45 +1256,7 @@ public class PersistenceManager
 	}
 
 	/**
-	 * Returns an array containing the result of the SQL sum() function for each field.
-	 * If the field is an integer type, the corresponding entry is Integer or Long type, whichever is most appropriate.
-	 * 
-	 * If the field is a floating point type, the corresponding entry will be Float or Double, whichever is most appropriate.
-	 * 
-	 * 
-	 * 
-	 * @param cw the database connection to use for the operation.
-	 * @param clazz the class of the object to calculate the sum for.
-	 * functions the functions to calculate - each entry will get a corresponding entry in the returned array.
-	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
-	 * 
-	 * @return
-	 * @throws SQLException 
-	 */
-	public Number[] calculateAggregate(ConnectionWrapper cw,Class<?>clazz, AggregateFunction [] functions,Clause... where)throws SQLException
-	{
-		return persist.calculateAggregate(cw,clazz,functions,where);
-	}
-	
-	/**
-	 * Convenience function that calculates the sum of one given field in all matching entries.
-	 * 
-	 * @param cw the database connection to use for the operation.
-	 * @param clazz the class of the object to calculate the sum for.
-	 * @param function the function to calculate.
-	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
-	 * 
-	 * @return
-	 * @throws SQLException 
-	 */
-	public Number calculateAggregate(ConnectionWrapper cw,Class<?>clazz, AggregateFunction function,Clause... where)throws SQLException
-	{
-		Number [] tmp = calculateAggregate(cw, clazz,new AggregateFunction []{function},where);
-		return tmp[0];
-	}
-	
-	/**
-	 * Returns an array containing the result of the SQL sum() function for each field.
+	 * Returns an array containing the result of the SQL aggregate function for each field.
 	 * If the field is an integer type, the corresponding entry is  Long, Integer, Byte, or Short type, whichever is appropriate.
 	 * 
 	 * If the field is a floating point type, the corresponding entry will be Double or Float, whichever is appropriate.
@@ -1293,11 +1267,46 @@ public class PersistenceManager
 	 * 
 	 * This function is undefined for non-numeric fields.
 	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the sum for.
+	 * functions the functions to calculate - each entry will get a corresponding entry in the returned array.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return an array of Number subclasses, each corresponding to an entry in the functions parameter.
+	 * @throws SQLException 
+	 */
+	public Number[] calculateAggregate(ConnectionWrapper cw,Class<?>clazz, AggregateFunction [] functions,Clause... where)throws SQLException
+	{
+		return persist.calculateAggregate(cw,clazz,functions,where);
+	}
+	
+	/**
+	 * Convenience function that calculates the sum of one given field in all matching entries.
+	 * See {@link #calculateAggregate(ConnectionWrapper, Class, AggregateFunction[], Clause...)} for more detail.
+	 * 
+	 * @param cw the database connection to use for the operation.
+	 * @param clazz the class of the object to calculate the sum for.
+	 * @param function the function to calculate.
+	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
+	 * 
+	 * @return the result of the aggregate function, as a subclass of Number.
+	 * @throws SQLException 
+	 */
+	public Number calculateAggregate(ConnectionWrapper cw,Class<?>clazz, AggregateFunction function,Clause... where)throws SQLException
+	{
+		Number [] tmp = calculateAggregate(cw, clazz,new AggregateFunction []{function},where);
+		return tmp[0];
+	}
+	
+	/**
+	 * This function is a convenience function for {@link #calculateAggregate(ConnectionWrapper, Class, AggregateFunction[], Clause...)} 
+	 * that handles requesting and discarding the ConnectionWrapper for you. See that function's comments for more detail.
+	 * 
 	 * @param clazz the class of the object to calculate the sum for.
 	 * @param functions the functions to calculate - each entry will get a corresponding entry in the returned array.
 	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
 	 * 
-	 * @return
+	 * @return an array of Number subclasses, each corresponding to an entry in the functions parameter.
 	 * @throws SQLException 
 	 */
 	public Number[] calculateAggregate(Class<?>clazz, AggregateFunction [] functions,Clause... where) throws SQLException
@@ -1321,12 +1330,13 @@ public class PersistenceManager
 	
 	/**
 	 * Convenience function that calculates the sum of one given field in all matching entries.
+	 * See {@link #calculateAggregate(ConnectionWrapper, Class, AggregateFunction[], Clause...)} for more detail.
 	 * 
 	 * @param clazz the class of the object to calculate the sum for.
 	 * @param function the function to calculate.
 	 * @param where selection clauses that determine what objects will be matched - if empty, all objects are matched.
 	 * 
-	 * @return
+	 * @return the result of the aggregate function, as a subclass of  Number.
 	 * @throws SQLException 
 	 */
 	public Number calculateAggregate(Class<?>clazz, AggregateFunction function,Clause... where) throws SQLException

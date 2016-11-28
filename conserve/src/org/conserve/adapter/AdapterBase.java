@@ -757,9 +757,4 @@ public class AdapterBase
 	{
 		return null;
 	}
-
-	public boolean isNullValidColumnNamePattern() 
-	{
-		return true;
-	}	
 }

@@ -99,7 +99,7 @@ public class AsStatementGenerator
 	}
 
 	/**
-	 * @return
+	 * @return the values to be inserted in place of '?' in join statements.
 	 */
 	public List<Object> getValues()
 	{

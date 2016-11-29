@@ -41,7 +41,7 @@ public class ClassChangeList
 	}
 	
 	/**
-	 * @return
+	 * @return the number of added/removed nodes.
 	 */
 	public int size()
 	{
@@ -52,9 +52,7 @@ public class ClassChangeList
 	{
 		changedNodes.add(n);
 	}
-	/**
-	 * @return the shared
-	 */
+	
 	public boolean isShared()
 	{
 		return shared;
@@ -75,7 +73,7 @@ public class ClassChangeList
 	}
 
 	/**
-	 * @param other
+	 * @param other 
 	 */
 	public void addAll(ClassChangeList other)
 	{	
@@ -86,12 +84,11 @@ public class ClassChangeList
 	}
 
 	/**
-	 * @param i
-	 * @return
+	 * @param index
 	 */
-	public Node getNode(int i)
+	public Node getNode(int index)
 	{
-		return changedNodes.get(i);
+		return changedNodes.get(index);
 	}
 
 	/**

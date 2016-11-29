@@ -39,8 +39,6 @@ public class InheritanceChangeDescription
 	 * Get change descriptions for all fields that have been moved from an old
 	 * superclass to a new one. Never returns null - if there are no changed
 	 * fields an empty list is returned.
-	 * 
-	 * @return
 	 */
 	public List<FieldChangeDescription> getMovedFields()
 	{
@@ -50,7 +48,7 @@ public class InheritanceChangeDescription
 	/**
 	 * Get a list of former superclasses.
 	 * 
-	 * @return the removedSuperClasses
+	 * @return the removed superclasses
 	 */
 	public List<ClassChangeList> getRemovedSuperClasses()
 	{
@@ -60,7 +58,7 @@ public class InheritanceChangeDescription
 	/**
 	 * Get a list of new superclasses.
 	 * 
-	 * @return the addedSuperClass
+	 * @return the added superclasses 
 	 */
 	public List<ClassChangeList> getAddedSuperClasses()
 	{
@@ -79,7 +77,6 @@ public class InheritanceChangeDescription
 	 * True if the inheritance model has changed so much that checking for
 	 * changes in the actual object is pointless.
 	 * 
-	 * @return
 	 */
 	public boolean inheritanceModelChanged()
 	{
@@ -94,7 +91,6 @@ public class InheritanceChangeDescription
 	 * Get the size of a list of lists
 	 * 
 	 * @param listoflists
-	 * @return
 	 */
 	private int size(List<ClassChangeList> listoflists)
 	{

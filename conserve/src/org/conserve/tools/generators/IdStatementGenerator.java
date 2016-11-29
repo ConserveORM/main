@@ -348,7 +348,6 @@ public class IdStatementGenerator
 
 	/**
 	 * Get values to be inserted in '?' places in the query.
-	 * @return
 	 */
 	public List<Object> getValues()
 	{

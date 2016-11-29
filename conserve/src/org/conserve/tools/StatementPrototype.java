@@ -380,7 +380,7 @@ public class StatementPrototype
 	}
 
 	/**
-	 * @return
+	 * @return the generator responsible for id statements in this object.
 	 */
 	public IdStatementGenerator getIdStatementGenerator()
 	{

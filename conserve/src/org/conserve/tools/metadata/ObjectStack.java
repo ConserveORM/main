@@ -333,7 +333,6 @@ public class ObjectStack
 	 * Get a list of all superclasses we know the given class has.
 	 * 
 	 * @param subClass
-	 * @return
 	 */
 	public List<Class<?>> getSuperClasses(Class<?> subClass)
 	{
@@ -364,7 +363,6 @@ public class ObjectStack
 	 * implemented interface.
 	 * 
 	 * @param subRep
-	 * @return
 	 */
 	public List<Node> getSupers(Node subRep)
 	{
@@ -409,7 +407,6 @@ public class ObjectStack
 	 * there is no such representation, return null.
 	 * 
 	 * @param propertyName
-	 * @return
 	 */
 	public ObjectRepresentation getRepresentation(String propertyName)
 	{
@@ -466,7 +463,6 @@ public class ObjectStack
 	 * Get the node that contains the representation of a given class.
 	 * 
 	 * @param clazz
-	 * @return
 	 */
 	public Node getNode(Class<?> clazz)
 	{
@@ -629,7 +625,6 @@ public class ObjectStack
 	/**
 	 * Get the actual object representation node, or the root node.
 	 * 
-	 * @return
 	 */
 	public Node getActual()
 	{
@@ -639,7 +634,6 @@ public class ObjectStack
 	/**
 	 * Get a list of all table names in this stack.
 	 * 
-	 * @return
 	 */
 	public List<String> getAllTableNames()
 	{
@@ -655,7 +649,6 @@ public class ObjectStack
 	 * Return the largest level-number any class in the stack has.
 	 * java.lang.Object has level = 0.
 	 * 
-	 * @return
 	 */
 	public int getMaxLevel()
 	{
@@ -666,7 +659,6 @@ public class ObjectStack
 	 * Return the smallest level-number any class in the stack has.
 	 * java.lang.Object has level = 0.
 	 * 
-	 * @return
 	 */
 	public int getMinLevel()
 	{
@@ -695,7 +687,6 @@ public class ObjectStack
 	 * Check if this object stack contains a certain class.
 	 * 
 	 * @param clazz
-	 * @return
 	 */
 	public boolean containsClass(Class<?> clazz)
 	{
@@ -758,8 +749,6 @@ public class ObjectStack
 		/**
 		 * Get the direct superclasses and implemented interface of the class
 		 * contained in this node.
-		 * 
-		 * @return
 		 */
 		public List<Node> getSupers()
 		{
@@ -824,10 +813,6 @@ public class ObjectStack
 		{
 		}
 
-		/**
-		 * @return
-		 * 
-		 */
 		public List<ObjectRepresentation> getAllRepresentations()
 		{
 			List<ObjectRepresentation> res = new ArrayList<ObjectRepresentation>();
@@ -856,7 +841,6 @@ public class ObjectStack
 		/**
 		 * Calculate the maximum height from root to leaf
 		 * 
-		 * @return
 		 */
 		public int getMaxHeight()
 		{
@@ -864,8 +848,8 @@ public class ObjectStack
 		}
 
 		/**
+		 * Get the maximum height of node n.
 		 * @param n
-		 * @return
 		 */
 		private int getMaxHeight(Node n)
 		{
@@ -880,7 +864,6 @@ public class ObjectStack
 		/**
 		 * Get a list of all the nodes in no particular order.
 		 * 
-		 * @return
 		 */
 		public List<Node> allNodes()
 		{
@@ -909,7 +892,6 @@ public class ObjectStack
 	/**
 	 * Get a reference to the adapter used by this stack.
 	 * 
-	 * @return
 	 */
 	public AdapterBase getAdapter()
 	{
@@ -919,7 +901,6 @@ public class ObjectStack
 	/**
 	 * Get the one node that has sup as a super.
 	 * @param sup
-	 * @return
 	 */
 	public Node getSubNode(Node sup)
 	{
@@ -940,7 +921,6 @@ public class ObjectStack
 	 * Check if it is possible that any object of the represented class has a self-reference.
 	 * The method is recursive.
 	 * 
-	 * @return
 	 */
 	public boolean canContainCircularReferences()
 	{
@@ -987,7 +967,6 @@ public class ObjectStack
 	/**
 	 * Returns true if any of this stack's properties is not a database primitive.
 	 * 
-	 * @return
 	 */
 	public boolean hasNonPrimitiveProperty()
 	{

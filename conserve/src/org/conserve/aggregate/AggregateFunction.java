@@ -84,7 +84,6 @@ public abstract class AggregateFunction
 	 * and object.
 	 * 
 	 * @param stack
-	 * @return
 	 * @throws NoSuchMethodException
 	 * @throws SecurityException
 	 */
@@ -110,14 +109,11 @@ public abstract class AggregateFunction
 	 * e.g. Float will return Float or Double.
 	 * 
 	 * @param clazz
-	 * @return
 	 */
 	protected abstract Class<? extends Number> translateReturnType(Class<?> clazz);
 
 	/**
 	 * Get the name of the SQL aggregate function this class represents.
-	 * 
-	 * @return
 	 */
 	protected abstract String getFunctionName();
 }

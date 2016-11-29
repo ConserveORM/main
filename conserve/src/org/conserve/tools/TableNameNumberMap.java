@@ -46,7 +46,6 @@ public class TableNameNumberMap extends NameNumberMap
 	 * 
 	 * @param cw
 	 * @param clazz
-	 * @return
 	 * @throws SQLException 
 	 */
 	public Integer getNumber(ConnectionWrapper cw, Class<?>clazz) throws SQLException

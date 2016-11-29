@@ -52,7 +52,6 @@ public class ProtectionManager
 	 * @param tableId
 	 * @param databaseId
 	 * @param cw
-	 * @return
 	 * @throws SQLException
 	 */
 	public boolean isProtected(Integer tableId, Long databaseId, ConnectionWrapper cw) throws SQLException
@@ -68,7 +67,6 @@ public class ProtectionManager
 	 * @param tableId the id of the table - @see org.conserve.tools.TableNameNumberMap 
 	 * @param databaseId
 	 * @param cw
-	 * @return
 	 * @throws SQLException
 	 */
 	public boolean isProtectedExternal(Integer tableId, Long databaseId, ConnectionWrapper cw) throws SQLException

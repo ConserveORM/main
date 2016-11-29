@@ -71,7 +71,6 @@ public class ObjectTools
 	 * Ignores super-interfaces.
 	 * 
 	 * @param c
-	 * @return
 	 */
 	public static List<Class<?>>getAllDirectInterfaces(Class<?>c)
 	{
@@ -112,8 +111,7 @@ public class ObjectTools
 	 * The class c itself is not included in the result.
 	 * Each class is only present once.
 	 * 
-	 * @param c
-	 * @return
+	 * @param c the class to get legal refernece types for.S
 	 */
 	public static List<Class<?>> getAllLegalReferenceTypes(Class<?>c)
 	{
@@ -142,8 +140,8 @@ public class ObjectTools
 	 * Returns true if implementor is equal to interf or implementor implements
 	 * interf.
 	 * 
-	 * @param implementor
-	 * @param interf
+	 * @param implementor the class that may or may not be interf or one of its implementations.
+	 * @param interf the interface.
 	 * @return true if interf is one of the interfaces of implementor.
 	 */
 	public static boolean implementsInterface(Class<?> implementor, Class<?> interf)

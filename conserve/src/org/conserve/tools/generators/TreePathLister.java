@@ -40,7 +40,6 @@ public class TreePathLister
 	 * interfaces with no superclass).
 	 * 
 	 * @param oStack
-	 * @return
 	 */
 	public List<List<ObjectRepresentation>> generateLists(ObjectStack oStack)
 	{

@@ -1215,8 +1215,6 @@ public class PersistenceManager
 	
 	/**
 	 * Package-level accessor for the managed Persistence object.
-	 * 
-	 * @return
 	 */
 	Persist getPersist()
 	{

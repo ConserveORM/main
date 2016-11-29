@@ -150,8 +150,6 @@ public class FieldChangeDescription
 	
 	/**
 	 * Returns true if this change is a field moved from one table to another.
-	 * 
-	 * @return
 	 */
 	public boolean isMove()
 	{

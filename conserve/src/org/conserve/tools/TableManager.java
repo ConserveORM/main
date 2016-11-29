@@ -2139,7 +2139,6 @@ public class TableManager
 	 * 
 	 * @param tableName
 	 * @param cw
-	 * @return
 	 * @throws SQLException
 	 */
 	public Map<String, String> getDatabaseColumns(String tableName, ConnectionWrapper cw) throws SQLException

@@ -140,7 +140,6 @@ public class NameNumberMap
 	 *            the connection wrapper to use to update the map in case the
 	 *            number is unknown.
 	 * @param number
-	 * @return
 	 * @throws SQLException
 	 */
 	public String getName(ConnectionWrapper cw, Integer number) throws SQLException

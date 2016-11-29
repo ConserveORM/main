@@ -515,16 +515,16 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	
 
 	/**
-	 * @param x
-	 * @return
+	 * Get the accessor for property with the given index.
+	 * @param index
 	 */
-	public Method getAccessor(int x)
+	public Method getAccessor(int index)
 	{
-		if (x >= this.getters.size())
+		if (index >= this.getters.size())
 		{
 			return null;
 		}
-		return this.getters.get(x);
+		return this.getters.get(index);
 	}
 
 
@@ -572,7 +572,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * 
 	 * @param m
 	 *            an accessor.
-	 * @return
 	 */
 	protected String getMutatorName(Method m)
 	{
@@ -758,9 +757,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return this.delayBuffer;
 	}
 
-	/**
-	 * @return
-	 */
 	public String getSystemicName()
 	{
 		return NameGenerator.getSystemicName(getRepresentedClass());
@@ -769,7 +765,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 
 	/**
 	 * Returns true iff the represented class is an interface, false otherwise.
-	 * @return
 	 */
 	public boolean isInterface()
 	{
@@ -832,12 +827,11 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	/**
 	 * Get the SQL column type for a named property.
 	 * @param prop the property to get the column type for.
-	 * @return
 	 */
 	public abstract String getColumnType(String prop);
 
 	/**
-	 * @return
+	 * @return true if any of the properties of the represented object are non-primitive.
 	 */
 	public boolean hasNonPrimitiveProperty()
 	{

@@ -1,0 +1,73 @@
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+
+sourceSets {
+	main {
+		java {
+			srcDirs = ['src']
+		}
+	}
+	test {
+		java {
+			srcDirs = ['test']
+		}
+	}
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		//monetdb jars
+		url "https://clojars.org/repo/"
+	}
+}
+
+test {
+	filter {
+		//don't run tests several times
+		includeTestsMatching "org.conserve.AllTests"
+	}
+}
+
+dependencies {
+	testCompile group: 'junit', name: 'junit', version:'4.+'
+	testCompile group: 'org.apache.derby', name: 'derby', version:'10.+'
+	testCompile group: 'com.h2database', name: 'h2', version:'1.4.+'
+	testCompile group: 'org.postgresql', name: 'postgresql', version:'9.4.+'
+	testCompile group: 'org.hsqldb', name: 'hsqldb', version:'2.3.+'
+	testCompile group: 'mysql', name: 'mysql-connector-java', version:'6.0.+'
+	testCompile group: 'org.xerial', name: 'sqlite-jdbc', version:'3.15.+'
+	testCompile group: 'org.firebirdsql.jdbc', name: 'jaybird', version:'2.2.+'
+	testCompile group: 'monetdb', name: 'monetdb-jdbc', version:'2.+'
+	testCompile group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '1.5.+'
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+task javadocJar (type: Jar, dependsOn: javadoc) { 
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId 'org.conserve'
+            artifactId 'conserve'
+            version '0.7'
+
+            from components.java
+            
+            artifact sourceJar {
+                classifier "sources"
+            }
+            
+            artifact javadocJar {
+            	classifier "javadoc"
+            }            
+        }
+    }
+}
+

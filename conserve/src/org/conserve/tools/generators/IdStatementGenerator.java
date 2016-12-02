@@ -62,8 +62,13 @@ public class IdStatementGenerator
 		this.addTablesToJoin(oStack);
 		if (addJoins)
 		{
+			Node linker = oStack.getNode(Object.class);
+			if (linker == null)
+			{
+				linker = oStack.getActual();
+			}
 			// recursively add join tables
-			addLinks(oStack, oStack.getActual());
+			addLinks(oStack, oStack.getActual(), linker);
 		}
 	}
 
@@ -77,14 +82,17 @@ public class IdStatementGenerator
 	 * @param rep
 	 *            the class to add links for.
 	 */
-	private void addLinks(ObjectStack oStack, Node rep)
+	private void addLinks(ObjectStack oStack, Node rep, Node linker)
 	{
+		if(!rep.equals(linker))
+		{
+			addLinkStatement(rep.getRepresentation(), linker.getRepresentation());
+		}
 		List<Node> supers = oStack.getSupers(rep);
 		for (Node sup : supers)
 		{
-			addLinkStatement(sup.getRepresentation(), rep.getRepresentation());
 			// recurse
-			addLinks(oStack, sup);
+			addLinks(oStack, sup,linker);
 		}
 	}
 

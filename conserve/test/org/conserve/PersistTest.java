@@ -178,7 +178,7 @@ public abstract class PersistTest
 		LOGGER.setUseParentHandlers(false);
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.INFO;
+		Level level = Level.FINEST;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}

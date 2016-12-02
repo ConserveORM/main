@@ -366,34 +366,14 @@ public class StatementPrototypeGenerator
 	private void addLinkStatement(StatementPrototype sp, ObjectStack propertyStack, Class<?> propertyClass)
 	{
 		Node objRep = propertyStack.getNode(propertyClass);
-		Node current = propertyStack.getActual();
-		List<Node> supers = propertyStack.getSupers(current);
-		while (supers.size() > 0)
+		for(ObjectRepresentation rep:propertyStack.getAllRepresentations())
 		{
-			// find the representation that is part of propertyClass'
-			// inheritance
-			Node next = null;
-			for (Node s : supers)
+			if(!rep.equals(objRep.getRepresentation()) && ObjectTools.isA(rep.getRepresentedClass(),propertyClass))
 			{
-				if (ObjectTools.isA(current.getRepresentation().getRepresentedClass(), s.getRepresentation().getRepresentedClass()))
-				{
-					next = s;
-					break;
-				}
-			}
-			if (next == null)
-			{
-				// we're done
-				break;
-			}
-			else
-			{
-				// link the two representations, go up a level
-				sp.getIdStatementGenerator().addLinkStatement(next.getRepresentation(), current.getRepresentation());
-				current = next;
-				supers = propertyStack.getSupers(current);
+				sp.getIdStatementGenerator().addLinkStatement(objRep.getRepresentation(),rep);
 			}
 		}
+		
 		if (objRep.getRepresentation().isArray())
 		{
 			sp.getIdStatementGenerator().addPropertyTableToJoin(NameGenerator.getArrayTablename(adapter), objRep.getRepresentation().getAsName());
@@ -418,8 +398,7 @@ public class StatementPrototypeGenerator
 		if (propertyTree == null)
 		{
 			// if this property has not been part of the query previously, add a
-			// new
-			// propertyTree for it.
+			// new propertyTree for it.
 			propertyTree = new UniqueIdTree(uidGenerator);
 			parameterTypeIds.put(propertyName, propertyTree);
 		}

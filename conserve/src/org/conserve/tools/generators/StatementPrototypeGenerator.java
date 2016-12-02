@@ -267,14 +267,6 @@ public class StatementPrototypeGenerator
 			sorted = isSorted(sel.getSelectionObject().getClass());
 		}
 		ObjectRepresentation baseRep = oStack.getRepresentation(sel.getSelectionClass());
-		if(baseRep==null)
-		{
-			baseRep = oStack.getRepresentation(Object.class);
-			if(baseRep==null)
-			{
-				baseRep = oStack.getActualRepresentation();
-			}
-		}
 
 		// get all possible paths from a superclass to the actual implementing
 		// class

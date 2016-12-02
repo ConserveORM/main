@@ -266,6 +266,15 @@ public class StatementPrototypeGenerator
 		{
 			sorted = isSorted(sel.getSelectionObject().getClass());
 		}
+		ObjectRepresentation baseRep = oStack.getRepresentation(sel.getSelectionClass());
+		if(baseRep==null)
+		{
+			baseRep = oStack.getRepresentation(Object.class);
+			if(baseRep==null)
+			{
+				baseRep = oStack.getActualRepresentation();
+			}
+		}
 
 		// get all possible paths from a superclass to the actual implementing
 		// class
@@ -285,16 +294,16 @@ public class StatementPrototypeGenerator
 			{
 				ObjectRepresentation rep = path.get(t);
 				// don't add link on first object, obviously
-				if (subRep != null)
+				if(!rep.equals(baseRep))
 				{
-					sp.getIdStatementGenerator().addLinkStatement(rep, subRep);
+					sp.getIdStatementGenerator().addLinkStatement(rep,baseRep);
 				}
 				// make sure the class is in the link table
 				sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
 				// prepare for next step
 				subRep = rep;
-				// store parameters
-
+				
+				// store parameters:
 				// iterate over the non-null values
 				for (Integer x : rep)
 				{

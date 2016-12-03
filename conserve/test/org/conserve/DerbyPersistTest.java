@@ -31,13 +31,13 @@ public class DerbyPersistTest extends PersistTest
 	@Override
 	protected void setupConnectionConstants()
 	{
+		driver = "org.apache.derby.jdbc.ClientDriver";
+
 		//embedded
-		driver = null;
 		database = "jdbc:derby:derbyDB;create=true";
 		secondDatabase = "jdbc:derby:derbyDB2;create=true";
 		
 		//server
-		//driver = "org.apache.derby.jdbc.ClientDriver";
 		//database = "jdbc:derby://localhost:1527/derbyDB;create=true";
 		//secondDatabase = "jdbc:derby://localhost:1527/derbyDB2;create=true";
 		

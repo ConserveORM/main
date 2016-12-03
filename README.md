@@ -1,4 +1,4 @@
-Conserve Object-Relational Mapping (ORM), main repository  
+Conserve Object-Relational Mapping (ORM)
 ====
 
 ### What is ORM?

@@ -34,12 +34,12 @@ public class HsqldbPersistTest extends PersistTest
 		driver = "org.hsqldb.jdbcDriver";
 		
 		//embedded:
-		//database = "jdbc:hsqldb:file:hsqldbtest;shutdown=true";
-		//secondDatabase = "jdbc:hsqldb:file:hsqldbtest2;shutdown=true";
+		database = "jdbc:hsqldb:file:hsqldbtest;shutdown=true";
+		secondDatabase = "jdbc:hsqldb:file:hsqldbtest2;shutdown=true";
 		
 		//server:
-		database = "jdbc:hsqldb:hsql://localhost/hsqldbtest";
-		secondDatabase = "jdbc:hsqldb:hsql://localhost/hsqldbtest2";
+		//database = "jdbc:hsqldb:hsql://localhost/hsqldbtest";
+		//secondDatabase = "jdbc:hsqldb:hsql://localhost/hsqldbtest2";
 		
 		
 		login = "sa";

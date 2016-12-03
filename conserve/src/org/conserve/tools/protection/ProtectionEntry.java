@@ -95,11 +95,27 @@ public class ProtectionEntry
 			ProtectionEntry other = (ProtectionEntry) obj;
 			if ((this.propertyTableNameId == null && other.propertyTableNameId == null)
 					|| (this.propertyTableNameId != null 
-						&& (this.propertyTableNameId == other.propertyTableNameId 
+						&& (this.propertyTableNameId.equals(other.propertyTableNameId) 
 							&& this.propertyId.equals(other.getPropertyId()))))
 			{
 				res = true;
 			}
+		}
+		return res;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int res = this.propertyId.intValue();
+		res+=this.propertyTableNameId;
+		if(this.propertyClassNameId!=null)
+		{
+			res+=this.propertyClassNameId;
+		}
+		if(this.relationName!=null)
+		{
+			res+=this.relationName.hashCode();
 		}
 		return res;
 	}

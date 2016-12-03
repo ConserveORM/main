@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -83,6 +84,10 @@ import org.conserve.objects.SimpleObjectContainer;
 import org.conserve.objects.SimplestObject;
 import org.conserve.objects.StringArrayContainer;
 import org.conserve.objects.SubInterface;
+import org.conserve.objects.demo.BarTextObject;
+import org.conserve.objects.demo.FooTextObject;
+import org.conserve.objects.demo.Person;
+import org.conserve.objects.demo.TextObject;
 import org.conserve.objects.polymorphism.AbstractBar;
 import org.conserve.objects.polymorphism.ConcreteBar1;
 import org.conserve.objects.polymorphism.ConcreteBar2;
@@ -5785,6 +5790,162 @@ public abstract class PersistTest
 		Book query2 = new Book();
 		query2.setTitle("%ar");
 		assertEquals(6, pm.getCount(Book.class, new Or(new Like(query),new Like(query2))));
+		
+		pm.close();
+	}
+	
+	/**
+	 * Test the examples from the tutorial (except the author-book example, that's tested elsewhere).
+	 * 
+	 */
+	@Test
+	public void testTutorial1() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		//save an object
+		TextObject a = new TextObject();
+		a.setText("The quick brown fox");
+		a.setKeyWords(a.getText().split(" "));
+		pm.saveObject(a);
+		
+		//search for the object
+		TextObject example = new TextObject();
+		example.setText("The quick brown fox");
+		List<TextObject>res  = pm.getObjects(TextObject.class, new Equal(example));
+		System.out.println(res.get(0).getKeyWords());
+		Set<String>keywords = res.get(0).getKeyWords();
+		assertTrue(keywords.contains("The"));
+		assertTrue(keywords.contains("quick"));
+		assertTrue(keywords.contains("brown"));
+		assertTrue(keywords.contains("fox"));
+		assertEquals(4,keywords.size());
+		
+		//find by unordered set
+		example.setText(null);
+		example.setKeyWords(new String[]{"brown"});
+		res  = pm.getObjects(TextObject.class, new Equal(example));
+		System.out.println(res.get(0).getText());
+		keywords = res.get(0).getKeyWords();
+		assertTrue(keywords.contains("The"));
+		assertTrue(keywords.contains("quick"));
+		assertTrue(keywords.contains("brown"));
+		assertTrue(keywords.contains("fox"));
+		assertEquals(4,keywords.size());
+		
+		//find not matching
+		res = pm.getObjects(TextObject.class, new Different(example));
+		if(res.size()==0)
+		{
+		    System.out.println("No matches found.");
+		}
+		
+		//delete all TextObjects
+		pm.deleteObjects(TextObject.class,new All());
+		
+		//insert some new ones
+		a = new TextObject();
+		a.setText("The quick brown fox");
+		a.setKeyWords(a.getText().split(" ")); 
+		pm.saveObject(a);
+		FooTextObject foo = new FooTextObject();
+		foo.setKeyWords(new String[] { "The", "quick", "brown", "dog" });
+		pm.saveObject(foo);
+		BarTextObject bar = new BarTextObject();
+		bar.setKeyWords(new String[] { "The", "quick", "brown", "rabbit" });
+		pm.saveObject(bar);
+		
+		//do some searches,verify size
+		example = new TextObject();
+		example.setKeyWords(new String[] { "brown" });
+		List<TextObject> list = 
+		           pm.getObjects(TextObject.class, new Equal(example));
+		assertEquals(3, list.size());
+		List<FooTextObject> fooList = 
+		           pm.getObjects(FooTextObject.class, new Equal(example));
+		assertEquals(1,fooList.size());
+
+		example.setKeyWords(new String[] { "rabbit" });
+		List<TextObject> rabbitList = 
+		           pm.getObjects(TextObject.class, new Equal(example));
+		assertEquals(1,rabbitList.size());
+		
+		pm.close();
+		
+	}
+	
+	/**
+	 * Test the sorting and limits part of the tutorial
+	 */
+	@Test
+	public void testTutorial2() throws Exception
+	{
+
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		
+		//insert some test data
+		pm.saveObject(new Person("Tim","Smith"));
+		pm.saveObject(new Person("Vijay","Shankar"));
+		pm.saveObject(new Person("Ash","Walsh"));
+		pm.saveObject(new Person("Random","Hacker"));
+		pm.saveObject(new Person("Isaac","Asimov"));
+		pm.saveObject(new Person("Elvis","Presley"));
+		
+		// create the sorting object
+		Person lastNameSort = new Person();
+
+		// the value of LastName does not matter, only that it is not null
+		lastNameSort.setLastName("foo");
+
+		// sort descending by last name
+		List<Person> res = 
+		      pm.getObjects(Person.class, new All(), new Descending(lastNameSort));
+
+		//make sure the first name is the first
+		assertEquals(6,res.size());
+		assertEquals("Walsh",res.get(0).getLastName());
+		assertEquals("Asimov",res.get(res.size()-1).getLastName());
+		
+		//create the sorting objects
+		lastNameSort = new Person();
+		Person firstNameSort = new Person();
+
+		//the values of LastName and FirstName do not matter, 
+		//only that they are not null
+		lastNameSort.setLastName("foo");
+		firstNameSort.setFirstName("bar");
+
+		//sort descending by last name, then ascending by first name
+		res = pm.getObjects(Person.class, new All(), 
+		    new Order(new Descending(lastNameSort),new Ascending(firstNameSort)));
+		assertEquals(6,res.size());
+		assertEquals("Walsh",res.get(0).getLastName());
+		assertEquals("Asimov",res.get(res.size()-1).getLastName());
+		
+		//sort ascending on firstname, then ascending on lastname, limit to first three results
+		res = pm.getObjects(Person.class, new All(), 
+		    new Order( 3, new Ascending(firstNameSort), 
+		                  new Ascending(lastNameSort)));
+		assertEquals(3,res.size());
+		assertEquals("Walsh",res.get(0).getLastName());
+		assertEquals("Asimov",res.get(res.size()-1).getLastName());
+		
+		
+		//same as above, but skip first three and return 2
+		res = pm.getObjects(Person.class, new All(), 
+		    new Order(2, 3, new Ascending(firstNameSort), 
+		                    new Ascending(lastNameSort)));
+		assertEquals(2,res.size());
+		assertEquals("Hacker",res.get(0).getLastName());
+		assertEquals("Smith",res.get(res.size()-1).getLastName());
+		
+		int toDelete = 20;
+		for(int x=0;x<toDelete;x++)
+		{
+			pm.saveObject(new TextObject());
+		}
+		int deleted = pm.deleteObjects(TextObject.class, new All());
+		assertEquals(toDelete,deleted);
+		
 		
 		pm.close();
 	}

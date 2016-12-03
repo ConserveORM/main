@@ -127,15 +127,7 @@ public class Persist
 			throw new SQLException("Property org.conserve.connectionstring not found.");
 		}
 		String userName = prop.getProperty("org.conserve.username");
-		if (userName == null)
-		{
-			throw new SQLException("Property org.conserve.username not found.");
-		}
 		String password = prop.getProperty("org.conserve.password");
-		if (password == null)
-		{
-			throw new SQLException("Property org.conserve.password not found.");
-		}
 		initialize(driver, connectionString, userName, password);
 	}
 

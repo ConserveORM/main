@@ -134,8 +134,6 @@ public class ArrayEntryWriter
 				{
 					ps.setLong(3, valueId);
 					Tools.logFine(ps);
-
-					// save the object
 					ps.execute();
 					ps.close();
 					// get the new id of the __ARRAY_MEMBER entry

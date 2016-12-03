@@ -126,8 +126,8 @@ public class NameNumberMap
 	{
 		String command = "INSERT INTO " + tableName + " (NAME) VALUES (?)";
 		PreparedStatement prepareStatement = cw.prepareStatement(command);
-		Tools.logFine(prepareStatement);
 		prepareStatement.setString(1, name);
+		Tools.logFine(prepareStatement);
 		prepareStatement.execute();
 		prepareStatement.close();
 		loadData(cw);

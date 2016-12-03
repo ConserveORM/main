@@ -178,7 +178,7 @@ public abstract class PersistTest
 		LOGGER.setUseParentHandlers(false);
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.INFO;
+		Level level = Level.FINE;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}
@@ -4795,28 +4795,6 @@ public abstract class PersistTest
 		boolean thrown = false;
 		try
 		{
-			dcp = new DataConnectionPool(1,driver,database,login,null);
-			dcp.cleanUp();
-		}
-		catch(SQLException e)
-		{
-			thrown = true;
-		}
-		assertTrue("No exception thrown on null password.",thrown);
-		thrown = false;
-		try
-		{
-			dcp = new DataConnectionPool(1,driver,database,null,password);
-			dcp.cleanUp();
-		}
-		catch(SQLException e)
-		{
-			thrown = true;
-		}
-		assertTrue("No exception thrown on null username.",thrown);
-		thrown = false;
-		try
-		{
 			dcp = new DataConnectionPool(1,driver,null,login,password);
 			dcp.cleanUp();
 		}
@@ -4977,8 +4955,14 @@ public abstract class PersistTest
 			fw.write("org.conserve.driver=" + driver + "\n");
 		}
 		fw.write("org.conserve.connectionstring=" + database + "\n");
-		fw.write("org.conserve.username=" + login + "\n");
-		fw.write("org.conserve.password=" + password + "\n");
+		if(login!=null)
+		{
+			fw.write("org.conserve.username=" + login + "\n");
+		}
+		if(password != null)
+		{
+			fw.write("org.conserve.password=" + password + "\n");
+		}
 		fw.close();
 		
 		PersistenceManager persist = new PersistenceManager(filename);
@@ -5040,67 +5024,7 @@ public abstract class PersistTest
 		thrown =false;
 		f = new File(filename);
 		f.delete();
-		
-		//no login
-		fw = new FileWriter(filename);
-		if (driver != null)
-		{
-			fw.write("org.conserve.driver=" + driver + "\n");
-		}
-		fw.write("org.conserve.connectionstring="+database+"\n");
-		fw.write("org.conserve.password="+password+"\n");
-		fw.close();
-		try
-		{
-			persist = new PersistenceManager(filename);
-		}
-		catch(SQLException e)
-		{
-			thrown = true;
-		}
-		finally
-		{
-			if(persist != null)
-			{
-				persist.close();
-				persist = null;
-			}
-		}
-		assertTrue("No exception on non-existing database.",thrown);
-		thrown =false;
-		f = new File(filename);
-		f.delete();
-
-		//no password
-		fw = new FileWriter(filename);
-		if (driver != null)
-		{
-			fw.write("org.conserve.driver=" + driver + "\n");
-		}
-		fw.write("org.conserve.connectionstring="+database+"\n");
-		fw.write("org.conserve.username="+login+"\n");
-		fw.close();
-		try
-		{
-			persist = new PersistenceManager(filename);
-		}
-		catch(SQLException e)
-		{
-			thrown = true;
-		}
-		finally
-		{
-			if(persist != null)
-			{
-				persist.close();
-				persist = null;
-			}
-		}
-		assertTrue("No exception on non-existing database.",thrown);
-		thrown =false;
-		f = new File(filename);
-		f.delete();
-		
+				
 	}
 	
 	/**

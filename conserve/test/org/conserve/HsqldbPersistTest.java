@@ -32,10 +32,19 @@ public class HsqldbPersistTest extends PersistTest
 	protected void setupConnectionConstants()
 	{
 		driver = "org.hsqldb.jdbcDriver";
-		database = "jdbc:hsqldb:file:hsqldbtest;shutdown=true";
-		secondDatabase = "jdbc:hsqldb:file:hsqldbtest2;shutdown=true";
+		
+		//embedded:
+		//database = "jdbc:hsqldb:file:hsqldbtest;shutdown=true";
+		//secondDatabase = "jdbc:hsqldb:file:hsqldbtest2;shutdown=true";
+		
+		//server:
+		database = "jdbc:hsqldb:hsql://localhost/hsqldbtest";
+		secondDatabase = "jdbc:hsqldb:hsql://localhost/hsqldbtest2";
+		
+		
 		login = "sa";
 		password = "";
+		
 		//HSQLDB resets ALL loggers
 		//workaround:
 		System.setProperty("hsqldb.reconfig_logging", "false");

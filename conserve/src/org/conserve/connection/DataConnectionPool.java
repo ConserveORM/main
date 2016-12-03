@@ -58,9 +58,9 @@ public class DataConnectionPool
 	 * @param db
 	 *            The name of the database
 	 * @param uname
-	 *            The login name
+	 *            The login name, can be null if the database allows it.
 	 * @param pw
-	 *            The login password
+	 *            The login password, can be null if the database allows it.
 	 */
 	public DataConnectionPool(int poolsize, String driver, String db, String uname, String pw) throws SQLException
 	{
@@ -87,9 +87,9 @@ public class DataConnectionPool
 		// set up the connections
 		for (int x = 0; x < poolsize; x++)
 		{
-			if ((this.userName == null) || (this.dataBase == null) || (this.password == null))
+			if ((this.dataBase == null) )
 			{
-				throw new SQLException("Connection string, user name and password must be given. User name and password may be empty strings.");
+				throw new SQLException("Connection string must be given.");
 			}
 			else
 			{

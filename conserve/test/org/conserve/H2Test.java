@@ -30,8 +30,15 @@ public class H2Test extends PersistTest
 	protected void setupConnectionConstants()
 	{
 		driver = "org.h2.Driver";
+		
+		//embedded:
+		//database = "jdbc:h2:~/test";
+		//secondDatabase = "jdbc:h2:~/test2";
+		
+		//server:
 		database = "jdbc:h2:tcp://localhost/~/test";
 		secondDatabase = "jdbc:h2:tcp://localhost/~/test2";
+		
 		login = "sa";
 		password = "";
 	}

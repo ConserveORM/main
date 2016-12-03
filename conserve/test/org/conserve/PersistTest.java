@@ -5286,25 +5286,25 @@ public abstract class PersistTest
 	public void testGetObjectById() throws Exception
 	{
 		//create some dummy objects
+		PersistenceManager pm1 = new PersistenceManager(driver,database,login,password);
+		PersistenceManager pm2 = new PersistenceManager(driver,database,login,password);
 		for(int x = 0;x<50;x++)
 		{
-			PersistenceManager pm = new PersistenceManager(driver,database,login,password);
 			SimpleObject so = new SimpleObject();
-			long id = pm.saveObject(so);
+			long id = pm1.saveObject(so);
 			so.setAge(id);
 			so.setName(Long.toString(id));
-			long id2 = pm.saveObject(so);
+			long id2 = pm1.saveObject(so);
 			//make sure the id is the same
 			assertEquals(id,id2);
-			pm.close();
 			
-			pm = new PersistenceManager(driver,database,login,password);
-			SimpleObject sos = pm.getObject(SimpleObject.class,id);
+			SimpleObject sos = pm2.getObject(SimpleObject.class,id);
 			assertEquals(so.getAge(),sos.getAge());
 			assertEquals(so.getName(),sos.getName());
 		
-			pm.close();
 		}
+		pm1.close();
+		pm2.close();
 	}
 	
 	/**

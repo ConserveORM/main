@@ -266,7 +266,17 @@ public class StatementPrototypeGenerator
 		{
 			sorted = isSorted(sel.getSelectionObject().getClass());
 		}
+		
 		ObjectRepresentation baseRep = oStack.getRepresentation(sel.getSelectionClass());
+		
+		// queries will always include these three tables
+		baseRep.setForceInclude(true);
+		oStack.getActualRepresentation().setForceInclude(true);
+		ObjectRepresentation objectRep = oStack.getRepresentation(Object.class);
+		if (objectRep != null)
+		{
+			oStack.getRepresentation(Object.class).setForceInclude(true);
+		}
 
 		// get all possible paths from a superclass to the actual implementing
 		// class
@@ -281,19 +291,21 @@ public class StatementPrototypeGenerator
 		// go through the list of paths and add all relevant query parts
 		for (List<ObjectRepresentation> path : allPaths)
 		{
-			ObjectRepresentation subRep = null;
 			for (int t = 0; t < path.size(); t++)
 			{
 				ObjectRepresentation rep = path.get(t);
-				// don't add link on first object, obviously
-				if(!rep.equals(baseRep))
+				if(!rep.equals(baseRep) )
 				{
-					sp.getIdStatementGenerator().addLinkStatement(rep,baseRep);
+					if(rep.belongsInJoin())
+					{
+						sp.getIdStatementGenerator().addLinkStatement(rep,baseRep);
+					}
 				}
 				// make sure the class is in the link table
-				sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
-				// prepare for next step
-				subRep = rep;
+				if(rep.belongsInJoin())
+				{
+					sp.getIdStatementGenerator().addPropertyTableToJoin(rep.getTableName(), rep.getAsName());
+				}
 				
 				// store parameters:
 				// iterate over the non-null values
@@ -340,8 +352,9 @@ public class StatementPrototypeGenerator
 						sp.addConditionalStatement(conditional.toString());
 						// is this query using strict inheritance?
 						// is the property and the property class different?
-						if ((sel.isStrictInheritance() || (!propertyClass.isInterface() && !Modifier.isAbstract(propertyClass.getModifiers())))
-								&& !propertyClass.equals(property.getClass()))
+						if (!propertyClass.equals(property.getClass()) 
+								&& (sel.isStrictInheritance() 
+								|| (!propertyClass.isInterface() && !Modifier.isAbstract(propertyClass.getModifiers()))))
 						{
 							// Then add linking statement
 							addLinkStatement(sp, propertyStack, propertyClass);
@@ -369,7 +382,9 @@ public class StatementPrototypeGenerator
 		Node objRep = propertyStack.getNode(propertyClass);
 		for(ObjectRepresentation rep:propertyStack.getAllRepresentations())
 		{
-			if(!rep.equals(objRep.getRepresentation()) && ObjectTools.isA(rep.getRepresentedClass(),propertyClass))
+			if(!rep.equals(objRep.getRepresentation()) 
+					&& ObjectTools.isA(rep.getRepresentedClass(),propertyClass)
+					&& rep.belongsInJoin())
 			{
 				sp.getIdStatementGenerator().addLinkStatement(objRep.getRepresentation(),rep);
 			}
@@ -611,6 +626,13 @@ public class StatementPrototypeGenerator
 						// is the property and the property class different?
 						if (!propertyClass.equals(o.getClass()))
 						{
+							propertyRep.setForceInclude(true);
+							propertyStack.getActualRepresentation().setForceInclude(true);
+							ObjectRepresentation objectRep = propertyStack.getRepresentation(Object.class);
+							if(objectRep != null)
+							{
+								objectRep.setForceInclude(true);
+							}
 							// Then add linking statement
 							addLinkStatement(sp, propertyStack, propertyClass);
 						}

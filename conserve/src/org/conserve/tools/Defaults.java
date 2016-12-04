@@ -25,6 +25,14 @@ package org.conserve.tools;
  */
 public class Defaults
 {
+	public static final String LOGGER_NAME ;
+	static
+	{
+		//use the parent package name as logger name
+		String tmp = Defaults.class.getPackage().getName();
+		LOGGER_NAME = tmp.substring(0, tmp.lastIndexOf("."));
+	}
+	
 	/**
 	 * Default table names.
 	 */

@@ -57,7 +57,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	protected AdapterBase adapter;
 	protected Object object;
 	protected Long id;
-	protected static final Logger LOGGER = Logger.getLogger("org.conserve");
+	protected static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
 	protected String asName;
 	//list from field names to index names
 	protected Map<String,List<String>>indices = new HashMap<String,List<String>>();

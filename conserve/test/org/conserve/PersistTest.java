@@ -176,14 +176,14 @@ public abstract class PersistTest
 	protected String password;
 	protected String secondDatabase;
 
-	private static final Logger LOGGER = Logger.getLogger("org.conserve");
+	private static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
 	// create a log handler that outputs all warning events to the console
 	static
 	{
 		LOGGER.setUseParentHandlers(false);
 		ConsoleHandler consoleHandler = new ConsoleHandler();
 		LOGGER.addHandler(consoleHandler);
-		Level level = Level.FINE;
+		Level level = Level.INFO;
 		LOGGER.setLevel(level);
 		consoleHandler.setLevel(level);
 	}

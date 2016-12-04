@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.conserve.tools.Defaults;
+
 /**
  * A pool that maintains a set of open database connections.
  * 
@@ -44,7 +46,7 @@ public class DataConnectionPool
 
 	private Object mutex = new Object();
 
-	private static final Logger LOGGER = Logger.getLogger("org.conserve");
+	private static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
 
 
 	/**

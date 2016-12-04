@@ -108,7 +108,7 @@ public class Persist
 	private Updater updater;
 	private ArrayEntryWriter arrayEntryWriter;
 	
-	private static final Logger LOGGER = Logger.getLogger("org.conserve");
+	private static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
 
 	/**
 	 * Package-access constructor.

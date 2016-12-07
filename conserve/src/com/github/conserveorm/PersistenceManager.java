@@ -58,7 +58,9 @@ public class PersistenceManager
 
 	/**
 	 * Load the settings from a file. The file contains properties on the form
-	 * property=value
+	 * property=value. The properties you can set are:
+	 * com.github.conserveorm.driver, com.github.conserveorm.connectionstring, 
+	 * com.github.conserveorm.username, and com.github.conserveorm.password.
 	 * 
 	 * @param filename
 	 *            the name of the properties file to load settings from.
@@ -72,7 +74,9 @@ public class PersistenceManager
 
 	/**
 	 * Load the settings from a file. The file contains properties on the form
-	 * property=value
+	 * property=value. The properties you can set are:
+	 * com.github.conserveorm.driver, com.github.conserveorm.connectionstring, 
+	 * com.github.conserveorm.username, and com.github.conserveorm.password.
 	 * 
 	 * If createSchema is true the database tables will be automatically
 	 * created.
@@ -99,7 +103,9 @@ public class PersistenceManager
 	}
 
 	/**
-	 * Reads property=value pairs from the inputstream.
+	 * Reads property=value pairs from the inputstream. The properties you can set are:
+	 * com.github.conserveorm.driver, com.github.conserveorm.connectionstring, 
+	 * com.github.conserveorm.username, and com.github.conserveorm.password.
 	 * 
 	 * @param in
 	 *            the source of the properties of the connection.
@@ -113,7 +119,9 @@ public class PersistenceManager
 
 	/**
 	 * Reads property=value pairs from the inputstream. If createSchema is true
-	 * the database tables will be automatically created.
+	 * the database tables will be automatically created. The properties you can set are:
+	 * com.github.conserveorm.driver, com.github.conserveorm.connectionstring, 
+	 * com.github.conserveorm.username, and com.github.conserveorm.password.
 	 * 
 	 * @param in
 	 *            the source of the properties of the connection.
@@ -130,7 +138,9 @@ public class PersistenceManager
 	}
 
 	/**
-	 * Create object, read settings from provided properties.
+	 * Create object, read settings from provided properties. The properties you can set are:
+	 * com.github.conserveorm.driver, com.github.conserveorm.connectionstring, 
+	 * com.github.conserveorm.username, and com.github.conserveorm.password.
 	 * 
 	 * @param prop
 	 *            contains the driver, connectionstring, username and password
@@ -143,10 +153,13 @@ public class PersistenceManager
 	}
 
 	/**
-	 * Create object, read settings from provided properties.
+	 * Create object, read settings from provided properties. 
+	 * The properties you can set are:
+	 * com.github.conserveorm.driver, com.github.conserveorm.connectionstring, 
+	 * com.github.conserveorm.username, and com.github.conserveorm.password.
 	 * 
 	 * If createSchema is true the database tables will be automatically
-	 * created.
+	 * created. 
 	 * 
 	 * @param createSchema
 	 *            whether to create tables or not.

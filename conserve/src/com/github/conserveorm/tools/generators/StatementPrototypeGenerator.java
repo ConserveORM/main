@@ -383,7 +383,7 @@ public class StatementPrototypeGenerator
 		for(ObjectRepresentation rep:propertyStack.getAllRepresentations())
 		{
 			if(!rep.equals(objRep.getRepresentation()) 
-					&& ObjectTools.isA(rep.getRepresentedClass(),propertyClass)
+					&& propertyClass.isAssignableFrom(rep.getRepresentedClass())
 					&& rep.belongsInJoin())
 			{
 				sp.getIdStatementGenerator().addLinkStatement(objRep.getRepresentation(),rep);
@@ -441,50 +441,50 @@ public class StatementPrototypeGenerator
 		else
 		{
 			// check if c is a Map
-			if (ObjectTools.implementsInterfaceIncludingSuper(c, Map.class))
+			if (Map.class.isAssignableFrom(c))
 			{
 				res = false;
 				// sorted maps are sorted
-				if (ObjectTools.implementsInterfaceIncludingSuper(c, SortedMap.class))
+				if (SortedMap.class.isAssignableFrom(c))
 				{
 					res = true;
 				}
 				// check if c is one of HashMap's sorted subclasses.
-				if (ObjectTools.isSubClassOf(c, LinkedHashMap.class))
+				if (LinkedHashMap.class.isAssignableFrom(c))
 				{
 					res = true;
 				}
-				if (ObjectTools.isSubClassOf(c, EnumMap.class))
+				if (EnumMap.class.isAssignableFrom(c))
 				{
 					res = true;
 				}
 			}
-			else if (ObjectTools.implementsInterfaceIncludingSuper(c, Collection.class))
+			else if (Collection.class.isAssignableFrom(c))
 			{
 				// by default, collections are not sorted
 				res = false;
 				// check if the c is a Set
-				if (ObjectTools.implementsInterfaceIncludingSuper(c, Set.class))
+				if (Set.class.isAssignableFrom(c))
 				{
 					// check if c implements any of Sets sorted sub-interfaces
-					if (ObjectTools.implementsInterfaceIncludingSuper(c, SortedSet.class))
+					if (SortedSet.class.isAssignableFrom(c))
 					{
 						res = true;
 					}
 					// check if c is one of HashSet's sorted implementations
-					if (ObjectTools.isSubClassOf(c, LinkedHashSet.class))
+					if (LinkedHashSet.class.isAssignableFrom(c))
 					{
 						res = true;
 					}
 				}
 				// check if c is a Queue
-				if (ObjectTools.implementsInterfaceIncludingSuper(c, Queue.class))
+				if (Queue.class.isAssignableFrom(c))
 				{
 					res = true;
 				}
 
 				// check if c is a List
-				if (ObjectTools.implementsInterfaceIncludingSuper(c, List.class))
+				if (List.class.isAssignableFrom(c))
 				{
 					res = true;
 				}
@@ -512,11 +512,11 @@ public class StatementPrototypeGenerator
 		else
 		{
 			// check if c is a Map
-			if (ObjectTools.implementsInterfaceIncludingSuper(c, Map.class))
+			if (Map.class.isAssignableFrom(c))
 			{
 				res = true;
 			}
-			else if (ObjectTools.implementsInterfaceIncludingSuper(c, Collection.class))
+			else if (Collection.class.isAssignableFrom(c))
 			{
 				res = true;
 			}

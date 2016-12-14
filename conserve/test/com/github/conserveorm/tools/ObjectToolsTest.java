@@ -18,11 +18,10 @@
  *******************************************************************************/
 package com.github.conserveorm.tools;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.junit.After;
@@ -34,7 +33,6 @@ import com.github.conserveorm.objects.LessSimpleObject;
 import com.github.conserveorm.objects.SerializableInheritingObject;
 import com.github.conserveorm.objects.SimplestObject;
 import com.github.conserveorm.objects.SubInterface;
-import com.github.conserveorm.tools.ObjectTools;
 
 /**
  * @author Erik Berglund
@@ -78,37 +76,6 @@ public class ObjectToolsTest
 		assertTrue(interfaces.contains(BaseInterface.class));
 		interfaces = ObjectTools.getAllInterfaces(SerializableInheritingObject.class);
 		assertFalse(interfaces.contains(Serializable.class));
-	}
-	/**
-	 * Test method for {@link com.github.conserveorm.tools.ObjectTools#getAllInterfacesIncludingSuper(java.lang.Class)}.
-	 */
-	@Test
-	public void testGetAllInterfacesIncludingSuper()
-	{
-		List<Class<?>> interfaces = ObjectTools.getAllInterfacesIncludingSuper(SubInterface.class);
-		assertTrue(interfaces.contains(SubInterface.class));
-		assertTrue(interfaces.contains(BaseInterface.class));
-		assertTrue(interfaces.contains(Serializable.class));
-		interfaces = ObjectTools.getAllInterfacesIncludingSuper(SimplestObject.class);
-		assertTrue(interfaces.isEmpty());
-		interfaces = ObjectTools.getAllInterfacesIncludingSuper(LessSimpleObject.class);
-		assertTrue(interfaces.contains(Serializable.class));
-		assertTrue(interfaces.contains(Runnable.class));
-		assertTrue(interfaces.contains(SubInterface.class));
-		assertTrue(interfaces.contains(BaseInterface.class));
-		interfaces = ObjectTools.getAllInterfacesIncludingSuper(SerializableInheritingObject.class);
-		assertTrue(interfaces.contains(Serializable.class));
-	}
-
-	/**
-	 * Test method for {@link com.github.conserveorm.tools.ObjectTools#implementsInterface(java.lang.Class, java.lang.Class)}.
-	 */
-	@Test
-	public void testImplementsInterface()
-	{
-		ArrayList<String> foo = new ArrayList<String>();
-		assertTrue(ObjectTools.implementsInterfaceIncludingSuper(foo.getClass(), List.class));
-		assertTrue(ObjectTools.implementsInterfaceIncludingSuper(foo.getClass(), Collection.class));
 	}
 
 }

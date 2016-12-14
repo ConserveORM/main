@@ -109,7 +109,7 @@ public class ObjectStack
 		removeDuplicatedNodes(representations.root, new ArrayList<Class<?>>(), new ArrayList<Node>());
 
 		// check for implementations of Collection
-		if (this.getActualRepresentation().isImplementation(Collection.class))
+		if (Collection.class.isAssignableFrom(c))
 		{
 			// switch to bug-fix implementation of Collection
 			for (ObjectRepresentation rep : this.getAllRepresentations())
@@ -121,7 +121,7 @@ public class ObjectStack
 			}
 		}
 		// do the same for Map as for Collection
-		if (this.getActualRepresentation().isImplementation(Map.class))
+		if (Map.class.isAssignableFrom(c))
 		{
 			// switch to bug-fix implementation of Map
 			for (ObjectRepresentation rep : this.getAllRepresentations())
@@ -268,7 +268,7 @@ public class ObjectStack
 		// save all interfaces
 		for (Class<?> i : c.getInterfaces())
 		{
-			if (!ObjectTools.implementsInterfaceIncludingSuper(superClass, i))
+			if (superClass == null || !i.isAssignableFrom(superClass))
 			{
 				supers.add(i);
 			}
@@ -948,7 +948,7 @@ public class ObjectStack
 				}
 				if(!checkedClasses.contains(propClass))
 				{
-					if(ObjectTools.isA(realClass, propClass))
+					if(propClass.isAssignableFrom(realClass))
 					{
 						return true;
 					}

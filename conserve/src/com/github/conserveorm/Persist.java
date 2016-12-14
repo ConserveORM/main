@@ -46,6 +46,7 @@ import com.github.conserveorm.adapter.MonetDbAdapter;
 import com.github.conserveorm.adapter.MySqlAdapter;
 import com.github.conserveorm.adapter.PostgreSqlAdapter;
 import com.github.conserveorm.adapter.SqLiteAdapter;
+import com.github.conserveorm.adapter.SqlDroidAdapter;
 import com.github.conserveorm.aggregate.AggregateFunction;
 import com.github.conserveorm.aggregate.Count;
 import com.github.conserveorm.aggregate.Sum;
@@ -202,9 +203,13 @@ public class Persist
 		{
 			res = new FirebirdAdapter(this);
 		}
-		else if (url.startsWith("jdbc:sqlite:"))
+		else if (url.startsWith("jdbc:sqlite:") )
 		{
 			res = new SqLiteAdapter(this);
+		}
+		else if(url.startsWith("jdbc:sqldroid:"))
+		{
+			res = new SqlDroidAdapter(this);
 		}
 		else if (url.startsWith("jdbc:monetdb"))
 		{
@@ -677,7 +682,7 @@ public class Persist
 		}
 		if (clazz == null)
 		{
-			clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+			clazz = (Class<T>)adapter.getClass().getClassLoader().loadClass(className);
 		}
 		// check if the appropriate table exists
 		String tableName = NameGenerator.getTableName(clazz, adapter);
@@ -975,8 +980,7 @@ public class Persist
 				else
 				{
 					// no REAL_CLASS_COL found, which means this is the actual
-					// class
-					// of the object
+					// class of the object
 					List<Long> idVector = res.get(clazz);
 					if (idVector == null)
 					{
@@ -1006,8 +1010,7 @@ public class Persist
 				if (map.get(Defaults.REAL_CLASS_COL) == null)
 				{
 					// no REAL_CLASS_COL found, which means this is the actual
-					// class
-					// of the object
+					// class of the object
 					List<Long> idVector = res.get(clazz);
 					if (idVector == null)
 					{
@@ -1253,10 +1256,9 @@ public class Persist
 					else
 					{
 						// load the real class
-						clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+						clazz = (Class<T>) adapter.getClass().getClassLoader().loadClass(className);
 						// primitives are not loaded in response to queries,
-						// only as
-						// parts of other objects
+						// only as parts of other objects
 						if (!ObjectTools.isDatabasePrimitive(clazz) && !(clazz.equals(MapEntry.class)) && !(clazz.equals(Number.class)))
 						{
 							// get the subclass-specific data
@@ -1264,7 +1266,7 @@ public class Persist
 							// load the real class info
 							classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
 							className = classNameNumberMap.getName(cw, classNameId);
-							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+							clazz = (Class<T>) adapter.getClass().getClassLoader().loadClass(className);
 						}
 						else
 						{
@@ -1393,7 +1395,7 @@ public class Persist
 						else
 						{
 							// load the real class
-							clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+							clazz = (Class<T>) adapter.getClass().getClassLoader().loadClass(className);
 							// primitives are not loaded in response to queries,
 							// only as
 							// parts of other objects
@@ -1404,7 +1406,7 @@ public class Persist
 								// load the real class info
 								classNameId = (Integer)map.get(Defaults.REAL_CLASS_COL);
 								className = classNameNumberMap.getName(cw, classNameId);
-								clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+								clazz = (Class<T>) adapter.getClass().getClassLoader().loadClass(className);
 							}
 							else
 							{
@@ -1565,7 +1567,7 @@ public class Persist
 				if (!className.equalsIgnoreCase(Defaults.ARRAY_TABLENAME))
 				{
 					// load the real class
-					clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+					clazz = (Class<T>) adapter.getClass().getClassLoader().loadClass(className);
 					// get the subclass-specific data
 					getSubClassData(cw,map, clazz, dbId);
 					// load the real class info
@@ -1600,7 +1602,7 @@ public class Persist
 			{
 				// load an ordinary object
 				// check if the object is known
-				clazz = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(className);
+				clazz = (Class<T>) adapter.getClass().getClassLoader().loadClass(className);
 				String tableName = NameGenerator.getTableName(clazz, adapter);
 				Object cachedObject = cache.getObject(tableName, dbId);
 				if (cachedObject == null)
@@ -1744,7 +1746,7 @@ public class Persist
 		List<HashMap<String, Object>> propertyVector = createPropertyVector(rs);
 		if (propertyVector.size() != 1)
 		{
-			throw new SQLException("Wrong number of subclass entities found: " + propertyVector.size() + ", expected 1.");
+			throw new SQLException("Wrong number of subclass entities for db id " + dbId+": found " + propertyVector.size() + ", expected 1.");
 		}
 		ps.close();
 		HashMap<String, Object> subMap = propertyVector.get(0);
@@ -1755,7 +1757,7 @@ public class Persist
 		if (subClassId != null)
 		{
 			String subClassName = classNameNumberMap.getName(cw,subClassId);
-			Class<?> subClass = (Class<T>) ClassLoader.getSystemClassLoader().loadClass(subClassName);
+			Class<?> subClass = (Class<T>) adapter.getClass().getClassLoader().loadClass(subClassName);
 			getSubClassData(cw,map, subClass, dbId);
 		}
 		else

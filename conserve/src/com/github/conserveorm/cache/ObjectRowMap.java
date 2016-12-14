@@ -23,6 +23,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,13 +47,13 @@ public class ObjectRowMap implements Runnable
 	/**
 	 * Map from table entry (table name and database id) to an object.
 	 */
-	private ConcurrentHashMap<TableEntry, WeakReference<Object>> tableToReference = new ConcurrentHashMap<>();
+	private Map<TableEntry, WeakReference<Object>> tableToReference = new ConcurrentHashMap<>();
 
 	/**
 	 * Map from a weak reference to the table entry (table name and database
 	 * id).
 	 */
-	private ConcurrentHashMap<WeakReference<Object>, TableEntry> referenceToTable = new ConcurrentHashMap<>();
+	private Map<WeakReference<Object>, TableEntry> referenceToTable = new ConcurrentHashMap<>();
 
 	/**
 	 * Reference queue where References for deleted objects are placed.
@@ -286,7 +287,7 @@ public class ObjectRowMap implements Runnable
 	 */
 	private class WeakRefMap
 	{
-		private ConcurrentHashMap<Long, List<WeakReference<Object>>> buckets = new ConcurrentHashMap<>();
+		private Map<Long, List<WeakReference<Object>>> buckets = new ConcurrentHashMap<>();
 
 		public void put(Object obj, WeakReference<Object> wr)
 		{

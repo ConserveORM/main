@@ -403,8 +403,13 @@ public class TableManager
 			columnName = columnName.toLowerCase();
 		}
 		Connection c = cw.getConnection();
+		String catalog = null;
+		if(!adapter.getCatalogIsBroken())
+		{
+			catalog = c.getCatalog();
+		}
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getColumns(c.getCatalog(), null, tableName, columnName);
+		ResultSet rs = metaData.getColumns(catalog, null, tableName, columnName);
 		boolean res = false;
 		if (rs.next())
 		{
@@ -431,8 +436,13 @@ public class TableManager
 			tableName = tableName.toLowerCase();
 		}
 		Connection c = cw.getConnection();
+		String catalog = null;
+		if(!adapter.getCatalogIsBroken())
+		{
+			catalog = c.getCatalog();
+		}
 		DatabaseMetaData metaData = c.getMetaData();
-		ResultSet rs = metaData.getTables(c.getCatalog(), null, tableName, new String[] { "TABLE" });
+		ResultSet rs = metaData.getTables(catalog, null, tableName, new String[] { "TABLE" });
 		boolean res = false;
 		if (rs.next())
 		{
@@ -1515,6 +1525,7 @@ public class TableManager
 		// create the new field
 		if (!columnExists(movedField.getToTable(), movedField.getToName(), cw))
 		{
+			Tools.logFine("Column \""+movedField.getToTable()+"."+movedField.getToName()+"\" does not exist, creating it.");
 			createColumn(movedField.getToTable(), movedField.getToName(), movedField.getToClass(),movedField.getToSize(), cw);
 		}
 		// copy all values
@@ -1808,7 +1819,7 @@ public class TableManager
 			String propertyClassName = adapter.getPersist().getClassNameNumberMap().getName(cw, propertyClassNameId);
 			Class<?> sourceClass = ObjectTools.lookUpClass(propertyClassName, adapter);
 			// check compatibility
-			if (ObjectTools.isA(sourceClass, nuType))
+			if (nuType.isAssignableFrom(sourceClass))
 			{
 				// update the reference id
 				setReferenceTo(tableName, ownerId, colName, propertyId, cw);

@@ -228,7 +228,7 @@ public class CompabilityCalculator
 		
 		//if we got this far it's a reference type
 		//check if fromClass is a subclass of toClass or vice versa
-		if(ObjectTools.isA(fromClass, toClass)||ObjectTools.isA(toClass,fromClass))
+		if(fromClass.isAssignableFrom(toClass)||toClass.isAssignableFrom(fromClass))
 		{
 			return true;
 		}

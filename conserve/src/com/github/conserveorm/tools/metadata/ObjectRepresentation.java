@@ -156,18 +156,6 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		}
 	}
 
-	/**
-	 * Check if this class implements interface interf or any of its
-	 * sub-interfaces.
-	 * 
-	 * @return true if this object directly implements interf or a
-	 *         sub-interface.
-	 */
-	boolean isImplementation(Class<?> interf)
-	{
-		return ObjectTools.implementsInterface(clazz, interf);
-	}
-
 	public Object getObject()
 	{
 		return object;

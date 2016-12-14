@@ -188,6 +188,15 @@ public class Tools
 			LOGGER.log(lr);
 		}
 	}
+	
+	public static void logFine(String message)
+	{
+		if (LOGGER.isLoggable(Level.FINE))
+		{
+			LogRecord lr = new Tools.SqlStatementLogRecord(Level.FINE, message);
+			LOGGER.log(lr);
+		}
+	}
 
 	/**
 	 * A subclass of LogRecord that allows Tools.logFine to print the name of

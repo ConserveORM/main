@@ -754,4 +754,15 @@ public class AdapterBase
 	{
 		return null;
 	}
+
+	/**
+	 * Returns true if there is a problem with the implementation of the database engine's 
+	 * getCatalog() method, false if the getCatalog() method works fine.
+	 * 
+	 */
+	public boolean getCatalogIsBroken()
+	{
+		//default is no, getCatalog has no problems.
+		return false;
+	}
 }

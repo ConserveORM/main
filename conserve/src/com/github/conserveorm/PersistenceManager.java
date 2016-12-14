@@ -1229,7 +1229,7 @@ public class PersistenceManager
 	/**
 	 * Package-level accessor for the managed Persistence object.
 	 */
-	Persist getPersist()
+	public Persist getPersist()
 	{
 		return this.persist;
 	}

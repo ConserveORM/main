@@ -437,7 +437,7 @@ public abstract class PersistTest
 		assertEquals(a.getData(), b.getData());
 		assertTrue(a.getData() != null);
 		assertEquals(3, a.getData().length);
-		assertTrue(a.getData()[2] == 3.3);
+		assertEquals(a.getData()[2],3.3,0.01);
 		persist.close();
 	}
 
@@ -1216,6 +1216,8 @@ public abstract class PersistTest
 		// make sure only one object exists
 		List<Object> all = persist.getObjects(new Object());
 		assertEquals(1, all.size());
+		assertEquals(dateO.getTime().getTime(), ((DateObject)all.get(0)).getTime().getTime());
+		assertEquals(dateO.getDate().getTime(), ((DateObject)all.get(0)).getDate().getTime());
 
 		persist.close();
 	}
@@ -4847,8 +4849,8 @@ public abstract class PersistTest
 		{
 			// we don't care if this is thrown, it just means the table does not
 			// exist
+			cw.rollback();
 		}
-		cw.rollback();
 
 		// create a fake table
 		ps = c.prepareStatement("CREATE TABLE TEST_TABLE (FOO INT)");
@@ -4953,7 +4955,9 @@ public abstract class PersistTest
 	@Test
 	public void testPropertiesFile() throws Exception
 	{
-		String filename = "temporary_test.prop";
+
+ 	   	File temp = File.createTempFile("temporary_test", ".prop");
+ 	   	String filename = temp.getAbsolutePath();
 		//create a file for the properties
 		FileWriter fw = new FileWriter(filename);
 
@@ -5277,7 +5281,7 @@ public abstract class PersistTest
 		assertTrue(pm2.hasChanged(copy));
 		pm2.refresh(copy);
 		assertNotNull(copy.getSimplestObject());
-		assertEquals(orig.getSimplestObject().getFoo(),copy.getSimplestObject().getFoo());
+		assertEquals(orig.getSimplestObject().getFoo().doubleValue(),copy.getSimplestObject().getFoo().doubleValue(),0.01);
 		
 		
 		//change from non-null to another non-null property

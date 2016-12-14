@@ -86,24 +86,6 @@ public class ObjectTools
 		return res;
 	}
 
-	/**
-	 * Get all interfaces of c. If c is an interface, get all super-interfaces.
-	 * Includes superclasses of c.
-	 * 
-	 * @param c
-	 * @return all interfaces that are implemented by c or one of its
-	 *         superclasses.
-	 */
-	public static List<Class<?>> getAllInterfacesIncludingSuper(Class<?> c)
-	{
-		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
-		while (c != null)
-		{
-			res.addAll(getAllInterfaces(c));
-			c = c.getSuperclass();
-		}
-		return res;
-	}
 	
 	/**
 	 * Get all types that can legally be used to reference an object of c.
@@ -111,7 +93,7 @@ public class ObjectTools
 	 * The class c itself is not included in the result.
 	 * Each class is only present once.
 	 * 
-	 * @param c the class to get legal refernece types for.S
+	 * @param c the class to get legal refernece types for.
 	 */
 	public static List<Class<?>> getAllLegalReferenceTypes(Class<?>c)
 	{
@@ -136,48 +118,6 @@ public class ObjectTools
 		return res;
 	}
 
-	/**
-	 * Returns true if implementor is equal to interf or implementor implements
-	 * interf.
-	 * 
-	 * @param implementor the class that may or may not be interf or one of its implementations.
-	 * @param interf the interface.
-	 * @return true if interf is one of the interfaces of implementor.
-	 */
-	public static boolean implementsInterface(Class<?> implementor, Class<?> interf)
-	{
-		List<Class<?>> interfaces = getAllInterfaces(implementor);
-		for (Class<?> intf : interfaces)
-		{
-			if (intf.equals(interf))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Returns true if implementor is equal to interf, implementor implements
-	 * interf, or one of implementor's superclasses implements interf.
-	 * 
-	 * @param implementor
-	 * @param interf
-	 * @return true if interf is one of the interfaces of implementor or its
-	 *         superclasses.
-	 */
-	public static boolean implementsInterfaceIncludingSuper(Class<?> implementor, Class<?> interf)
-	{
-		List<Class<?>> interfaces = getAllInterfacesIncludingSuper(implementor);
-		for (Class<?> intf : interfaces)
-		{
-			if (intf.equals(interf))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
 
 	/**
 	 * Checks if subClass is a subClass (directly or indirectly) of
@@ -202,35 +142,12 @@ public class ObjectTools
 		return false;
 	}
 
-	/**
-	 * Returns true if sub is equal to sup, if sub is a subclass of sup -
-	 * including indirectly, or if sub or any of its superclasses implement sup.
-	 * 
-	 * @param sub
-	 *            the implementor, subclass or interface.
-	 * @param sup
-	 *            the superclass or interface,
-	 * @return true if sub is_a sup (possibly indirectly), false otherwise.
-	 */
-	public static boolean isA(Class<?> sub, Class<?> sup)
-	{
-		boolean res = false;
-		if (isSubClassOf(sub, sup))
-		{
-			res = true;
-		}
-		else if (sup.isInterface() && implementsInterface(sub, sup))
-		{
-			res = true;
-		}
-		return res;
-	}
 
 	/**
 	 * Determine if a class is a 'database primitive'. A class is a database
 	 * primitive if its Class.isPrimitive method returns true, if it's an object
 	 * representation of a primitive class (e.g. Double, Integer), or if it is
-	 * String, Enum, Class, or any of the java.sql.Time,Timestapm, or Date classes.
+	 * String, Enum, Class, or any of the java.sql.Time,Timestamp, or Date classes.
 	 * 
 	 * In short, a database primitive is any class that can be fully represented
 	 * in one column of an SQL database.
@@ -307,7 +224,7 @@ public class ObjectTools
 		{
 			try
 			{
-				res = ClassLoader.getSystemClassLoader().loadClass(name);
+				res = adapter.getClass().getClassLoader().loadClass(name);
 			}
 			catch (ClassNotFoundException e)
 			{

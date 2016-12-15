@@ -38,4 +38,10 @@ public class SqlDroidAdapter extends SqLiteAdapter
 		//the getCatalog call isn't implemented in SQLDroid 1.0.3.
 		return true;
 	}
+	
+	@Override
+	public boolean getObjectIsBroken()
+	{
+		return true;
+	}
 }

@@ -58,6 +58,7 @@ public class ObjectFactory
 	 * @return a new object of the appropriate type.
 	 * @throws SQLException
 	 */
+	@SuppressWarnings("unchecked")
 	public static <T> T createObject(AdapterBase adapter,ObjectRowMap cache, HashMap<String, Object> map, Class<T> resultClass,ConnectionWrapper cw,String tableName, Long dbId)
 			throws SQLException
 	{
@@ -65,7 +66,15 @@ public class ObjectFactory
 		{
 			if (ObjectTools.isDatabasePrimitive(resultClass))
 			{
-				return resultClass.cast(map.get(Defaults.VALUE_COL));
+				if(resultClass.isAssignableFrom(Number.class))
+				{
+					//safe cast of numbers
+					return (T) ObjectTools.cast(resultClass, (Number)map.get(Defaults.VALUE_COL));
+				}
+				else
+				{					
+					return resultClass.cast(map.get(Defaults.VALUE_COL));
+				}
 			}
 			else
 			{

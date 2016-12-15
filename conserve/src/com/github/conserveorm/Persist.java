@@ -1834,6 +1834,22 @@ public class Persist
 			if (map.get(key) == null)
 			{
 				Object o = rs.getObject(x+1);
+				//check if we need to handle numbers specially
+				if(adapter.getObjectIsBroken() && o instanceof Number)
+				{
+					// database engine is braindead and returns floats where it should return doubles,
+					// and ints where it should return longs.
+					if(o instanceof Float)
+					{
+						o = rs.getDouble(x+1);
+					}
+					else if( o instanceof Integer 
+							&& !key.equalsIgnoreCase(Defaults.ID_COL) 
+							&& !key.equalsIgnoreCase(Defaults.REAL_CLASS_COL))
+					{
+						o = rs.getLong(x+1);
+					}
+				}
 				//check if the database has converted a tinyint into a string out of sheer stupidity
 				if(md.getColumnType(x+1)==Types.TINYINT && o instanceof String)
 				{

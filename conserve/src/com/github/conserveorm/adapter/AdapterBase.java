@@ -765,4 +765,14 @@ public class AdapterBase
 		//default is no, getCatalog has no problems.
 		return false;
 	}
+	
+	/**
+	 * Returns true if the ResultSet.getObject function is broken in such a way that it
+	 * returns subclasses of Number with the wrong width, e.g. Float instead of Double.
+	 */
+	public boolean getObjectIsBroken()
+	{
+		//default is no, getObject returns the right subclass of number
+		return false;
+	}
 }

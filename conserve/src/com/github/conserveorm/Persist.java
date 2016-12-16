@@ -1844,7 +1844,6 @@ public class Persist
 						o = rs.getDouble(x+1);
 					}
 					else if( o instanceof Integer 
-							&& !key.equalsIgnoreCase(Defaults.ID_COL) 
 							&& !key.equalsIgnoreCase(Defaults.REAL_CLASS_COL))
 					{
 						o = rs.getLong(x+1);

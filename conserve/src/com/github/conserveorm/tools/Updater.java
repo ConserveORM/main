@@ -168,7 +168,7 @@ public class Updater
 					{
 						Object value = values.get(t);
 						Tools.setParameter(pStatement, value.getClass(), t + 1,
-								value);
+								value,adapter);
 					}
 					pStatement.setLong(values.size() + 1, rep.getId());
 					Tools.logFine(pStatement);

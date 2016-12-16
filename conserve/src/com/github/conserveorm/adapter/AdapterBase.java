@@ -767,12 +767,22 @@ public class AdapterBase
 	}
 	
 	/**
-	 * Returns true if the ResultSet.getObject function is broken in such a way that it
+	 * Returns true if the ResultSet.getObject method is broken in such a way that it
 	 * returns subclasses of Number with the wrong width, e.g. Float instead of Double.
 	 */
 	public boolean getObjectIsBroken()
 	{
 		//default is no, getObject returns the right subclass of number
+		return false;
+	}
+	
+	/**
+	 * Returns true if the PreparedStatement.setBoolean(...) method is broken in such 
+	 * a way that we must use setInt(...) instead.
+	 */
+	public boolean setBooleanIsBroken()
+	{
+		//default is no, setBoolean is not broken
 		return false;
 	}
 }

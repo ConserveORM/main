@@ -107,7 +107,7 @@ public class StatementPrototype
 	 */
 	private void addValue(PreparedStatement ps, int index, Object o) throws SQLException
 	{
-		Tools.setParameter(ps, o.getClass(), index,o);
+		Tools.setParameter(ps, o.getClass(), index,o,adapter);
 	}
 
 	/**

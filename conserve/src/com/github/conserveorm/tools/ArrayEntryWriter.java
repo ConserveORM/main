@@ -91,7 +91,7 @@ public class ArrayEntryWriter
 			if (ObjectTools.isDatabasePrimitive(compType))
 			{
 				// The array entry is a primitive type, add it directly
-				Tools.setParameter(ps, compType, 3, value);
+				Tools.setParameter(ps, compType, 3, value,adapter);
 				Integer compTypeNameId = adapter.getPersist().getClassNameNumberMap().getNumber(cw, compType);
 				ps.setInt(4, compTypeNameId);
 				Tools.logFine(ps);

@@ -42,106 +42,76 @@ public class Tools
 	 * @param value
 	 * @throws SQLException
 	 */
-	public static void setParameter(PreparedStatement ps, Class<?> clazz, int i, Object value) throws SQLException
+	public static void setParameter(PreparedStatement ps, Class<?> clazz, int i,
+			Object value, AdapterBase adapter) throws SQLException
 	{
-		if (clazz.isPrimitive())
+		if (clazz.equals(Boolean.class) || clazz.equals(boolean.class))
 		{
-			if (clazz.equals(boolean.class))
+			if (!adapter.setBooleanIsBroken())
 			{
 				ps.setBoolean(i, (Boolean) value);
 			}
-			else if (clazz.equals(byte.class))
+			else
 			{
-				ps.setByte(i, (Byte) value);
-			}
-			else if (clazz.equals(short.class))
-			{
-				ps.setShort(i, (Short) value);
-			}
-			else if (clazz.equals(char.class))
-			{
-				ps.setInt(i, (Character) value);
-			}
-			else if (clazz.equals(int.class))
-			{
-				ps.setInt(i, (Integer) value);
-			}
-			else if (clazz.equals(long.class))
-			{
-				ps.setLong(i, (Long) value);
-			}
-			else if (clazz.equals(float.class))
-			{
-				ps.setFloat(i, (Float) value);
-			}
-			else if (clazz.equals(double.class))
-			{
-				ps.setDouble(i, (Double) value);
+				// the database engine can't handle setBoolean properly,
+				// circumvent it by converting to int.
+				ps.setInt(i, ((Boolean) value) ? 1 : 0);
 			}
 		}
-		else
+		else if (clazz.equals(Byte.class) || clazz.equals(byte.class))
 		{
-			if (clazz.equals(Boolean.class))
-			{
-				ps.setBoolean(i, (Boolean) value);
-			}
-			else if (clazz.equals(Byte.class))
-			{
-				ps.setByte(i, (Byte) value);
-			}
-			else if (clazz.equals(Short.class))
-			{
-				ps.setShort(i, (Short) value);
-			}
-			else if (clazz.equals(Character.class))
-			{
-				ps.setInt(i, (Character) value);
-			}
-			else if (clazz.equals(Integer.class))
-			{
-				ps.setInt(i, (Integer) value);
-			}
-			else if (clazz.equals(Long.class))
-			{
-				ps.setLong(i, (Long) value);
-			}
-			else if (clazz.equals(Float.class))
-			{
-				ps.setFloat(i, (Float) value);
-			}
-			else if (clazz.equals(Double.class))
-			{
-				ps.setDouble(i, (Double) value);
-			}
-			else if (clazz.equals(String.class) || clazz.equals(Enum.class))
-			{
-				ps.setString(i, value.toString());
-			}
-			else if (clazz.equals(java.sql.Date.class))
-			{
-				ps.setDate(i, (java.sql.Date) value);
-			}
-			else if (clazz.equals(java.sql.Time.class))
-			{
-				ps.setTime(i, (java.sql.Time) value);
-			}
-			else if (clazz.equals(java.sql.Timestamp.class))
-			{
-				ps.setTimestamp(i, (java.sql.Timestamp) value);
-			}
-			else if (clazz.equals(Clob.class))
-			{
-				char[] array = (char[]) value;
-				CharArrayReader reader = new CharArrayReader(array);
-				ps.setCharacterStream(i, reader, array.length);
-			}
-			else if (clazz.equals(Blob.class))
-			{
-				ps.setBytes(i, (byte[]) value);
-			}
-
+			ps.setByte(i, (Byte) value);
 		}
-
+		else if (clazz.equals(Short.class) || clazz.equals(short.class))
+		{
+			ps.setShort(i, (Short) value);
+		}
+		else if (clazz.equals(Character.class) || clazz.equals(char.class))
+		{
+			ps.setInt(i, (Character) value);
+		}
+		else if (clazz.equals(Integer.class) || clazz.equals(int.class))
+		{
+			ps.setInt(i, (Integer) value);
+		}
+		else if (clazz.equals(Long.class) || clazz.equals(long.class))
+		{
+			ps.setLong(i, (Long) value);
+		}
+		else if (clazz.equals(Float.class) || clazz.equals(float.class))
+		{
+			ps.setFloat(i, (Float) value);
+		}
+		else if (clazz.equals(Double.class) || clazz.equals(double.class))
+		{
+			ps.setDouble(i, (Double) value);
+		}
+		else if (clazz.equals(String.class) || clazz.equals(Enum.class))
+		{
+			ps.setString(i, value.toString());
+		}
+		else if (clazz.equals(java.sql.Date.class))
+		{
+			ps.setDate(i, (java.sql.Date) value);
+		}
+		else if (clazz.equals(java.sql.Time.class))
+		{
+			ps.setTime(i, (java.sql.Time) value);
+		}
+		else if (clazz.equals(java.sql.Timestamp.class))
+		{
+			ps.setTimestamp(i, (java.sql.Timestamp) value);
+		}
+		else if (clazz.equals(Clob.class))
+		{
+			char[] array = (char[]) value;
+			CharArrayReader reader = new CharArrayReader(array);
+			ps.setCharacterStream(i, reader, array.length);
+		}
+		else if (clazz.equals(Blob.class))
+		{
+			ps.setBytes(i, (byte[]) value);
+		}
 	}
 
 	/**

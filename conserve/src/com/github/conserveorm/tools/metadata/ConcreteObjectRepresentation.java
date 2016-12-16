@@ -454,16 +454,16 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 					{
 						//save the name of the class, let the classloader handle it
 						String name = ((Class<?>)value).getName();
-						Tools.setParameter(ps, String.class, index, name);
+						Tools.setParameter(ps, String.class, index, name,adapter);
 					}
 					else if(c.isEnum())
 					{
 						String name = ((Enum<?>)value).name();
-						Tools.setParameter(ps, String.class, index, name);
+						Tools.setParameter(ps, String.class, index, name,adapter);
 					}
 					else if (ObjectTools.isDatabasePrimitive(c))
 					{
-						Tools.setParameter(ps, c, index, value);
+						Tools.setParameter(ps, c, index, value,adapter);
 					} 
 					else
 					{

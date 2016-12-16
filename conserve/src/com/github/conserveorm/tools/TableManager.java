@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -411,12 +412,12 @@ public class TableManager
 		DatabaseMetaData metaData = c.getMetaData();
 		ResultSet rs = metaData.getColumns(catalog, null, tableName, columnName);
 		boolean res = false;
-		if (rs.next())
+		while (rs.next())
 		{
-			res = true;
-			if (rs.next())
+			if(rs.getString("COLUMN_NAME").equalsIgnoreCase(columnName))
 			{
-				throw new SQLException("Multiple results found for table " + tableName + " and column " + columnName);
+				res = true;
+				break;
 			}
 		}
 		return res;

@@ -44,4 +44,10 @@ public class SqlDroidAdapter extends SqLiteAdapter
 	{
 		return true;
 	}
+	
+	@Override
+	public boolean setBooleanIsBroken()
+	{
+		return true;
+	}
 }

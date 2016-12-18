@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +46,7 @@ public class DataConnectionPool
 	private int lastConnection = 0;
 
 	private Object mutex = new Object();
+	private Properties properties;
 
 	private static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
 
@@ -63,12 +65,23 @@ public class DataConnectionPool
 	 *            The login name, can be null if the database allows it.
 	 * @param pw
 	 *            The login password, can be null if the database allows it.
+	 * @param properties name-value pairs to be passed to the database engine when creating a new connection
 	 */
-	public DataConnectionPool(int poolsize, String driver, String db, String uname, String pw) throws SQLException
+	public DataConnectionPool(int poolsize, String driver, String db, String uname, String pw, Properties properties) throws SQLException
 	{
 		this.dataBase = db;
 		this.userName = uname;
 		this.password = pw;
+		this.properties = properties;
+		if(userName !=null)
+		{
+			this.properties.put("user", userName);
+		}
+		if(password!=null)
+		{
+			this.properties.put("password", password);
+		}
+		
 		this.pool = new ArrayList<ConnectionWrapper>();
 
 		if (driver != null)
@@ -97,7 +110,7 @@ public class DataConnectionPool
 			{
 				try
 				{
-					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName, this.password)));
+					pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.properties)));
 				}
 				catch (Exception e)
 				{
@@ -173,7 +186,7 @@ public class DataConnectionPool
 			LOGGER.fine("Increasing pool size from " + pool.size() + " to " + newsize + " connections.");
 			while (pool.size() < newsize)
 			{
-				pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.userName, this.password)));
+				pool.add(new ConnectionWrapper(DriverManager.getConnection(this.dataBase, this.properties)));
 			}
 		}
 	}
@@ -186,17 +199,22 @@ public class DataConnectionPool
 		{
 			synchronized (this.mutex)
 			{
+				// this is a workaround for a bug in some databases that
+				// won't properly close connections if they're not in
+				// autocommit mode
+				for (ConnectionWrapper cw : pool)
+				{
+					cw.setTaken(true);
+					cw.commit();
+					cw.getConnection().setAutoCommit(true);
+				}
 				while (!pool.isEmpty())
 				{
-					pool.get(0).setTaken(true);
 					Connection c = pool.get(0).getConnection();
-					c.commit();
-				
-					//this is a workaround for a bug in some databases that 
-					//won't properly close connections if they're not in autocommit mode
-					c.setAutoCommit(true);
-					
-					c.close();
+					if (!c.isClosed())
+					{
+						c.close();
+					}
 					pool.remove(0);
 				}
 				this.pool = null;

@@ -134,11 +134,11 @@ public class Persist
 
 	void initialize(String driver, String connectionstring, String username, String password) throws SQLException
 	{
-		// create the pool
-		connectionPool = new DataConnectionPool(1, driver, connectionstring, username, password);
-		// set up the default adapter
+		// set up the database engine adapter
 		adapter = selectAdapter(connectionstring);
 		LOGGER.fine("Selected adapter: " + NameGenerator.getSystemicName(adapter.getClass()) + " for connection " + connectionstring);
+		// create the pool
+		connectionPool = new DataConnectionPool(1, driver, connectionstring, username, password,adapter.getAdapterSpecificProperties());
 		// set up a new protection manager
 		protectionManager = new ProtectionManager(adapter);
 		// set up the object responsible for updating objects
@@ -232,7 +232,7 @@ public class Persist
 	/**
 	 * Indicate whether tables and indices should be automatically created.
 	 * 
-	 * @param createSchema
+	 * @param createSchema if true, schema will be created. 
 	 */
 	public void setCreateSchema(boolean createSchema)
 	{
@@ -259,7 +259,6 @@ public class Persist
 	 * returned object.
 	 * 
 	 * @return a ready-to-use ConnectionWrapper object.
-	 * @throws SQLException
 	 */
 	public ConnectionWrapper getConnectionWrapper() throws SQLException
 	{
@@ -367,12 +366,8 @@ public class Persist
 	 * This is a helper method that is only called once the possibility of a
 	 * circular reference has been indicated.
 	 * 
-	 * @param cw
-	 * @param clazz
-	 * @param where
-	 * @return
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
+	 * @param clazz the class to delete
+	 * @param ids the database ids of the objects to delete
 	 */
 	private int deleteClassHelper(ConnectionWrapper cw, Class<?> clazz, List<Long> ids) throws SQLException, ClassNotFoundException
 	{
@@ -407,7 +402,6 @@ public class Persist
 	 * 
 	 * @return true if one object was deleted, false otherwise.
 	 * 
-	 * @throws SQLException
 	 */
 	public boolean deleteObject(ConnectionWrapper cw,Class<?> clazz, Long id ) throws SQLException
 	{
@@ -428,11 +422,9 @@ public class Persist
 	/**
 	 * Delete one particular object.
 	 * 
-	 * @param tableName
-	 * @param id
-	 * @param cw
+	 * @param tableName the table to delete from
+	 * @param id the database ID of the object to delete
 	 * @return true if one object was deleted, false otherwise.
-	 * @throws SQLException
 	 */
 	public boolean deleteObject(ConnectionWrapper cw,String tableName, Long id) throws SQLException
 	{
@@ -470,10 +462,7 @@ public class Persist
 	/**
 	 * Delete the array with the given id.
 	 * 
-	 * @param id
-	 * @param cw
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
+	 * @param id the database id of the array to delete.
 	 */
 	private boolean deleteArray(ConnectionWrapper cw,Long id) throws SQLException, ClassNotFoundException
 	{
@@ -568,8 +557,6 @@ public class Persist
 	 *            the ID of the class
 	 * @param cw
 	 *            the connection wrapper
-	 * @return
-	 * @throws SQLException
 	 */
 	private boolean deleteObjectHelper(ConnectionWrapper cw,Class<?> clazz, Long id) throws SQLException
 	{
@@ -598,7 +585,6 @@ public class Persist
 	 * 
 	 * @param id
 	 *            the id of the object who's properties we are deleting.
-	 * @throws SQLException
 	 */
 	private void deletePropertiesOf(ConnectionWrapper cw,Long id) throws SQLException
 	{
@@ -667,8 +653,6 @@ public class Persist
 	 *            the clause to distinguish (can be null if id is given).
 	 * @param id the database id of the object to search for (can be null if
 	 *         clause is given).
-	 * @throws ClassNotFoundException
-	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
 	<T> HashMap<Class<?>, List<Long>> getObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, String className,List<Class<?>>classes, Clause clause, Long id)
@@ -730,8 +714,6 @@ public class Persist
 	 *            the clause to distinguish (can be null if id is given).
 	 * @param id the database id of the object to search for (can be null if
 	 *         clause is given).
-	 * @throws ClassNotFoundException
-	 * @throws SQLException
 	 */
 	private <T> void unprotectObjectsExternal(ConnectionWrapper cw, Class<T> clazz, Clause clause)
 			throws ClassNotFoundException, SQLException
@@ -776,8 +758,6 @@ public class Persist
 	 *            the C__ID entries to delete.
 	 *            
 	 *  
-	 * @throws ClassNotFoundException
-	 * @throws SQLException
 	 */
 	private <T> int  fastDelete(ConnectionWrapper cw, Class<T> clazz, List<Long>ids, List<Class<?>>deletedClasses)
 			throws ClassNotFoundException, SQLException
@@ -877,8 +857,6 @@ public class Persist
 	 * @param classes classes that are subclasses of or equal to clazz
 	 * @param clause
 	 *            the clause to distinguish.
-	 * @throws ClassNotFoundException
-	 * @throws SQLException
 	 */
 	private <T> HashMap<Class<?>, List<Long>> getUnprotectedObjectDescriptors(ConnectionWrapper cw, Class<T> clazz, List<Class<?>>classes, Clause clause)
 			throws ClassNotFoundException, SQLException
@@ -932,8 +910,6 @@ public class Persist
 	 * @param propertyVector the list of objects with name-value pairs.
 	 * @param clazz the class we searched for
 	 * @param classes all classes that a reference of type clazz can actually point to.
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
 	 */
 	private void populateObjectDescriptorsFromPropertyVector(ConnectionWrapper cw,HashMap<Class<?>, 
 			List<Long>> res, 
@@ -1091,7 +1067,6 @@ public class Persist
 	 * Get the last id/unique id inserted into the named table by this
 	 * connection
 	 * 
-	 * @throws SQLException
 	 */
 	public long getLastId(ConnectionWrapper cw, String tableName) throws SQLException
 	{
@@ -1113,10 +1088,6 @@ public class Persist
 	 * 
 	 * @param object
 	 *            the object to save.
-	 * @throws IOException
-	 * @throws SQLException
-	 * 
-	 * @throws SQLException
 	 */
 	public Long saveObjectUnprotected(ConnectionWrapper cw, Object object) throws SQLException, IOException
 	{
@@ -1132,7 +1103,6 @@ public class Persist
 	 *            the connection wrapper used for this transaction.
 	 * @return the database id of the saved object, or null if the object was
 	 *         not saved.
-	 * @throws SQLException
 	 */
 	public Long saveObjectUnprotected(ConnectionWrapper cw, Object object, DelayedInsertionBuffer delayBuffer) throws SQLException
 	{
@@ -1213,7 +1183,6 @@ public class Persist
 	 * @param cw
 	 *            the connection wrapper to use for this operation.
 	 * @return an ArrayList of the desired type.
-	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> List<T> getObjects(ConnectionWrapper cw, Class<T> clazz, Clause... clauses) throws SQLException
@@ -1316,7 +1285,6 @@ public class Persist
 	 *            the class of returned objects.
 	 * @param clauses
 	 *            the optional search parameters.
-	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> void getObjects(ConnectionWrapper cw, SearchListener<T> listener, Class<T> clazz, Clause... clauses) throws SQLException
@@ -1472,7 +1440,6 @@ public class Persist
 	 *            the connection wrapper for this operation.
 	 * @return the number of objects of class clazz and its subclasses that
 	 *         satisfy clause.
-	 * @throws SQLException
 	 */
 	<T> long getCount(ConnectionWrapper cw, Class<T> clazz, Clause... clause) throws SQLException
 	{

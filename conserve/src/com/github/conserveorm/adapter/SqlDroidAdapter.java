@@ -18,6 +18,8 @@
  *******************************************************************************/
 package com.github.conserveorm.adapter;
 
+import java.util.Properties;
+
 import com.github.conserveorm.Persist;
 
 /**
@@ -30,6 +32,15 @@ public class SqlDroidAdapter extends SqLiteAdapter
 	public SqlDroidAdapter(Persist persist)
 	{
 		super(persist);
+	}
+	
+	@Override
+	public Properties getAdapterSpecificProperties()
+	{
+		Properties res = super.getAdapterSpecificProperties();
+		//set android.database.sqlite.SQLiteDatabase.NO_LOCALIZED_COLLATORS flag
+		res.put("AdditionalDatabaseFlags", 16);
+		return res;
 	}
 	
 	@Override

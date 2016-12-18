@@ -1676,6 +1676,7 @@ public abstract class PersistTest
 
 		// make sure no Layer2 objects remain
 		assertEquals(0, objects.size());
+		persist.close();
 	}
 
 	/**
@@ -1990,13 +1991,9 @@ public abstract class PersistTest
 		persistOne.saveObject(co);
 		persistTwo.refresh(complexCopy);
 		assertNotNull(complexCopy.getSimplestObject());
-		
-		
-		
-		
-		
-		persistOne.close();
+
 		persistTwo.close();
+		persistOne.close();
 	}
 
 	/**
@@ -2421,6 +2418,7 @@ public abstract class PersistTest
 		// make sure oo2.otherObject still exists, as SimplestObject is an
 		// acceptable subclass
 		assertNotNull(obj.getOtherObject());
+		pm.close();
 
 		// change subclass to superclass
 		pm = new PersistenceManager(driver, database, login, password);
@@ -3130,8 +3128,8 @@ public abstract class PersistTest
 		pm1.dropTable(Object.class);
 		pm2.dropTable(Object.class);
 
-		pm1.close();
 		pm2.close();
+		pm1.close();
 		pm1 = new PersistenceManager(driver, database, login, password);
 		pm2 = new PersistenceManager(driver, database, login, password);
 
@@ -3161,8 +3159,8 @@ public abstract class PersistTest
 		objects = pm2.getObjects(SimpleObject.class, new All());
 		assertEquals(2, objects.size());
 
-		pm1.close();
 		pm2.close();
+		pm1.close();
 
 	}
 
@@ -4507,6 +4505,7 @@ public abstract class PersistTest
 		assertNull(first.getName());
 		assertNull(first.getScale());
 		assertNull(first.getAge());
+		pm.close();
 	}
 	
 	/**
@@ -4785,7 +4784,7 @@ public abstract class PersistTest
 	public void testDatabasePool() throws Exception
 	{
 		//test normal operation
-		DataConnectionPool dcp = new DataConnectionPool(1, driver, database, login, password);
+		DataConnectionPool dcp = new DataConnectionPool(1, driver, database, login, password,new Properties());
 		dcp.getConnectionWrapper().commitAndDiscard();
 		dcp.getConnectionWrapper().rollbackAndDiscard();
 		//get several connection wrappers
@@ -4805,7 +4804,7 @@ public abstract class PersistTest
 		boolean thrown = false;
 		try
 		{
-			dcp = new DataConnectionPool(1,driver,null,login,password);
+			dcp = new DataConnectionPool(1,driver,null,login,password,new Properties());
 			dcp.cleanUp();
 		}
 		catch(SQLException e)
@@ -4816,7 +4815,7 @@ public abstract class PersistTest
 		thrown = false;
 		try
 		{
-			dcp = new DataConnectionPool(1,"completely fake driver",database,login,password);
+			dcp = new DataConnectionPool(1,"completely fake driver",database,login,password,new Properties());
 			dcp.cleanUp();
 		}
 		catch(SQLException e)
@@ -4832,7 +4831,7 @@ public abstract class PersistTest
 	@Test
 	public void testRollback() throws Exception
 	{
-		DataConnectionPool dcp = new DataConnectionPool(1, driver, database, login, password);
+		DataConnectionPool dcp = new DataConnectionPool(1, driver, database, login, password,new Properties());
 		ConnectionWrapper cw = dcp.getConnectionWrapper();
 		Connection c = cw.getConnection();
 
@@ -5219,29 +5218,29 @@ public abstract class PersistTest
 	 * Test if getting an object by its database ID works.
 	 */
 	@Test
-	public void testGetObjectById() throws Exception
-	{
-		//create some dummy objects
-		PersistenceManager pm1 = new PersistenceManager(driver,database,login,password);
-		PersistenceManager pm2 = new PersistenceManager(driver,database,login,password);
-		for(int x = 0;x<50;x++)
-		{
-			SimpleObject so = new SimpleObject();
-			long id = pm1.saveObject(so);
-			so.setAge(id);
-			so.setName(Long.toString(id));
-			long id2 = pm1.saveObject(so);
-			//make sure the id is the same
-			assertEquals(id,id2);
-			
-			SimpleObject sos = pm2.getObject(SimpleObject.class,id);
-			assertEquals(so.getAge(),sos.getAge());
-			assertEquals(so.getName(),sos.getName());
-		
-		}
-		pm1.close();
-		pm2.close();
-	}
+    public void testGetObjectById() throws Exception
+    {
+        PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+        //create some dummy objects
+        for(int x = 0;x<50;x++)
+        {
+
+            SimpleObject so = new SimpleObject();
+            long id = pm.saveObject(so);
+            so.setAge(id);
+            so.setName(Long.toString(id));
+            long id2 = pm.saveObject(so);
+            //make sure the id is the same
+            assertEquals(id,id2);
+            pm.close();
+
+            pm = new PersistenceManager(driver,database,login,password);
+            SimpleObject sos = pm.getObject(SimpleObject.class,id);
+            assertEquals(so.getAge(),sos.getAge());
+            assertEquals(so.getName(),sos.getName());
+        }
+        pm.close();
+    }
 	
 	/**
 	 * Test updating an object that contains other objects.

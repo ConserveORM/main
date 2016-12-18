@@ -21,6 +21,7 @@ package com.github.conserveorm.adapter;
 import java.lang.reflect.Method;
 import java.sql.Blob;
 import java.sql.Clob;
+import java.util.Properties;
 
 import com.github.conserveorm.Persist;
 import com.github.conserveorm.annotations.Indexed;
@@ -784,5 +785,15 @@ public class AdapterBase
 	{
 		//default is no, setBoolean is not broken
 		return false;
+	}
+
+	/**
+	 * Get a set of properties that are specific to the database engine.
+	 * These properties will be passed to the database engine when a new Connection is initialised.
+	 */
+	public Properties getAdapterSpecificProperties()
+	{
+		//default is no properties 
+		return new Properties();
 	}
 }

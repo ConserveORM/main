@@ -46,17 +46,16 @@ public class ProtectionManager
 		this.adapter = adapter;
 	}
 	/**
-	 * Check if an object, identified by tablename id and id, is protected
+	 * Check if an object, identified by database id, is protected
 	 * This checks references recursively because an object can contain itself.
 	 * 
-	 * @param tableId
 	 * @param databaseId
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public boolean isProtected(Integer tableId, Long databaseId, ConnectionWrapper cw) throws SQLException
+	public boolean isProtected( Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
-		DependentSet depSet = new DependentSet(tableId, databaseId, cw);
+		DependentSet depSet = new DependentSet( databaseId, cw);
 		return depSet.isProtected();
 	}
 	
@@ -64,20 +63,18 @@ public class ProtectionManager
 	/**
 	 * Check if a given table id and db id combination is protected.
 	 * 
-	 * @param tableId the id of the table - @see com.github.conserveorm.tools.TableNameNumberMap 
 	 * @param databaseId
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public boolean isProtectedExternal(Integer tableId, Long databaseId, ConnectionWrapper cw) throws SQLException
+	public boolean isProtectedExternal( Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("SELECT * FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_TABLE IS NULL AND OWNER_ID IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE OWNER_TABLE IS NULL AND OWNER_ID IS NULL AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		ps.setInt(1, tableId);
-		ps.setLong(2, databaseId);
+		ps.setLong(1, databaseId);
 		Tools.logFine(ps);
 		try
 		{
@@ -160,7 +157,7 @@ public class ProtectionManager
 	 * @param propertyId
 	 *            the database id of the owned object.
 	 * @param propertyClassId
-	 *            the id of thecanonical name of the actual property class.
+	 *            the id of the canonical name of the actual property class.
 	 * @param cw
 	 *            the connection to the database.
 	 * @throws SQLException
@@ -206,24 +203,22 @@ public class ProtectionManager
 	/**
 	 * Remove the outside-reference label from the given object.
 	 * 
-	 * @param tableNameId
 	 * @param databaseId
 	 * @param cw
 	 *            the connection object.
 	 * 
 	 * @throws SQLException
 	 */
-	public void unprotectObjectExternal(Integer tableNameId, Long databaseId, ConnectionWrapper cw) throws SQLException
+	public void unprotectObjectExternal( Long databaseId, ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("DELETE FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_TABLE IS NULL AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE OWNER_TABLE IS NULL AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setInt(1, tableNameId);
-			ps.setLong(2, databaseId);
+			ps.setLong(1, databaseId);
 			Tools.logFine(ps);
 			ps.execute();
 		}
@@ -242,20 +237,18 @@ public class ProtectionManager
 	 * @param ownerTableId the table id of the owner
 	 * @param cw
 	 */
-	public void unprotectObjectInternal(Integer ownerTableId, Long ownerId, Integer propertyTableId, Long propertyId,
+	public void unprotectObjectInternal( Long ownerId,  Long propertyId,
 			ConnectionWrapper cw) throws SQLException
 	{
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("DELETE FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ? AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+		statement.append(" WHERE  OWNER_ID = ?  AND PROPERTY_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setInt(1, ownerTableId);
-			ps.setLong(2, ownerId);
-			ps.setInt(3, propertyTableId);
-			ps.setLong(4, propertyId);
+			ps.setLong(1, ownerId);
+			ps.setLong(2, propertyId);
 			Tools.logFine(ps);
 			ps.execute();
 		}
@@ -316,14 +309,12 @@ public class ProtectionManager
 		StringBuilder statement = new StringBuilder(150);
 		statement.append("SELECT COUNT(*) FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ? AND OWNER_TABLE=? AND OWNER_ID=?");
+		statement.append(" WHERE  PROPERTY_ID = ? AND OWNER_ID=?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
 		try
 		{
-			ps.setInt(1, propertyTableId);
-			ps.setLong(2, propertyId);
-			ps.setInt(3, ownerTableId);
-			ps.setLong(4, ownerId);
+			ps.setLong(1, propertyId);
+			ps.setLong(2, ownerId);
 			Tools.logFine(ps);
 			ResultSet rs = ps.executeQuery();
 			// check if the query returns no results

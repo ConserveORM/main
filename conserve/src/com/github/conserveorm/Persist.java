@@ -373,13 +373,12 @@ public class Persist
 	{
 		int deletedCount = 0;
 		String tableName = NameGenerator.getTableName(clazz, adapter);
-		Integer tableNameId = tableNameNumberMap.getNumber(cw, clazz);
 		for (Long id : ids)
 		{
 			// delete objects from cache
 			cache.purge(tableName, id);
 			// check if objects are part of other object
-			if (!protectionManager.isProtected(tableNameId, id, cw))
+			if (!protectionManager.isProtected( id, cw))
 			{
 				// if not, delete
 				deleteObject(cw, clazz, id);
@@ -483,16 +482,12 @@ public class Persist
 			Integer compTypeId = rs.getInt(1);
 			String compType = adapter.getPersist().getClassNameNumberMap().getName(cw, compTypeId);
 			Class<?> compClass = ObjectTools.lookUpClass(compType, adapter).getComponentType();
-			String propertyTableName = NameGenerator.getTableName(compClass, adapter);
-			Integer propretyTableNameId = tableNameNumberMap.getNumber(cw, propertyTableName);
 			String compTable = NameGenerator.getArrayMemberTableName(compClass, adapter);
-			Integer compTableId = tableNameNumberMap.getNumber(cw, compTable);
-			Integer arrayTableNameId = tableNameNumberMap.getNumber(cw, NameGenerator.getArrayTablename(adapter));
 			boolean isObject = !ObjectTools.isDatabasePrimitive(compClass);
 
 			// all entries are actual objects, delete them
 			StringBuilder componentQuery = new StringBuilder(
-					"SELECT " + Defaults.COMPONENT_CLASS_COL + ", " + Defaults.VALUE_COL + ", " + Defaults.ID_COL + " FROM ");
+					"SELECT " + Defaults.COMPONENT_CLASS_COL + ", " + Defaults.VALUE_COL + " FROM ");
 			componentQuery.append(compTable);
 			componentQuery.append(" WHERE " + Defaults.ARRAY_MEMBER_ID + " = ?");
 			PreparedStatement componentStmt = cw.prepareStatement(componentQuery.toString());
@@ -502,13 +497,11 @@ public class Persist
 			while (components.next())
 			{
 				Integer compClassNameId = components.getInt(1);
-				Long compId = components.getLong(3);
-				protectionManager.unprotectObjectInternal(arrayTableNameId, id, compTableId, compId, cw);
 				if (isObject)
 				{
 					Long valueId = components.getLong(2);
-					protectionManager.unprotectObjectInternal(compTableId, compId, propretyTableNameId, valueId, cw);
-					if (!protectionManager.isProtected(propretyTableNameId, valueId, cw))
+					protectionManager.unprotectObjectInternal( id,  valueId, cw);
+					if (!protectionManager.isProtected( valueId, cw))
 					{
 						String className = classNameNumberMap.getName(cw, compClassNameId);
 						Class<?>clazz = ObjectTools.lookUpClass(className, adapter);
@@ -589,7 +582,7 @@ public class Persist
 	private void deletePropertiesOf(ConnectionWrapper cw,Long id) throws SQLException
 	{
 		// find all properties, ignore arrays and array members
-		StringBuilder statement = new StringBuilder("SELECT OWNER_TABLE,PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
+		StringBuilder statement = new StringBuilder("SELECT PROPERTY_TABLE, PROPERTY_ID, PROPERTY_CLASS FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
 		//arrays have ARRAY_TABLENAME or ARRAY_MEMBER_TABLENAME* as OWNER_TABLE, null as RELATION_NAME
 		statement.append(" WHERE OWNER_ID = ? AND OWNER_TABLE IS NOT NULL  AND RELATION_NAME IS NOT NULL ");
@@ -599,23 +592,21 @@ public class Persist
 		ResultSet subObjects = query.executeQuery();
 		while (subObjects.next())
 		{
-			Integer ownerTableNameId = subObjects.getInt(1);
-			Integer propertyTableNameId = subObjects.getInt(2);
-			Long propertyId = subObjects.getLong(3);
+			Integer propertyTableNameId = subObjects.getInt(1);
+			Long propertyId = subObjects.getLong(2);
 			// unprotect the sub-object relative to the current object
-			protectionManager.unprotectObjectInternal(ownerTableNameId,id, propertyTableNameId, propertyId, cw);
+			protectionManager.unprotectObjectInternal(id,  propertyId, cw);
 			// check if the property is unprotected
-			if (!protectionManager.isProtected(propertyTableNameId, propertyId, cw))
+			if (!protectionManager.isProtected( propertyId, cw))
 			{
-				String propertyClassName = classNameNumberMap.getName(cw, subObjects.getInt(4));
+				String propertyClassName = classNameNumberMap.getName(cw, subObjects.getInt(3));
 				String propertyTableName = tableNameNumberMap.getName(cw, propertyTableNameId);
 				// delete the property itself
 				try
 				{
 					
 					//check if the property is an array
-					if (propertyTableName.equalsIgnoreCase(Defaults.ARRAY_TABLENAME)
-							|| propertyTableName.toUpperCase().startsWith(Defaults.ARRAY_MEMBER_TABLENAME) || propertyClassName.contains("["))
+					if (propertyTableName.equalsIgnoreCase(Defaults.ARRAY_TABLENAME) || propertyClassName.contains("["))
 					{
 						deleteObject(cw,propertyTableName, propertyId);
 					}
@@ -880,8 +871,7 @@ public class Persist
 		// get the id of clazz
 		String shortName = whereGenerator.getTypeStack().getActualRepresentation().getAsName();
 		sp.addLeftJoin(whereGenerator.getTypeStack().getActualRepresentation().getTableName(), shortName, Defaults.HAS_A_TABLENAME,
-				shortName + "." + Defaults.ID_COL + " = " + Defaults.HAS_A_TABLENAME + ".PROPERTY_ID AND " + Defaults.HAS_A_TABLENAME
-						+ ".OWNER_TABLE <> ?",tableNameNumberMap.getNumber(cw, NameGenerator.getArrayTablename(adapter)));
+				shortName + "." + Defaults.ID_COL + " = " + Defaults.HAS_A_TABLENAME + ".PROPERTY_ID ");
 		sp.addConditionalStatement(Defaults.HAS_A_TABLENAME + ".PROPERTY_ID IS NULL");
 
 		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
@@ -1145,7 +1135,7 @@ public class Persist
 		{
 			// the object exists in the database
 			res = databaseId;
-			if (protect && !protectionManager.isProtectedExternal(tableNameId, databaseId, cw))
+			if (protect && !protectionManager.isProtectedExternal( databaseId, cw))
 			{
 				protectionManager.protectObjectExternal(tableNameId, databaseId, classNameId, cw);
 			}

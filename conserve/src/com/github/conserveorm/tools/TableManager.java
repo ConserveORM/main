@@ -55,6 +55,7 @@ import com.github.conserveorm.tools.metadata.ObjectStack.Node;
 import com.github.conserveorm.tools.protection.ProtectionManager;
 
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * This object is responsible for creating tables and checking if tables exist.
@@ -64,7 +65,7 @@ import java.util.Set;
  */
 public class TableManager
 {
-	private int schemaTypeVersion = 2;
+	private final int schemaTypeVersion = 3;
 	private boolean createSchema;
 	private DataConnectionPool connectionPool;
 	private AdapterBase adapter;
@@ -325,6 +326,71 @@ public class TableManager
 		if (existingSchema < 2)
 		{
 			throw new RuntimeException("This version of Conserve can not load databases with version less than 2.");
+		}
+		else if(existingSchema == 2)
+		{
+			//get the table name map
+			TableNameNumberMap tnMap = new TableNameNumberMap(adapter);
+			tnMap.initialise(cw);
+			//remove intermediary protection entries,
+			//entries are protected directly by the array they are part of
+			Tools.LOGGER.log(Level.INFO,"Updating schema from version " +existingSchema +" to "+ this.schemaTypeVersion);
+			int tableNameId = tnMap.getNumber(cw,NameGenerator.getArrayTablename(adapter));
+			
+			//get a list of all intermediaries tables
+			List<Integer>intermediaries = new ArrayList<>();
+			String allIntermediaries = "SELECT DISTINCT(PROPERTY_TABLE) FROM " + Defaults.HAS_A_TABLENAME + " WHERE OWNER_TABLE = ?";
+			PreparedStatement allIntermedQuery = cw.prepareStatement(allIntermediaries);
+			allIntermedQuery.setInt(1, tableNameId);
+			Tools.logFine(allIntermedQuery);
+			ResultSet res = allIntermedQuery.executeQuery();
+			while(res.next())
+			{
+				intermediaries.add(res.getInt(1));
+			}
+			allIntermedQuery.close();
+			
+			//update all array entries
+			
+			String updateStatement = "UPDATE " + Defaults.HAS_A_TABLENAME +" SET PROPERTY_TABLE = ?, PROPERTY_ID = ? WHERE OWNER_TABLE = ? AND OWNER_ID = ?";
+			
+			String allArrays = "SELECT A.OWNER_ID,B.PROPERTY_TABLE,B.PROPERTY_ID FROM ";
+			allArrays += Defaults.HAS_A_TABLENAME +" AS A, " +Defaults.HAS_A_TABLENAME +" AS B ";
+			allArrays += "WHERE A.PROPERTY_TABLE = B.OWNER_TABLE AND A.PROPERTY_ID = B.PROPERTY_ID AND A.OWNER_TABLE = ?";
+			PreparedStatement allArraysQuery = cw.prepareStatement(allArrays);
+			allArraysQuery.setInt(1,tableNameId);
+			Tools.logFine(allArraysQuery);
+			res = allArraysQuery.executeQuery();
+			while(res.next())
+			{
+				Long arrayId = res.getLong(1);
+				Integer propertyTable = res.getInt(2);
+				Long propertyId = res.getLong(3);
+				PreparedStatement ps = cw.prepareStatement(updateStatement);
+				ps.setInt(1, propertyTable);
+				ps.setLong(2, propertyId);
+				ps.setInt(3, tableNameId);
+				ps.setLong(4, arrayId);
+				Tools.logFine(ps);
+				ps.executeUpdate();
+				ps.close();
+			}
+			allArraysQuery.close();
+			
+			// delete all intermediaries
+			String delInter = "DELETE FROM "+Defaults.HAS_A_TABLENAME+" WHERE OWNER_TABLE = ?";
+			for(Integer inter:intermediaries)
+			{
+				
+				PreparedStatement delete = cw.prepareStatement(delInter);
+				delete.setInt(1, inter);
+				Tools.logFine(delete);
+				delete.execute();
+				delete.close();
+				
+			}
+			
+			updateAllRelations(Defaults.SCHEMA_VERSION_TABLENAME,"VERSION" , existingSchema, this.schemaTypeVersion, cw);
 		}
 	}
 
@@ -1058,9 +1124,9 @@ public class TableManager
 				// remove the reference
 				setReferenceTo(ownerTable, innerRes.getLong(1), relationName, null, cw);
 				// remove protection entry
-				pm.unprotectObjectInternal( ownerTableId,innerRes.getLong(1), propertyTableId, innerRes.getLong(3), cw);
+				pm.unprotectObjectInternal( innerRes.getLong(1),  innerRes.getLong(3), cw);
 				// if item is unprotected, remove it
-				if (!pm.isProtected(propertyTableId, innerRes.getLong(3), cw))
+				if (!pm.isProtected( innerRes.getLong(3), cw))
 				{
 					String propertyTableName = adapter.getPersist().getTableNameNumberMap().getName(cw, propertyTableId);
 					Class<?> lookUpClass = ObjectTools.lookUpClass(getClassForTableName(propertyTableName, cw), adapter);
@@ -1529,68 +1595,36 @@ public class TableManager
 			createColumn(movedField.getToTable(), movedField.getToName(), movedField.getToClass(),movedField.getToSize(), cw);
 		}
 		// copy all values
-		if (adapter.isSupportsJoinInUpdate())
-		{
-			StringBuilder query = new StringBuilder();
-			query.append("UPDATE ");
-			query.append(movedField.getToTable());
-			query.append(" SET ");
-			// query.append(movedField.getToTable());
-			// query.append(".");
-			query.append(movedField.getToName());
-			query.append(" = (SELECT ");
-			query.append(movedField.getFromTable());
-			query.append(".");
-			query.append(movedField.getFromName());
-			query.append(" FROM ");
-			query.append(movedField.getFromTable());
-			query.append(" WHERE ");
-			query.append(movedField.getFromTable());
-			query.append(".");
-			query.append(Defaults.ID_COL);
-			query.append(" = ");
-			query.append(movedField.getToTable());
-			query.append(".");
-			query.append(Defaults.ID_COL);
-			query.append(")");
-			PreparedStatement ps = cw.prepareStatement(query.toString());
-			Tools.logFine(ps);
-			ps.executeUpdate();
-		}
-		else
-		{
-			// we'll have to join manually
-			// underlying database does not support joins in UPDATE statements,
-			// use alternate form
-			StringBuilder query = new StringBuilder();
-			query.append("UPDATE ");
-			query.append(movedField.getToTable());
-			query.append(" SET ");
-			query.append(movedField.getToName());
-			query.append(" = (SELECT ");
-			query.append(movedField.getFromName());
-			query.append(" FROM ");
-			query.append(movedField.getFromTable());
-			query.append(" WHERE ");
-			query.append(Defaults.ID_COL);
-			query.append(" = ");
-			query.append(movedField.getToTable());
-			query.append(".");
-			query.append(Defaults.ID_COL);
-			query.append(")");
-			PreparedStatement ps = cw.prepareStatement(query.toString());
-			Tools.logFine(ps);
-			ps.executeUpdate();
-
-		}
-
+		StringBuilder query = new StringBuilder();
+		query.append("UPDATE ");
+		query.append(movedField.getToTable());
+		query.append(" SET ");
+		query.append(movedField.getToName());
+		query.append(" = (SELECT ");
+		query.append(movedField.getFromTable());
+		query.append(".");
+		query.append(movedField.getFromName());
+		query.append(" FROM ");
+		query.append(movedField.getFromTable());
+		query.append(" WHERE ");
+		query.append(movedField.getFromTable());
+		query.append(".");
+		query.append(Defaults.ID_COL);
+		query.append(" = ");
+		query.append(movedField.getToTable());
+		query.append(".");
+		query.append(Defaults.ID_COL);
+		query.append(")");
+		PreparedStatement ps = cw.prepareStatement(query.toString());
+		Tools.logFine(ps);
+		ps.executeUpdate();
 		Persist pers = adapter.getPersist();
 		// move protection entries
 		// move table names
 		StringBuilder sb = new StringBuilder("UPDATE ");
 		sb.append(Defaults.HAS_A_TABLENAME);
 		sb.append(" SET OWNER_TABLE = ? WHERE OWNER_TABLE = ? AND RELATION_NAME = ?");
-		PreparedStatement ps = cw.prepareStatement(sb.toString());
+		ps = cw.prepareStatement(sb.toString());
 		ps.setInt(1, pers.getTableNameNumberMap().getNumber(cw, movedField.getToTable()));
 		ps.setInt(2, pers.getTableNameNumberMap().getNumber(cw, movedField.getFromTable()));
 		ps.setInt(3, pers.getColumnNameNumberMap().getNumber(cw, movedField.getFromName()));
@@ -1791,7 +1825,6 @@ public class TableManager
 		// Get affected entries from HAS_A table
 		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append("OWNER_ID,");
-		statement.append("PROPERTY_TABLE,");
 		statement.append("PROPERTY_ID,");
 		statement.append("PROPERTY_CLASS");
 		statement.append(" FROM ");
@@ -1813,9 +1846,8 @@ public class TableManager
 		{
 			// get data on one instance
 			Long ownerId = rs.getLong(1);
-			Integer propertyTableId = rs.getInt(2);
-			Long propertyId = rs.getLong(3);
-			Integer propertyClassNameId = rs.getInt(4);
+			Long propertyId = rs.getLong(2);
+			Integer propertyClassNameId = rs.getInt(3);
 			String propertyClassName = adapter.getPersist().getClassNameNumberMap().getName(cw, propertyClassNameId);
 			Class<?> sourceClass = ObjectTools.lookUpClass(propertyClassName, adapter);
 			// check compatibility
@@ -1830,9 +1862,9 @@ public class TableManager
 				// null the reference in the owner table
 				setReferenceTo(tableName, ownerId, colName, null, cw);
 				// remove protection
-				pm.unprotectObjectInternal(tableNameId, ownerId, propertyTableId, propertyId, cw);
+				pm.unprotectObjectInternal( ownerId,  propertyId, cw);
 				// if entity is unprotected,
-				if (!pm.isProtected(propertyTableId, propertyId, cw))
+				if (!pm.isProtected( propertyId, cw))
 				{
 					// then delete the entity
 					adapter.getPersist().deleteObject(cw,sourceClass, propertyId);
@@ -2125,9 +2157,9 @@ public class TableManager
 			if (!rs.wasNull())
 			{
 				// remove protection
-				pm.unprotectObjectInternal( tableNameId,ownerId, propertyTableId, propertyId, cw);
+				pm.unprotectObjectInternal( ownerId,  propertyId, cw);
 				// if entity is unprotected,
-				if (!pm.isProtected(propertyTableId, propertyId, cw))
+				if (!pm.isProtected( propertyId, cw))
 				{
 					// then delete the entity
 					String propertyClassName = adapter.getPersist().getClassNameNumberMap().getName(cw, propertyClassNameId);

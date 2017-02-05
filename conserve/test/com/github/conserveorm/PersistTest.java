@@ -79,6 +79,7 @@ import com.github.conserveorm.objects.ComplexArrayObject;
 import com.github.conserveorm.objects.ComplexObject;
 import com.github.conserveorm.objects.DateObject;
 import com.github.conserveorm.objects.EnumContainer;
+import com.github.conserveorm.objects.InfiniteRepititionCollection;
 import com.github.conserveorm.objects.LessSimpleObject;
 import com.github.conserveorm.objects.ListContainingObject;
 import com.github.conserveorm.objects.MyEnum;
@@ -5735,7 +5736,7 @@ public abstract class PersistTest
 		pm.saveObject(aco);
 		
 		//change one of the objects of the array
-		data[0]=new ComplexObject();
+		data[0] = new ComplexObject();
 		data[0].setObject("Baz");
 		
 		//re-save the complex object to ensure the array is updated
@@ -5954,5 +5955,158 @@ public abstract class PersistTest
 		
 		
 		pm.close();
+	}
+	
+	/**
+	 * Test that we can safely delete an array, even though it shares some components with another array.
+	 * @throws Exception
+	 */
+	@Test
+	public void testCrossingArrays() throws Exception
+	{
+		
+		SimplestObject so1 = new SimplestObject();
+		so1.setFoo(1.0);
+		SimplestObject so2 = new SimplestObject();
+		so2.setFoo(2.0);
+		ObjectArrayContainingObject oaco1 = new ObjectArrayContainingObject();
+		oaco1.setData(new Object[]{so1,so2});
+		ObjectArrayContainingObject oaco2 = new ObjectArrayContainingObject();
+		oaco2.setData(new Object[]{so1});
+		
+
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+		pm.saveObject(oaco1);
+		pm.saveObject(oaco2);
+		pm.deleteObject(oaco2);
+		List<ObjectArrayContainingObject> list = pm.getObjects(ObjectArrayContainingObject.class, new All());
+		assertEquals(1,list.size());
+		ObjectArrayContainingObject res = list.get(0);
+		assertEquals(2,res.getData().length);
+		assertNotNull(res.getData()[0]);
+		assertNotNull(res.getData()[1]);
+		
+		SimplestObject so1b = (SimplestObject) res.getData()[0];
+		SimplestObject so2b = (SimplestObject) res.getData()[1];
+		
+		assertEquals(1.0,so1b.getFoo(),0.001);
+		assertEquals(2.0,so2b.getFoo(),0.001); 
+		
+		//delete the objects in the array
+		pm.deleteObject(so1b);
+		pm.deleteObject(so2b);
+		
+		list = pm.getObjects(ObjectArrayContainingObject.class, new All());
+		assertEquals(1,list.size());
+		res = list.get(0);
+		assertEquals(2,res.getData().length);
+		assertNotNull(res.getData()[0]);
+		assertNotNull(res.getData()[1]);
+		
+		so1b = (SimplestObject) res.getData()[0];
+		so2b = (SimplestObject) res.getData()[1];
+		
+		assertEquals(1.0,so1b.getFoo(),0.001);
+		assertEquals(2.0,so2b.getFoo(),0.001); 
+		
+		pm.close();
+	}
+	
+	/**
+	 * Test that objects containing collections recursively are handled correctly.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testSubCategories() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver,database,login,password);
+
+		InfiniteRepititionCollection a = new InfiniteRepititionCollection("a");
+		InfiniteRepititionCollection b = new InfiniteRepititionCollection("b");
+		InfiniteRepititionCollection c = new InfiniteRepititionCollection("c");
+		InfiniteRepititionCollection d = new InfiniteRepititionCollection("d");
+		InfiniteRepititionCollection e = new InfiniteRepititionCollection("e");
+		
+		a.addSubCollection(b);
+		b.addSubCollection(c);
+		b.addSubCollection(d);
+		c.addSubCollection(d);
+		d.addSubCollection(e);
+		pm.saveObject(b);
+		pm.saveObject(a);
+		pm.close();
+		
+		pm = new PersistenceManager(driver,database,login,password);
+		InfiniteRepititionCollection query = new InfiniteRepititionCollection();
+		query.setName("a");
+		List<InfiniteRepititionCollection> res = pm.getObjects(InfiniteRepititionCollection.class, new Equal(query));
+		assertEquals(1,res.size());
+		InfiniteRepititionCollection A = res.get(0);
+		pm.deleteObject(A);
+		
+		query.setName("b");
+		res = pm.getObjects(InfiniteRepititionCollection.class, new Equal(query));
+		assertEquals(1,res.size());
+		InfiniteRepititionCollection B = res.get(0);
+		assertEquals("b",B.getName());
+		assertEquals(2,B.getSubcategories().size());
+		InfiniteRepititionCollection tmp0 = B.getSubcategories().get(0);
+		InfiniteRepititionCollection tmp1 = B.getSubcategories().get(1);
+		assertEquals(1,tmp0.getSubcategories().size());
+		assertEquals(1,tmp1.getSubcategories().size());
+		if(tmp0.getName().equals("c"))
+		{
+			assertEquals("d",tmp1.getName());
+			assertEquals("d",tmp0.getSubcategories().get(0).getName());
+			assertEquals("e",tmp1.getSubcategories().get(0).getName());
+		}
+		else
+		{
+			assertEquals("d",tmp0.getName());
+			assertEquals("c",tmp1.getName());
+			assertEquals("e",tmp0.getSubcategories().get(0).getName());
+			assertEquals("d",tmp1.getSubcategories().get(0).getName());
+		}
+		pm.close();
+	}
+	
+	@Test
+	public void testCircularArrayContainers() throws Exception
+	{
+		
+		// create some authors;
+		Author asimov = new Author();
+		asimov.setBirthYear(1920);
+		asimov.setFirstName("Isaac");
+		asimov.setLastName("Asimov");
+
+		// create some books
+		Book foundation = new Book("Foundation");
+		foundation.setPublishedYear(1951);
+		foundation.addKeyWord("science fiction");
+		foundation.addKeyWord("psychohistory");
+		asimov.addBook(foundation);
+
+		// save everything
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		pm.saveObject(asimov);
+		pm.close();
+		
+		
+		pm = new PersistenceManager(driver,database,login,password);
+		pm.deleteObjects(Object.class, new All());
+		pm.close();
+		
+		
+		pm = new PersistenceManager(driver,database,login,password);
+		String arrayCount = "SELECT COUNT(*) FROM " + Defaults.HAS_A_TABLENAME;
+		ConnectionWrapper cw = pm.getConnectionWrapper();
+		ResultSet executeQuery = cw.prepareStatement(arrayCount).executeQuery();
+		assertTrue(executeQuery.next());
+		assertEquals(0,executeQuery.getInt(1));
+		cw.commitAndDiscard();
+		pm.close();
+		
 	}
 }

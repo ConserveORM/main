@@ -27,6 +27,7 @@ import java.lang.annotation.Target;
  * Class annotation that indicates that a class should be stored under a different table name than the default.
  * If the user selects two different objects to be stored under the same table name, chaos is likely to ensue.
  * 
+ * 
  * @author Erik Berglund
  *
  */

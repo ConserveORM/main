@@ -300,10 +300,9 @@ public class PersistenceManager
 		Long dbId = persist.getCache().getDatabaseId(toDelete);
 		if(dbId != null)
 		{
-			Integer tableNameId = persist.getTableNameNumberMap().getNumber(cw, toDelete.getClass());
 			ProtectionManager pm = persist.getProtectionManager();
-			pm.unprotectObjectExternal(tableNameId, dbId, cw);
-			if(!pm.isProtected(tableNameId, dbId, cw))
+			pm.unprotectObjectExternal( dbId, cw);
+			if(!pm.isProtected( dbId, cw))
 			{
 				res = persist.deleteObject(cw,toDelete.getClass(), dbId);
 			}

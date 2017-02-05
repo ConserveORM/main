@@ -47,14 +47,13 @@ public class DependentSet
 	/**
 	 * Create and populate a new set of entries that are dependent on the given entry.
 	 * 
-	 * @param tableNameId
 	 * @param id
 	 * @param cw
 	 * @throws SQLException
 	 */
-	public DependentSet(Integer tableNameId, Long id, ConnectionWrapper cw) throws SQLException
+	public DependentSet( Long id, ConnectionWrapper cw) throws SQLException
 	{
-		ProtectionEntry candidate = new ProtectionEntry(tableNameId, id);
+		ProtectionEntry candidate = new ProtectionEntry(id);
 		List<ProtectionEntry> candidates = new ArrayList<ProtectionEntry>();
 		candidates.add(candidate);
 		List<ProtectionEntry> entries = new ArrayList<ProtectionEntry>(candidates);
@@ -149,7 +148,7 @@ public class DependentSet
 	}
 
 	/**
-	 * Get a list of all objects that are references by the given entry.
+	 * Get a list of all objects that are referenced by the given entry.
 	 * 
 	 * @param entry
 	 * @param cw
@@ -160,19 +159,23 @@ public class DependentSet
 	{
 		List<ProtectionEntry> res = new ArrayList<ProtectionEntry>();
 		StringBuilder statement = new StringBuilder(100);
-		statement.append("SELECT PROPERTY_TABLE, PROPERTY_ID FROM ");
+		statement.append("SELECT  PROPERTY_ID FROM ");
 		statement.append(Defaults.HAS_A_TABLENAME);
-		statement.append(" WHERE OWNER_TABLE = ? AND OWNER_ID = ?");
+		statement.append(" WHERE OWNER_ID = ?");
 		PreparedStatement ps = cw.prepareStatement(statement.toString());
-		ps.setInt(1, entry.getPropertyTableNameId());
-		ps.setLong(2, entry.getPropertyId());
+		ps.setLong(1, entry.getPropertyId());
 		Tools.logFine(ps);
 		try
 		{
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 			{
-				ProtectionEntry nuEntry = new ProtectionEntry(rs.getInt(1), rs.getLong(2));
+				Long value = rs.getLong(1);
+				if(rs.wasNull())
+				{
+					value = null;
+				}
+				ProtectionEntry nuEntry = new ProtectionEntry(value);
 				res.add(nuEntry);
 			}
 		}
@@ -199,19 +202,23 @@ public class DependentSet
 		{
 			res = new ArrayList<ProtectionEntry>();
 			StringBuilder statement = new StringBuilder(100);
-			statement.append("SELECT OWNER_TABLE, OWNER_ID FROM ");
+			statement.append("SELECT OWNER_ID FROM ");
 			statement.append(Defaults.HAS_A_TABLENAME);
-			statement.append(" WHERE PROPERTY_TABLE = ? AND PROPERTY_ID = ?");
+			statement.append(" WHERE PROPERTY_ID = ?");
 			PreparedStatement ps = cw.prepareStatement(statement.toString());
-			ps.setInt(1, entry.getPropertyTableNameId());
-			ps.setLong(2, entry.getPropertyId());
+			ps.setLong(1, entry.getPropertyId());
 			Tools.logFine(ps);
 			try
 			{
 				ResultSet rs = ps.executeQuery();
 				while (rs.next())
 				{
-					ProtectionEntry nuEntry = new ProtectionEntry(rs.getInt(1), rs.getLong(2));
+					Long value = rs.getLong(1);
+					if(rs.wasNull())
+					{
+						value = null;
+					}
+					ProtectionEntry nuEntry = new ProtectionEntry( value);
 					res.add(nuEntry);
 				}
 			}

@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
  * of what would happen if the object was stored as an array, since arrays are mutable, but similar to how the object
  * would be treated if it was stored as a String, since strings are immutable.
  * 
- * This annotation only has meaning if it is applied to accessors which return values of type char[]. In all other cases it will be ignored.
+ * This annotation only has meaning if it is applied to ACCESSORS which return values of type char[]. In all other cases it will be ignored.
  * This annotation will be silently ignored if the underlying database management system does not support anything equivalent to the CLOB datatype.
  * 
  * @author Erik Berglund

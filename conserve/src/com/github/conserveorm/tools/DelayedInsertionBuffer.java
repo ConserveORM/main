@@ -95,11 +95,11 @@ public class DelayedInsertionBuffer
 	 *            the result of the System.identityHash code for the owning
 	 *            object.
 	 */
-	public void add(String tableName, String columnName, Long parentId,
-			Object insertionObject, Class<?> referencetype, long hash)
+	public void addArrayEntry(String tableName, String columnName, Long parentId,
+			Object insertionObject, Class<?> referencetype, long hash,String arrayTableName, Long arrayId)
 	{
 		buffer.add(new InsertionObject(tableName, columnName, parentId, insertionObject,
-				referencetype, hash));
+				referencetype, hash,arrayTableName, arrayId));
 	}
 
 	/**
@@ -186,8 +186,8 @@ public class DelayedInsertionBuffer
 						tableName = NameGenerator.getTableName(i.getReferenceType(),
 								persist.getAdapter());
 					}
-					protectionManager.protectObjectInternal(i.getTableName(), i
-							.getParentId(), i.getColumnName(), tableName, id,
+					protectionManager.protectObjectInternal(i.getProtectionParentTable(), i
+							.getProtectionParentId(), i.getColumnName(), tableName, id,
 							NameGenerator.getSystemicName(i.getInsertionObject()
 									.getClass()), cw);
 
@@ -226,16 +226,27 @@ public class DelayedInsertionBuffer
 		private Object insertionObject;
 		private Long parentId;
 		private long parentHash;
+		private String protectionParentTable;
+		private Long protectionParentId;
 		private Class<?> referenceType;
 
 		public InsertionObject(String tableName, String columnName, Long parentId,
 				Object insertionObject, Class<?> referenceType, Long parentHash)
 		{
+			this(tableName,columnName,parentId,insertionObject,referenceType,parentHash,tableName,parentId);
+		}
+
+		public InsertionObject(String tableName, String columnName,
+				Long parentId, Object insertionObject, Class<?> referenceType,
+				Long parentHash, String protectionParentTable, Long protectionParentId)
+		{
 			this.tableName = tableName;
 			this.columnName = columnName;
+			this.protectionParentId = protectionParentId;
 			this.setParentId(parentId);
 			this.insertionObject = insertionObject;
 			this.referenceType = referenceType;
+			this.protectionParentTable = protectionParentTable;
 			this.setParentHash(parentHash);
 		}
 
@@ -262,11 +273,25 @@ public class DelayedInsertionBuffer
 		public void setParentId(Long parentId)
 		{
 			this.parentId = parentId;
+			if(this.protectionParentId==null)
+			{
+				this.protectionParentId=parentId;
+			}
 		}
 
 		public Long getParentId()
 		{
 			return parentId;
+		}
+		
+		public Long getProtectionParentId()
+		{
+			return protectionParentId;
+		}
+		
+		public String getProtectionParentTable()
+		{
+			return protectionParentTable;
 		}
 
 		/**

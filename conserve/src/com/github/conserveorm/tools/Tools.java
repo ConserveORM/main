@@ -31,7 +31,7 @@ import com.github.conserveorm.adapter.AdapterBase;
 
 public class Tools
 {
-	private static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
+	public static final Logger LOGGER = Logger.getLogger(Defaults.LOGGER_NAME);
 
 	/**
 	 * Fill in the values of the prepared statement, based on the class of the

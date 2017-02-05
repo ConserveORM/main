@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
 
 /**
  * Indicates that the storage mechanism should ignore this value.
+ * Should be placed on the ACCESSOR we wish to ignore.
  * 
  * @author Erik Berglund
  *

@@ -27,6 +27,8 @@ import java.lang.annotation.Target;
  * Method annotation that indicates that the should be stored under a different column name than the default.
  * If the user selects two different values to be stored under the same column name, chaos is likely to ensue.
  * 
+ * Should be placed on the ACCESSOR.
+ * 
  * @author Erik Berglund
  */
 @Retention(RetentionPolicy.RUNTIME)

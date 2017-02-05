@@ -25,6 +25,9 @@ import java.lang.annotation.Target;
 
 /**
  * Determines that a String may not be longer than the specified length.
+ * 
+ * Should be placed on the ACCESSOR.
+ * 
  * @author Erik Berglund
  *
  */

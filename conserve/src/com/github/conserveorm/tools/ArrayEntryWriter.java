@@ -81,6 +81,7 @@ public class ArrayEntryWriter
 		builder.append(")values(?,?,?,?)");
 		String statement = builder.toString();
 		int length = Array.getLength(array);
+		String arrayTableName = NameGenerator.getArrayTablename(adapter);
 		// iterate over all the elements
 		for (int x = 0; x < length; x++)
 		{
@@ -97,14 +98,6 @@ public class ArrayEntryWriter
 				Tools.logFine(ps);
 				ps.execute();
 				ps.close();
-				// get the new id of the __ARRAY_MEMBER entry
-				Long memberId = adapter.getPersist().getLastId(cw, tableName);
-				// add a protection entry for the __ARRAY table
-				protectionManager.protectObjectInternal(
-						NameGenerator.getArrayTablename(adapter), arrayId,null, NameGenerator
-								.getArrayMemberTableName(compType, adapter),
-						memberId, NameGenerator.getSystemicName(Array.get(array,
-								x).getClass()), cw);
 
 			}
 			else
@@ -127,8 +120,8 @@ public class ArrayEntryWriter
 					memberId = adapter.getPersist().getLastId(cw, tableName);
 					// this is a circularly referenced object
 					// mark it for later insertion
-					delayBuffer.add(tableName, Defaults.VALUE_COL, memberId,
-							value, compType,System.identityHashCode(array));
+					delayBuffer.addArrayEntry(tableName, Defaults.VALUE_COL, memberId,
+							value, compType,System.identityHashCode(array),arrayTableName,arrayId);
 				}
 				else
 				{
@@ -141,7 +134,7 @@ public class ArrayEntryWriter
 				}
 
 				String valueClassName = null;
-				String propertyName = NameGenerator.getArrayTablename(adapter);
+				String propertyName = arrayTableName;
 				// add a protection entry for the __ARRAY table
 				if (!compType.isArray())
 				{
@@ -152,15 +145,11 @@ public class ArrayEntryWriter
 				}
 				if (valueId != null)
 				{
-					// protect the object with array-member table as owner
+					// protect the object with array table as owner
 					protectionManager
-							.protectObjectInternal(tableName, memberId,null,
+							.protectObjectInternal(arrayTableName, arrayId,null,
 									propertyName, valueId, valueClassName, cw);
 				}
-				// protect the array-member with array as owner
-				protectionManager.protectObjectInternal(
-						NameGenerator.getArrayTablename(adapter), arrayId, null,tableName,
-						memberId, valueClassName, cw);
 
 			}
 		}

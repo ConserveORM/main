@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * If two objects A and B share a reference to a BLOB and the object A changes its BLOB, the BLOB of object B remains unchanged.
  * This is the opposite of what would happen if the object was stored as an array, since arrays are mutable. 
  * 
- * This annotation only has meaning if it is applied to accessors which return values of type byte[].
+ * This annotation only has meaning if it is applied to ACCESSORS which return values of type byte[].
  * In all other cases it will be ignored.
  * This annotation will be silently ignored if the underlying database management system does not support anything equivalent to the BLOB datatype.
  * 

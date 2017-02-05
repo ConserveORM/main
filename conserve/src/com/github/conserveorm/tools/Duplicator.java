@@ -105,9 +105,8 @@ public class Duplicator
 			Object object) throws SQLException
 	{
 		//we know arrays are never externally referenced, so no need to copy their protection
-		Integer sourceTableNameId = source.getAdapter().getPersist().getTableNameNumberMap().getNumber(sourceCw, object.getClass());
 		Integer targetTableNameId = target.getAdapter().getPersist().getTableNameNumberMap().getNumber(targetCw, object.getClass());
-		if (source.getProtectionManager().isProtectedExternal(sourceTableNameId, source.getId(object), sourceCw))
+		if (source.getProtectionManager().isProtectedExternal( source.getId(object), sourceCw))
 		{
 			Integer targetClassNameId = target.getAdapter().getPersist().getClassNameNumberMap().getNumber(targetCw, object.getClass());
 			target.getProtectionManager().protectObjectExternal(targetTableNameId, target.getId(object),

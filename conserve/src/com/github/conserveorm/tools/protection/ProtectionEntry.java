@@ -33,6 +33,15 @@ public class ProtectionEntry
 	private Integer propertyTableNameId;
 	private Integer propertyClassNameId;
 	private String relationName;
+	
+	/**
+	 * Create a proctection entry for the given object, only identified by database id.
+	 * 
+	 */
+	public ProtectionEntry(Long propertyId)
+	{
+		this((Integer)null,propertyId);
+	}
 
 	/**
 	 * Create a new protection entry for the given property.
@@ -93,10 +102,7 @@ public class ProtectionEntry
 		if (obj instanceof ProtectionEntry)
 		{
 			ProtectionEntry other = (ProtectionEntry) obj;
-			if ((this.propertyTableNameId == null && other.propertyTableNameId == null)
-					|| (this.propertyTableNameId != null 
-						&& (this.propertyTableNameId.equals(other.propertyTableNameId) 
-							&& this.propertyId.equals(other.getPropertyId()))))
+			if ( propertyId.equals(other.getPropertyId()))
 			{
 				res = true;
 			}
@@ -107,17 +113,7 @@ public class ProtectionEntry
 	@Override
 	public int hashCode()
 	{
-		int res = this.propertyId.intValue();
-		res+=this.propertyTableNameId;
-		if(this.propertyClassNameId!=null)
-		{
-			res+=this.propertyClassNameId;
-		}
-		if(this.relationName!=null)
-		{
-			res+=this.relationName.hashCode();
-		}
-		return res;
+		return this.propertyId.intValue();
 	}
 
 	/**

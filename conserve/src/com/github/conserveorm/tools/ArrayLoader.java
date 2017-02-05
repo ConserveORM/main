@@ -185,12 +185,11 @@ public class ArrayLoader
 	{
 		relationalTableName = NameGenerator.getArrayMemberTableName(c,
 				this.adapter);
+		boolean isReference = !ObjectTools.isDatabasePrimitive(c);
 		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(Defaults.COMPONENT_CLASS_COL);
 		statement.append(",");
 		statement.append(Defaults.VALUE_COL);
-		statement.append(",");
-		statement.append(Defaults.ID_COL);
 		statement.append(" FROM ");
 		statement.append(relationalTableName);
 		statement.append(" WHERE ");
@@ -210,7 +209,14 @@ public class ArrayLoader
 			String componentClassName = adapter.getPersist().getClassNameNumberMap().getName(cw, componentClassNameId);
 			classNames.add(componentClassName);
 			tmpList.add(rs.getObject(2));
-			relationalIds.add(rs.getLong(3));
+			if(isReference)
+			{
+				relationalIds.add(rs.getLong(2));
+			}
+			else
+			{
+				relationalIds.add(null);
+			}
 
 		}
 		ps.close();
@@ -258,8 +264,6 @@ public class ArrayLoader
 	{
 		StringBuilder sb = new StringBuilder("SELECT ");
 		sb.append(Defaults.VALUE_COL);
-		sb.append(",");
-		sb.append(Defaults.ID_COL);
 		sb.append(" FROM ");
 		sb.append(Defaults.ARRAY_MEMBER_TABLE_NAME_ARRAY);
 		sb.append(" WHERE ");
@@ -278,7 +282,7 @@ public class ArrayLoader
 			while (rs.next())
 			{
 				res.add(rs.getLong(1));
-				relationalIds.add(rs.getLong(2));
+				relationalIds.add(rs.getLong(1));
 			}
 			return res;
 		}

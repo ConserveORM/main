@@ -277,7 +277,8 @@ public class Updater
 	{
 		// if the new objects are non-primitve, save them and keep their ids
 		ArrayList<TableId> nuIds = new ArrayList<TableId>();
-		if (!ObjectTools.isDatabasePrimitive(nuValues.getClass().getComponentType()))
+		boolean isReferenceType = !ObjectTools.isDatabasePrimitive(nuValues.getClass().getComponentType());
+		if (isReferenceType)
 		{
 			int length = Array.getLength(nuValues);
 			for (int x = 0; x < length; x++)
@@ -299,35 +300,33 @@ public class Updater
 		arrayLoader.loadArray(databaseId);
 		Class<?> componentType = arrayLoader.getArray().getClass()
 				.getComponentType();
-		String arrayMemberTable = NameGenerator.getArrayMemberTableName(componentType, adapter);
 		//translate table names to corresponding IDs.
-		Integer arrayMemberTableId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, arrayMemberTable);
-		Integer arrayTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw,NameGenerator.getArrayTablename(adapter) );
 		// List all members of the existing array
 		ProtectionManager protecter = adapter.getPersist()
 				.getProtectionManager();
-		for (int x = 0; x < arrayLoader.getLength(); x++)
+		if(isReferenceType)
 		{
-			Object component = arrayLoader.getEntry(x);
-			// unprotect them
-			Long ownerId = arrayLoader.getRelationalIds().get(x);
-			protecter.unprotectObjectInternal(arrayTableNameId, databaseId, arrayMemberTableId, ownerId, cw);
-				
-			// if they are non-primitive
-			if (!ObjectTools.isDatabasePrimitive(component.getClass()))
+			for (int x = 0; x < arrayLoader.getLength(); x++)
 			{
-				String propertyTable = NameGenerator.getTableName(component,
-						adapter);
-				Integer propertyTableId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, propertyTable);
-				Long propertyId = adapter.getPersist().getId(component);
-				protecter.unprotectObjectInternal(arrayMemberTableId, ownerId, propertyTableId,propertyId, cw);
-				if (!protecter.isProtected(propertyTableId, propertyId, cw)
-						&& !nuIds.contains(new TableId(propertyTable,
-								propertyId)))
+				Object component = arrayLoader.getEntry(x);
+				// unprotect them
+				Long ownerId = arrayLoader.getRelationalIds().get(x);
+				protecter.unprotectObjectInternal(databaseId, ownerId, cw);
+
+				// if they are non-primitive
+				if (!ObjectTools.isDatabasePrimitive(component.getClass()))
 				{
-					// Delete them if they have no other protection
-					adapter.getPersist().deleteObject(cw,component.getClass(),
-							propertyId);
+					String propertyTable = NameGenerator.getTableName(component,
+							adapter);
+					Long propertyId = adapter.getPersist().getId(component);
+					protecter.unprotectObjectInternal(ownerId, propertyId, cw);
+					if (!protecter.isProtected(propertyId, cw) && !nuIds
+							.contains(new TableId(propertyTable, propertyId)))
+					{
+						// Delete them if they have no other protection
+						adapter.getPersist().deleteObject(cw,
+								component.getClass(), propertyId);
+					}
 				}
 			}
 		}
@@ -396,7 +395,6 @@ public class Updater
 			throw new SQLException("Wrong number of rows updated: "
 					+ updatedCount);
 		}
-		Integer repTableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw, rep.getTableName());
 		// unprotect and optionally delete discarded values of the object
 		Persist persist = adapter.getPersist();
 		for (String nValue : nullValues)
@@ -405,25 +403,11 @@ public class Updater
 			if (propertyId != null)
 			{
 				Class<?>returnType = oStack.getRepresentation(nValue).getReturnType(nValue);
-				String tableName = null;
 				
-				if(returnType.isArray())
-				{
-					//the property is an array
-					tableName = NameGenerator.getArrayTablename(adapter);
-				}
-				else
-				{
-					Class<?> actualClass = persist.getRealClass(cw,returnType,propertyId);
-					tableName = NameGenerator.getTableName(actualClass, adapter);
-				}
-				Integer tableNameId = adapter.getPersist().getTableNameNumberMap().getNumber(cw,tableName);
-	
 				persist.getProtectionManager()
-						.unprotectObjectInternal(repTableNameId,rep.getId(),tableNameId,propertyId, cw);
+						.unprotectObjectInternal(rep.getId(),propertyId, cw);
 				if (!persist.getProtectionManager()
-						.isProtected(tableNameId,
-								propertyId, cw))
+						.isProtected(propertyId, cw))
 				{
 					persist.deleteObject(cw,returnType,propertyId);
 				}

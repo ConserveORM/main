@@ -66,7 +66,7 @@ public class ObjectFactory
 		{
 			if (ObjectTools.isDatabasePrimitive(resultClass))
 			{
-				if(resultClass.isAssignableFrom(Number.class))
+				if(Number.class.isAssignableFrom(resultClass))
 				{
 					//safe cast of numbers
 					return (T) ObjectTools.cast(resultClass, (Number)map.get(Defaults.VALUE_COL));

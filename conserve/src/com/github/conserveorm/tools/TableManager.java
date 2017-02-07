@@ -352,11 +352,12 @@ public class TableManager
 			
 			//update all array entries
 			
-			String updateStatement = "UPDATE " + Defaults.HAS_A_TABLENAME +" SET PROPERTY_TABLE = ?, PROPERTY_ID = ? WHERE OWNER_TABLE = ? AND OWNER_ID = ?";
+			String updateStatement = "UPDATE " + Defaults.HAS_A_TABLENAME +" SET PROPERTY_TABLE = ?, PROPERTY_ID = ? WHERE OWNER_TABLE = ? AND OWNER_ID = ? "
+					+ "AND PROPERTY_TABLE = ? AND PROPERTY_ID = ?";
 			
-			String allArrays = "SELECT A.OWNER_ID,B.PROPERTY_TABLE,B.PROPERTY_ID FROM ";
+			String allArrays = "SELECT A.OWNER_ID,A.PROPERTY_TABLE,A.PROPERTY_ID,B.PROPERTY_TABLE,B.PROPERTY_ID FROM ";
 			allArrays += Defaults.HAS_A_TABLENAME +" AS A, " +Defaults.HAS_A_TABLENAME +" AS B ";
-			allArrays += "WHERE A.PROPERTY_TABLE = B.OWNER_TABLE AND A.PROPERTY_ID = B.PROPERTY_ID AND A.OWNER_TABLE = ?";
+			allArrays += "WHERE A.PROPERTY_TABLE = B.OWNER_TABLE AND A.PROPERTY_ID = B.OWNER_ID AND A.OWNER_TABLE = ?";
 			PreparedStatement allArraysQuery = cw.prepareStatement(allArrays);
 			allArraysQuery.setInt(1,tableNameId);
 			Tools.logFine(allArraysQuery);
@@ -364,13 +365,17 @@ public class TableManager
 			while(res.next())
 			{
 				Long arrayId = res.getLong(1);
-				Integer propertyTable = res.getInt(2);
-				Long propertyId = res.getLong(3);
+				Integer oldPropertyTable = res.getInt(2);
+				Long oldPropertyId = res.getLong(3);
+				Integer newPropertyTable = res.getInt(4);
+				Long newPropertyId = res.getLong(5);
 				PreparedStatement ps = cw.prepareStatement(updateStatement);
-				ps.setInt(1, propertyTable);
-				ps.setLong(2, propertyId);
+				ps.setInt(1, newPropertyTable);
+				ps.setLong(2, newPropertyId);
 				ps.setInt(3, tableNameId);
 				ps.setLong(4, arrayId);
+				ps.setInt(5, oldPropertyTable);
+				ps.setLong(6,oldPropertyId);
 				Tools.logFine(ps);
 				ps.executeUpdate();
 				ps.close();

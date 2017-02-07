@@ -233,8 +233,6 @@ public class ProtectionManager
 	 * 
 	 * @param ownerId the database id of the owner of the protection connection to delete.
 	 * @param propertyId the database id of the protected id to delete
-	 * @param propertyTableId the table id of the the property
-	 * @param ownerTableId the table id of the owner
 	 * @param cw
 	 */
 	public void unprotectObjectInternal( Long ownerId,  Long propertyId,

@@ -102,7 +102,15 @@ public class ProtectionEntry
 		if (obj instanceof ProtectionEntry)
 		{
 			ProtectionEntry other = (ProtectionEntry) obj;
-			if ( propertyId.equals(other.getPropertyId()))
+			if(propertyId == null && other.getPropertyId() == null) 
+			{
+				res = true;
+			}
+			else if(propertyId == null || other.getPropertyId() == null)
+			{
+				// leave res as false
+			}
+			else if ( propertyId.equals(other.getPropertyId()))
 			{
 				res = true;
 			}
@@ -113,7 +121,11 @@ public class ProtectionEntry
 	@Override
 	public int hashCode()
 	{
-		return this.propertyId.intValue();
+		if(this.propertyId!=null)
+		{
+			return this.propertyId.intValue();
+		}
+		return 0;
 	}
 
 	/**

@@ -47,5 +47,11 @@ public class Descending extends Sorter
 	{
 		return "DESC";
 	}
+	
+	@Override
+	public Sorter duplicate(Object property, Class<?> propertyClass)
+	{
+		return new Descending(property,propertyClass); 
+	}
 
 }

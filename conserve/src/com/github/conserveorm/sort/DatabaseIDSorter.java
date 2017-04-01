@@ -49,6 +49,11 @@ public class DatabaseIDSorter extends Ascending
 	{
 		return sortClass;
 	}
-	
+
+	@Override
+	public Sorter duplicate(Object property, Class<?> propertyClass)
+	{
+		return new DatabaseIDSorter(propertyClass); 
+	}
 	
 }

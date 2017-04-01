@@ -614,7 +614,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	 * Check if the represented object is primitive. Primitive objects are
 	 * strings, primitives (int, Integer, etc) and Enums.
 	 * 
-	 * @return true if the represented class/object is an array, false
+	 * @return true if the represented class/object is primitive, false
 	 *         otherwise.
 	 */
 	public boolean isPrimitive()

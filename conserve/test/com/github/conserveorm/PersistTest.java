@@ -1313,7 +1313,7 @@ public abstract class PersistTest
 
 		ConnectionWrapper cw = persist.getConnectionWrapper();
 		// add a large number of entries
-		for (int x = 0; x < 200; x++)
+		for (int x = 199; x >= 0; x--)
 		{
 			SimplestObject so = new SimplestObject();
 			so.setFoo((double) x);

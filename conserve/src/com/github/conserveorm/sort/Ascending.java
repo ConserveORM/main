@@ -49,4 +49,9 @@ public class Ascending extends Sorter
 	{
 		return "ASC";
 	}
+	@Override
+	public Sorter duplicate(Object property, Class<?> propertyClass)
+	{
+		return new Ascending(property,propertyClass); 
+	}
 }

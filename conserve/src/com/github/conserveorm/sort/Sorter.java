@@ -66,4 +66,12 @@ public abstract class Sorter extends Order
 	
 	
 	public abstract String getKeyWord();
+	
+	/**
+	 * Create a new Sorter object of the same class;
+	 * @param property
+	 * @param propertyClass
+	 * @return
+	 */
+	public abstract Sorter duplicate(Object property, Class<?> propertyClass);
 }

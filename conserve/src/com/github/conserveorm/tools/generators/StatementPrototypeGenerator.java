@@ -256,6 +256,14 @@ public class StatementPrototypeGenerator
 					conditional.append(".");
 					conditional.append(Defaults.ID_COL);
 					mainStatement.addConditionalStatement(conditional.toString());
+					
+					// Add linking statement
+					if (!propertyClass.equals(property.getClass()))
+					{
+						// Then add linking statement
+						addLinkStatement(mainStatement, propertyStack, propertyClass);
+					}
+					
 					// create a new sort on the property
 					Sorter nuSorter = sorter.duplicate(property,property.getClass());
 					// generate the order statement

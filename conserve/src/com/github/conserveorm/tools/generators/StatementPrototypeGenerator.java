@@ -257,11 +257,22 @@ public class StatementPrototypeGenerator
 					conditional.append(Defaults.ID_COL);
 					mainStatement.addConditionalStatement(conditional.toString());
 					
-					// Add linking statement
-					if (!propertyClass.equals(property.getClass()))
+					// Add linking statements
+					List<ObjectRepresentation> allReps = propertyStack.getAllRepresentations();
+					for (ObjectRepresentation actualRep : allReps)
 					{
-						// Then add linking statement
-						addLinkStatement(mainStatement, propertyStack, propertyClass);
+						if (!actualRep.getRepresentedClass()
+								.equals(propertyClass))
+						{
+							// Only add linking statement if propertyClass has
+							// properties we want to sort on
+							if (actualRep.hasNonNullProperty())
+							{
+								mainStatement.getIdStatementGenerator()
+										.addLinkStatement(actualRep,
+												propertyRep);
+							}
+						}
 					}
 					
 					// create a new sort on the property

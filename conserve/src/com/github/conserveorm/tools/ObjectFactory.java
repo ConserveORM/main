@@ -73,6 +73,10 @@ public class ObjectFactory
 					//safe cast of numbers
 					return (T) ObjectTools.cast(resultClass, (Number)map.get(Defaults.VALUE_COL));
 				}
+				else if(resultClass.isEnum())
+				{
+					return (T) Enum.valueOf((Class<Enum>)resultClass, (String)map.get(Defaults.VALUE_COL));
+				}
 				else
 				{					
 					return resultClass.cast(map.get(Defaults.VALUE_COL));
@@ -104,6 +108,7 @@ public class ObjectFactory
 			throw new SQLException(e);
 		}
 	}
+
 
 	@SuppressWarnings("unchecked")
 	private static <T> void fillObjectValues(AdapterBase adapter,ObjectRowMap cache, T res, Class<T> clazz, HashMap<String, Object> map,ConnectionWrapper cw)

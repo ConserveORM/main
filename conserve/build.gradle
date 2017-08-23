@@ -4,7 +4,7 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 group = 'com.github.conserveorm'
-version = '0.8.1'
+version = '0.9.0'
 
 //downgrade for compatability with Android
 sourceCompatibility = '1.7'
@@ -26,6 +26,7 @@ sourceSets {
 repositories {
     mavenLocal()
 	mavenCentral()
+	jcenter()
 	maven {
 		//monetdb jars
 		url "https://clojars.org/repo/"

@@ -69,6 +69,7 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	protected DelayedInsertionBuffer delayBuffer;
 	private Map<String, Long> columnSizes = new HashMap<>();
 	private boolean forceIncludeFlag;
+	protected List<String>identityColumns = new ArrayList<>();
 
 	/**
 	 * Default constructor for subclassing.
@@ -183,6 +184,11 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return values.get(index);
 	}
 	
+	public List<String>getIdentityColumns()
+	{
+		return this.identityColumns;
+	}
+	
 	
 	/**
 	 * Get a set of all the index names in the represented class.
@@ -237,6 +243,15 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 		return this.setters.get(index);
 	}
 	
+	/**
+	 * Get the index of a property, useful for getting the value, accessor, or mutator, for example.
+	 * @param name
+	 * @return
+	 */
+	public int getPropertyIndex(String name)
+	{
+		return props.indexOf(name);
+	}
 
 
 	/**

@@ -97,6 +97,10 @@ import com.github.conserveorm.objects.demo.BarTextObject;
 import com.github.conserveorm.objects.demo.FooTextObject;
 import com.github.conserveorm.objects.demo.Person;
 import com.github.conserveorm.objects.demo.TextObject;
+import com.github.conserveorm.objects.id.IdContainer;
+import com.github.conserveorm.objects.id.WithIdLong;
+import com.github.conserveorm.objects.id.WithIdString;
+import com.github.conserveorm.objects.id.WithIdStringAndLong;
 import com.github.conserveorm.objects.polymorphism.AbstractBar;
 import com.github.conserveorm.objects.polymorphism.ConcreteBar1;
 import com.github.conserveorm.objects.polymorphism.ConcreteBar2;
@@ -6111,4 +6115,103 @@ public abstract class PersistTest
 		pm.close();
 		
 	}
+	
+	/**
+	 * Try adding and updating objects of classes with the Id annotation.
+	 * @throws Exception
+	 */
+	@Test
+	public void testIdColumns() throws Exception
+	{
+
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		pm.deleteObjects(WithIdLong.class, new All());
+		pm.deleteObjects(WithIdString.class, new All());
+		pm.deleteObjects(WithIdStringAndLong.class, new All());
+
+		//test with long id
+		WithIdLong one = new WithIdLong();
+		one.setTheLongId(1L);
+		one.setValue(0.2f);
+		one.setSomeOtherString("one");
+		pm.saveObject(one);
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
+		one.setSomeOtherString("two");
+		pm.saveObject(one);
+		List<WithIdLong> list = pm.getObjects(WithIdLong.class, new All());
+		assertEquals(1, list.size());
+		assertEquals("two",list.get(0).getSomeOtherString());
+		
+		//test with string id
+		List<WithIdString> list2 = pm.getObjects(WithIdString.class, new All());
+		assertEquals(0, list2.size());
+		WithIdString two = new WithIdString();
+		two.setTheStringId("two");
+		two.setSomeOtherString("three");
+		two.setValue(0.3f);
+		pm.saveObject(two);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		two.setSomeOtherString("four");
+		two.setValue(null);
+		pm.saveObject(two);
+		list2 = pm.getObjects(WithIdString.class, new All());
+		assertEquals(1,list2.size());
+		assertEquals("four",list2.get(0).getSomeOtherString());
+		assertNull(list2.get(0).getValue());
+		
+		//test with string and long id
+		List<WithIdStringAndLong>list3 = pm.getObjects(WithIdStringAndLong.class, new All());
+		assertTrue(list3.isEmpty());
+		WithIdStringAndLong three = new WithIdStringAndLong();
+		three.setTheLongId(34L);
+		three.setTheStringId("thirtyfour");
+		three.setSomeOtherString("foo");
+		three.setValue(3.0f);
+		pm.saveObject(three);
+		pm.close();
+
+		pm = new PersistenceManager(driver, database, login, password);
+		three.setSomeOtherString("bar");
+		pm.saveObject(three);
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
+		list3 = pm.getObjects(WithIdStringAndLong.class, new All());
+		assertEquals(1,list3.size());
+		assertEquals("bar",list3.get(0).getSomeOtherString());
+		pm.close();
+		
+		pm = new PersistenceManager(driver, database, login, password);
+		three.setTheStringId("foo");
+		pm.saveObject(three);
+		list3 = pm.getObjects(WithIdStringAndLong.class, new All());
+		assertEquals(2,list3.size());
+		three.setTheLongId(30L);
+		pm.saveObject(three);
+		list3 = pm.getObjects(WithIdStringAndLong.class, new All());
+		assertEquals(2,list3.size());
+		pm.close();		
+		
+
+		pm = new PersistenceManager(driver, database, login, password);
+		IdContainer container = new IdContainer();
+		container.setIdObject(one);
+		pm.saveObject(container);
+		list = pm.getObjects(WithIdLong.class, new All());
+		assertEquals(1, list.size());
+		assertEquals("two",list.get(0).getSomeOtherString());
+		pm.close();
+		
+		one.setValue(1234f);
+		pm = new PersistenceManager(driver, database, login, password);
+		pm.saveObject(container);
+		list = pm.getObjects(WithIdLong.class, new All());
+		assertEquals(1, list.size());
+		assertEquals(1234f,list.get(0).getValue(),0.1f);
+		pm.close();
+	}	
 }

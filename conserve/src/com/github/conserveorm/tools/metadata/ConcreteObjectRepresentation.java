@@ -31,6 +31,7 @@ import java.util.List;
 import com.github.conserveorm.adapter.AdapterBase;
 import com.github.conserveorm.annotations.AsBlob;
 import com.github.conserveorm.annotations.AsClob;
+import com.github.conserveorm.annotations.Id;
 import com.github.conserveorm.annotations.Indexed;
 import com.github.conserveorm.annotations.MaxLength;
 import com.github.conserveorm.annotations.MultiIndexed;
@@ -155,6 +156,11 @@ public class ConcreteObjectRepresentation extends ObjectRepresentation
 					{
 						Long size = m.getAnnotation(MaxLength.class).value();
 						setColumnSize(name, size);
+					}
+					//handle index names
+					if(m.isAnnotationPresent(Id.class))
+					{
+						identityColumns.add(name);
 					}
 				}
 				catch (Exception e)

@@ -6155,6 +6155,10 @@ public abstract class PersistTest
 		pm.close();
 
 		pm = new PersistenceManager(driver, database, login, password);
+		list2 = pm.getObjects(WithIdString.class, new All());
+		assertEquals(1,list2.size());
+		assertEquals("three",list2.get(0).getSomeOtherString());
+		assertNotNull(list2.get(0).getValue());
 		two.setSomeOtherString("four");
 		two.setValue(null);
 		pm.saveObject(two);

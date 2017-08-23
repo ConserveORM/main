@@ -60,7 +60,7 @@ public class ObjectFactory
 	 * @return a new object of the appropriate type.
 	 * @throws SQLException
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T> T createObject(AdapterBase adapter,ObjectRowMap cache, HashMap<String, Object> map, Class<T> resultClass,ConnectionWrapper cw,String tableName, Long dbId)
 			throws SQLException
 	{

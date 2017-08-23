@@ -540,8 +540,8 @@ public class ObjectStack
 				try
 				{
 					copyValues(res);
-					long id = this.adapter.getPersist().saveObjectUnprotected(cw, res);
-					this.getActualRepresentation().setId(id);
+					long id = adapter.getPersist().saveObjectUnprotected(cw, res, this.getActualRepresentation().delayBuffer);
+					this.setDatabaseId(id);
 				}
 				catch (Exception e)
 				{
@@ -562,6 +562,14 @@ public class ObjectStack
 		ObjectRepresentation rep = this.getActualRepresentation();
 		adapter.getPersist().saveToCache(rep.getTableName(), rep.getObject(),
 				rep.getId());
+	}
+	
+	private void setDatabaseId(long id)
+	{
+		for(Node rep:this.representations.allNodes())
+		{
+			rep.getRepresentation().setId(id);
+		}
 	}
 
 	/**
@@ -608,18 +616,27 @@ public class ObjectStack
 			for (Node n : representations.allNodes())
 			{
 				ObjectRepresentation rep = n.getRepresentation();
-				for (String idColumnName : rep.getIdentityColumns())
+				for(int prop = 0;prop<rep.getPropertyCount();prop++)
 				{
-					int index = rep.getPropertyIndex(idColumnName);
-					if (index >= 0)
+					Method mutator = rep.getMutator(prop);
+					String propName = rep.getPropertyName(prop);
+					Object value = null;
+					if(rep.getIdentityColumns().contains(propName))
 					{
-						Object value = rep.getPropertyValue(index);
-						Method mutator = rep.getMutator(index);
-						oldAccess = mutator.isAccessible();
-						mutator.setAccessible(true);
-						mutator.invoke(res, value);
-						mutator.setAccessible(oldAccess);
+						value = rep.getPropertyValue(prop);
 					}
+					oldAccess = mutator.isAccessible();
+					mutator.setAccessible(true);
+					if(value == null && mutator.getParameterTypes()[0].isPrimitive())
+					{
+						//can't set a primitve to null
+						
+					}
+					else
+					{
+						mutator.invoke(res, value);
+					}
+					mutator.setAccessible(oldAccess);	
 				}
 			}
 		}

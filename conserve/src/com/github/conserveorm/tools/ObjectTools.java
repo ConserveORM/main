@@ -39,8 +39,8 @@ import com.github.conserveorm.annotations.Transient;
  */
 public class ObjectTools
 {
-	private static Class<?>[] classes = new Class<?>[] { long.class, int.class, short.class, char.class, byte.class,
-			boolean.class, double.class, float.class, String.class };
+	private static Class<?>[] classes = new Class<?>[] { long.class, int.class, short.class, char.class, byte.class, boolean.class, double.class,
+			float.class, String.class };
 
 	/**
 	 * Get all interfaces of c. If c is an interface, get all super-interfaces.
@@ -66,15 +66,14 @@ public class ObjectTools
 		}
 		return res;
 	}
-	
+
 	/**
-	 * Get a list of all direct interfaces of c. 
-	 * If c is an interface, it is not included. Ignores superclasses of c. 
-	 * Ignores super-interfaces.
+	 * Get a list of all direct interfaces of c. If c is an interface, it is not
+	 * included. Ignores superclasses of c. Ignores super-interfaces.
 	 * 
 	 * @param c
 	 */
-	public static List<Class<?>>getAllDirectInterfaces(Class<?>c)
+	public static List<Class<?>> getAllDirectInterfaces(Class<?> c)
 	{
 		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
 		if (c != null)
@@ -88,38 +87,37 @@ public class ObjectTools
 		return res;
 	}
 
-	
 	/**
-	 * Get all types that can legally be used to reference an object of c.
-	 * This includes all superclasses of c, and all interfaces implemented by c or any of its superclasses.
-	 * The class c itself is not included in the result.
-	 * Each class is only present once.
+	 * Get all types that can legally be used to reference an object of c. This
+	 * includes all superclasses of c, and all interfaces implemented by c or
+	 * any of its superclasses. The class c itself is not included in the
+	 * result. Each class is only present once.
 	 * 
-	 * @param c the class to get legal refernece types for.
+	 * @param c
+	 *            the class to get legal refernece types for.
 	 */
-	public static List<Class<?>> getAllLegalReferenceTypes(Class<?>c)
+	public static List<Class<?>> getAllLegalReferenceTypes(Class<?> c)
 	{
 		ArrayList<Class<?>> res = new ArrayList<Class<?>>();
 		while (c != null)
 		{
-			List<Class<?>>tmp = getAllInterfaces(c);
-			for(Class<?>t:tmp)
+			List<Class<?>> tmp = getAllInterfaces(c);
+			for (Class<?> t : tmp)
 			{
-				//only add interfaces we haven't added already.
-				if(!res.contains(t))
+				// only add interfaces we haven't added already.
+				if (!res.contains(t))
 				{
 					res.add(t);
 				}
 			}
 			c = c.getSuperclass();
-			if(c != null && !res.contains(c))
+			if (c != null && !res.contains(c))
 			{
 				res.add(c);
 			}
 		}
 		return res;
 	}
-
 
 	/**
 	 * Checks if subClass is a subClass (directly or indirectly) of
@@ -144,12 +142,12 @@ public class ObjectTools
 		return false;
 	}
 
-
 	/**
 	 * Determine if a class is a 'database primitive'. A class is a database
 	 * primitive if its Class.isPrimitive method returns true, if it's an object
 	 * representation of a primitive class (e.g. Double, Integer), or if it is
-	 * String, Enum, Class, or any of the java.sql.Time,Timestamp, or Date classes.
+	 * String, Enum, Class, or any of the java.sql.Time,Timestamp, or Date
+	 * classes.
 	 * 
 	 * In short, a database primitive is any class that can be fully represented
 	 * in one column of an SQL database.
@@ -277,7 +275,7 @@ public class ObjectTools
 				res = double.class;
 			}
 			// database-returned name, see if the adapter can help us.
-			else 
+			else
 			{
 				for (Class<?> c : classes)
 				{
@@ -363,9 +361,9 @@ public class ObjectTools
 	public static boolean isValidMethod(Method m)
 	{
 		int mod = m.getModifiers();
-		if ((!Modifier.isStatic(mod) && !m.isSynthetic() &&  !m.getName().equals("getClass")
-				&& !m.isAnnotationPresent(Transient.class) && !m.getReturnType().equals(void.class)
-				&& (m.getName().startsWith("get") || m.getName().startsWith("is")) && m.getParameterTypes().length == 0))
+		if ((!Modifier.isStatic(mod) && !m.isSynthetic() && !m.getName().equals("getClass") && !m.isAnnotationPresent(Transient.class)
+				&& !m.getReturnType().equals(void.class) && (m.getName().startsWith("get") || m.getName().startsWith("is"))
+				&& m.getParameterTypes().length == 0))
 		{
 			if (!isIgnored(m))
 			{
@@ -488,6 +486,31 @@ public class ObjectTools
 			{
 				// do nothing, keep iterating up
 			}
+			if (res == null && argument.isPrimitive())
+			{
+				Class<?> realArgument = ObjectTools.getWrapper(argument);
+				try
+				{
+					res = declaringClass.getDeclaredMethod(mutatorName, realArgument);
+				}
+				catch (NoSuchMethodException e)
+				{
+					// do nothing, keep iterating up
+				}
+			}
+			if (res == null && ObjectTools.isPrimitiveWrapper(argument))
+			{
+				Class<?> realArgument = ObjectTools.getPrimitiveFromWrapper(argument);
+				try
+				{
+					res = declaringClass.getDeclaredMethod(mutatorName, realArgument);
+				}
+				catch (NoSuchMethodException e)
+				{
+					// do nothing, keep iterating up
+				}
+			}
+
 			if (res == null)
 			{
 				res = getMutator(declaringClass.getSuperclass(), mutatorName, argument);
@@ -496,6 +519,109 @@ public class ObjectTools
 
 		return res;
 	}
+
+	/**
+	 * Return the primitive corresonponding to a given wrapper classe, e.g. Boolean -> boolean, Integer -> int.
+	 * {@see getWrapper}
+	 */
+	public static Class<?> getPrimitiveFromWrapper(Class<?> argument)
+	{
+		if (argument.equals(Integer.class))
+		{
+			return int.class;
+		}
+		else if (argument.equals(Long.class))
+		{
+			return long.class;
+		}
+		else if (argument.equals(Short.class))
+		{
+			return short.class;
+		}
+		else if (argument.equals(Character.class))
+		{
+			return char.class;
+		}
+		else if (argument.equals(Boolean.class))
+		{
+			return boolean.class;
+		}
+		else if (argument.equals(Float.class))
+		{
+			return float.class;
+		}
+		else if (argument.equals(Double.class))
+		{
+			return double.class;
+		}
+		else if (argument.equals(Void.class))
+		{
+			return void.class;
+		}
+		return null;
+	}
+
+	/**
+	 * Return true if this is one of the wrapper classes corresponding to a
+	 * primitive type, e.g. Boolean, Integer.
+	 */
+	public static boolean isPrimitiveWrapper(Class<?> argument)
+	{
+		if (argument.equals(Integer.class) 
+				|| argument.equals(Long.class) 
+				|| argument.equals(Short.class)
+				|| argument.equals(Character.class)
+				|| argument.equals(Boolean.class)
+				|| argument.equals(Float.class)
+				|| argument.equals(Double.class)
+				|| argument.equals(Void.class))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Get the wrapper class from a primitive class, e.g. boolean -> Boolean,
+	 * int -> Integer.
+	 */
+	public static Class<?> getWrapper(Class<?> argument)
+	{
+		if (argument.equals(int.class))
+		{
+			return Integer.class;
+		}
+		else if (argument.equals(long.class))
+		{
+			return Long.class;
+		}
+		else if (argument.equals(short.class))
+		{
+			return Short.class;
+		}
+		else if (argument.equals(char.class))
+		{
+			return Character.class;
+		}
+		else if (argument.equals(boolean.class))
+		{
+			return Boolean.class;
+		}
+		else if (argument.equals(float.class))
+		{
+			return Float.class;
+		}
+		else if (argument.equals(double.class))
+		{
+			return Double.class;
+		}
+		else if (argument.equals(void.class))
+		{
+			return Void.class;
+		}
+		return null;
+	}
+
 	/**
 	 * Recursively look up the inheritance tree for an accessor that matches the
 	 * given name and the given argument type.

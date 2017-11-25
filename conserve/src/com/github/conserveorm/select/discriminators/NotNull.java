@@ -21,6 +21,9 @@
 package com.github.conserveorm.select.discriminators;
 
 /**
+ * Selector that matches any property that *is not* null in the search object to database entries where the same property *is not* null.
+ * The actual values of the properties of the search object do not matter.
+ * 
  * @author Erik Berglund
  *
  */

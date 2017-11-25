@@ -22,6 +22,9 @@ package com.github.conserveorm.select.discriminators;
 
 /**
  * A Selector subclass that implements the SQL "LIKE" query.
+ * 
+ * Selector that matches any property that *is not* null in the search object to the corresponding property in the database entities.
+ * 
  * @author Erik Berglund
  *
  */

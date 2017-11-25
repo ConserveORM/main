@@ -522,7 +522,6 @@ public class ObjectTools
 
 	/**
 	 * Return the primitive corresonponding to a given wrapper classe, e.g. Boolean -> boolean, Integer -> int.
-	 * {@see getWrapper}
 	 */
 	public static Class<?> getPrimitiveFromWrapper(Class<?> argument)
 	{

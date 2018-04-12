@@ -1,6 +1,6 @@
 /*******************************************************************************
  *  
- * Copyright (c) 2009, 2017 Erik Berglund.
+ * Copyright (c) 2009, 2018 Erik Berglund.
  *    
  *       This file is part of Conserve.
  *   

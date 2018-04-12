@@ -1,6 +1,6 @@
 /*******************************************************************************
  *  
- * Copyright (c) 2009, 2017 Erik Berglund.
+ * Copyright (c) 2009, 2018 Erik Berglund.
  *    
  *       This file is part of Conserve.
  *   
@@ -32,7 +32,6 @@ public class MySQLPersistTest extends PersistTest
 	@Override
 	protected void setupConnectionConstants()
 	{
-		driver = "com.mysql.cj.jdbc.Driver";
 		database = "jdbc:mysql://localhost/test";
 		secondDatabase = "jdbc:mysql://localhost/test2";
 		login = "test";

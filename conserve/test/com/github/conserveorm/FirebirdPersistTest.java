@@ -1,6 +1,6 @@
 /*******************************************************************************
  *  
- * Copyright (c) 2009, 2017 Erik Berglund.
+ * Copyright (c) 2009, 2018 Erik Berglund.
  *    
  *       This file is part of Conserve.
  *   
@@ -38,7 +38,6 @@ public class FirebirdPersistTest extends PersistTest
 		database = "jdbc:firebirdsql://localhost/test";
 		secondDatabase = "jdbc:firebirdsql://localhost/test2";
 
-		driver = "org.firebirdsql.jdbc.FBDriver";
 		login = "test";
 		password = "test";
 	}

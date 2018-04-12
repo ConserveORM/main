@@ -76,6 +76,7 @@ public class ObjectRowMap implements Runnable
 	public void start()
 	{
 		Thread queueThread = new Thread(this);
+		queueThread.setName(this.getClass().getName());
 		queueThread.setDaemon(true);
 		queueThread.start();
 	}

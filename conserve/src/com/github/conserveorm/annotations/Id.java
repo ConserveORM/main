@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * 
  * When an object of a class with this annotation on any of its accessors is saved, Conserve will
  * first check if the corresponding object already exists.
- * If it exists, the object will be updated (including setting all null fields to NULL in the database).
+ * If it exists, any non-null fields in will be updated.
  * If it does not exist, a new row will be inserted in the database.
  * 
  * Any number of fields can be part of the id, just apply an Id annotation to all relevant accessors.

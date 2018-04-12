@@ -245,8 +245,8 @@ public abstract class ObjectRepresentation implements Iterable<Integer>
 	
 	/**
 	 * Get the index of a property, useful for getting the value, accessor, or mutator, for example.
-	 * @param name
-	 * @return
+	 * @param name the name of the property we want the index for.
+	 * @return the zero-based index of the named property.
 	 */
 	public int getPropertyIndex(String name)
 	{

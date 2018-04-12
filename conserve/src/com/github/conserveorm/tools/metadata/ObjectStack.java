@@ -585,14 +585,17 @@ public class ObjectStack
 		for (Node n : representations.allNodes())
 		{
 			ObjectRepresentation rep = n.getRepresentation();
-			for(int prop = 0;prop<rep.getPropertyCount();prop++)
+			for (int prop = 0; prop < rep.getPropertyCount(); prop++)
 			{
 				Object value = rep.getPropertyValue(prop);
-				Method mutator = rep.getMutator(prop);
-				boolean oldAccess = mutator.isAccessible();
-				mutator.setAccessible(true);
-				mutator.invoke(res, value);
-				mutator.setAccessible(oldAccess);
+				if (value != null)
+				{
+					Method mutator = rep.getMutator(prop);
+					boolean oldAccess = mutator.isAccessible();
+					mutator.setAccessible(true);
+					mutator.invoke(res, value);
+					mutator.setAccessible(oldAccess);
+				}
 			}
 		}
 

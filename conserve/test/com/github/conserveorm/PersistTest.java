@@ -6165,7 +6165,18 @@ public abstract class PersistTest
 		list2 = pm.getObjects(WithIdString.class, new All());
 		assertEquals(1,list2.size());
 		assertEquals("four",list2.get(0).getSomeOtherString());
-		assertNull(list2.get(0).getValue());
+		assertEquals(0.3f,list2.get(0).getValue(),0.0001f);
+		
+		//make sure null values are not erased
+		WithIdString update = new WithIdString();
+		update.setTheStringId("two");
+		update.setValue(42f);
+		pm.saveObject(update);
+		list2 = pm.getObjects(WithIdString.class, new All());
+		assertEquals(1,list2.size());
+		assertEquals("four",list2.get(0).getSomeOtherString());
+		assertEquals(42f,list2.get(0).getValue(),0.001f);
+		
 		
 		//test with string and long id
 		List<WithIdStringAndLong>list3 = pm.getObjects(WithIdStringAndLong.class, new All());

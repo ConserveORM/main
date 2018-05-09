@@ -12,9 +12,16 @@ Conserve also supports Android. Conserve is open source.
 ORM (Object Relational Mapping) makes it easier to use relational databases from object-oriented programming languages.
 
 ### Why Conserve?
-Conserve is simpler yet more flexible. Conserve makes it trivial to add persistence to your existing code.
-Conserve lets object-oriented searches make sense. Conserve includes compile-time consistency checking.
-Conserve makes it very difficult to inadvertently write SQL injection bugs.
+
+* Add persistence to existing objects.
+* Persist objects you don't have the source code for, or can't change the source code for.
+* Object-oriented searched mak sens.
+* Compile-time consistency checking.
+* Conserve makes it difficult to inadvertently write SQL injection bugs.
+* Supports Java Generics.
+* Allow customising object representations.
+* Store, search, retrieve arbitrarily complex objects with, including objects with deep inheritance hierarchies.
+
 
 ### Get started
 Head over to the tutorial to begin using Conserve:  

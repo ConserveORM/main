@@ -552,7 +552,7 @@ public class ObjectStack
 			else
 			{
 				// more than one object found, Id is not unique
-				throw new SQLException("Id for object of class "
+				throw new SQLException("Id " + getDatabaseId() + " for object of class "
 						+ searchObject.getClass().getCanonicalName()
 						+ " is not unique.");
 			}
@@ -570,6 +570,11 @@ public class ObjectStack
 		{
 			rep.getRepresentation().setId(id);
 		}
+	}
+	
+	private Long getDatabaseId()
+	{
+		return this.representations.root.getRepresentation().id;
 	}
 
 	/**

@@ -77,7 +77,7 @@ public class PostgreSqlAdapter extends AdapterBase
 	@Override
 	public String getLastInsertedIdentity(String tableName)
 	{
-		return "select last_value from " + tableName+"_"+Defaults.ID_COL+"_seq";
+		return "select currval('"+tableName+"_"+Defaults.ID_COL+"_seq')";
 	}
 
 

@@ -527,7 +527,7 @@ public class ObjectTools
 	}
 
 	/**
-	 * Return the primitive corresonponding to a given wrapper classe, e.g. Boolean -> boolean, Integer -> int.
+	 * Return the primitive corresponding to a given wrapper classe, e.g. Boolean -> boolean, Integer -> int.
 	 */
 	public static Class<?> getPrimitiveFromWrapper(Class<?> argument)
 	{

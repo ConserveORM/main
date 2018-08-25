@@ -338,6 +338,12 @@ public class ObjectTools
 		{
 			return (char) o.intValue();
 		}
+		else if (clazz.equals(Boolean.class)|| clazz.equals(boolean.class))
+		{
+			// Boolean is not an implementation of Number, but some databases pervert booleans into integers.
+			Boolean res = (o.intValue()!=0);
+			return res;
+		}
 		return null;
 	}
 

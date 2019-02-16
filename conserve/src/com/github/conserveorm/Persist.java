@@ -1,6 +1,6 @@
 /*******************************************************************************
  *  
- * Copyright (c) 2009, 2018 Erik Berglund.
+ * Copyright (c) 2009, 2019 Erik Berglund.
  *    
  *       This file is part of Conserve.
  *   
@@ -678,11 +678,11 @@ public class Persist
 			sp.addEqualsClause(shortName + "." + Defaults.ID_COL, id);
 		}
 
-		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
+		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.ID_COL);
-		statement.append("),");
+		statement.append(",");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.REAL_CLASS_COL);
@@ -876,11 +876,11 @@ public class Persist
 				shortName + "." + Defaults.ID_COL + " = " + Defaults.HAS_A_TABLENAME + ".PROPERTY_ID ");
 		sp.addConditionalStatement(Defaults.HAS_A_TABLENAME + ".PROPERTY_ID IS NULL");
 
-		StringBuilder statement = new StringBuilder("SELECT DISTINCT(");
+		StringBuilder statement = new StringBuilder("SELECT ");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.ID_COL);
-		statement.append("),");
+		statement.append(",");
 		statement.append(shortName);
 		statement.append(".");
 		statement.append(Defaults.REAL_CLASS_COL);

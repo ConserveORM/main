@@ -39,4 +39,11 @@ public class H2Adapter extends AdapterBase
 		super(persist);
 	}
 
+	@Override
+	public boolean handlesDistinctWithClobsAndBlobsCorrectly()
+	{
+		return false;
+	}
+
+	
 }

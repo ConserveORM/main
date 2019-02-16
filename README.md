@@ -15,7 +15,7 @@ ORM (Object Relational Mapping) makes it easier to use relational databases from
 
 * Add persistence to existing objects.
 * Persist objects you don't have the source code for, or can't change the source code for.
-* Object-oriented searched mak sens.
+* Object-oriented searches make sense.
 * Compile-time consistency checking.
 * Conserve makes it difficult to inadvertently write SQL injection bugs.
 * Supports Java Generics.

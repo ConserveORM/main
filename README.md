@@ -21,7 +21,7 @@ ORM (Object Relational Mapping) makes it easier to use relational databases from
 * Supports Java Generics.
 * Allow customising object representations.
 * Search by example.
-* Store, search, retrieve arbitrarily complex objects, including objects with deep inheritance hierarchies.
+* Store, search, and retrieve arbitrarily complex objects, including objects with deep inheritance hierarchies.
 
 
 ### Get started

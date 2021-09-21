@@ -266,7 +266,6 @@ public class PersistenceManager
 	 * 
 	 * @param toDelete the object that will be deleted
 	 * @return true if the object existed and was deleted, false otherwise.
-	 * @throws SQLExcpetion
 	 */
 	public boolean deleteObject(Object toDelete) throws SQLException
 	{
@@ -293,7 +292,6 @@ public class PersistenceManager
 	 * @param toDelete the object that will be deleted
 	 * @param cw the connection wrapper to use for the operation.
 	 * @return true if the object existed and was deleted, false otherwise.
-	 * @throws SQLExcpetion
 	 */
 	public boolean deleteObject(ConnectionWrapper cw, Object toDelete) throws SQLException
 	{
@@ -822,11 +820,10 @@ public class PersistenceManager
 	 * 
 	 * @param obj
 	 *            the object to refresh.
-	 * @throws IllegalArumentException
+	 * @throws IllegalArgumentException
 	 *             if obj is not known by this instance of Conserve.
 	 * @return the refreshed object or null if the object has been deleted from
 	 *         the database.
-	 * @throws SQLException
 	 * 
 	 */
 	public <T> T refresh(T obj) throws IllegalArgumentException, SQLException
@@ -862,12 +859,10 @@ public class PersistenceManager
 	 *            the connection wrapper to use.
 	 * @param obj
 	 *            the object to refresh.
-	 * @throws IllegalArumentException
+	 * @throws IllegalArgumentException
 	 *             if obj is not known by this instance of Conserve.
 	 * @return the refreshed object or null if the object has been deleted from
 	 *         the database.
-	 * @throws ClassNotFoundException
-	 * @throws SQLException
 	 */
 	public <T> T refresh(ConnectionWrapper cw, T obj) throws IllegalArgumentException, SQLException
 	{
@@ -884,8 +879,6 @@ public class PersistenceManager
 	 * 
 	 * @return true if the object or any of its properties has changed or been
 	 *         deleted, false otherwise.
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
 	 */
 	public boolean hasChanged( Object o) throws SQLException, ClassNotFoundException
 	{
@@ -913,8 +906,6 @@ public class PersistenceManager
 	 * 
 	 * @return true if the object or any of its properties has changed or been
 	 *         deleted, false otherwise.
-	 * @throws SQLException
-	 * @throws ClassNotFoundException
 	 */
 	private boolean hasChanged(ConnectionWrapper cw, Object o) throws SQLException, ClassNotFoundException
 	{
@@ -1122,29 +1113,29 @@ public class PersistenceManager
 	 * not been changed it has no effect.
 	 * 
 	 * The following changes ARE supported:
-	 * <p/>
+	 * <p>
 	 * 
 	 * 
 	 * * Remove or remove a property.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Rename a property.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Add or remove an index.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Move a class from one superclass to another.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Add or remove an interface.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Change a property from a primitive to the corresponding reference type,
 	 * for example from double to Double. The opposite (Double to double) is
 	 * possible, but not encouraged as it is entirely up to your code how any
 	 * nulls existing in the database are handled.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Change a property from one reference type to another. If the new type
 	 * is a supertype or implemented by the original type, either directly or
@@ -1155,7 +1146,7 @@ public class PersistenceManager
 	 * to both List and ArrayList objects and is converted from List to
 	 * ArrayList (the 'wrong' way) all List references that are not also
 	 * ArrayList references will be deleted.
-	 * <p/>
+	 * <p>
 	 * 
 	 * * Change a reference type to a primitive, or the other way around, for
 	 * example from String to java.util.Date. Please observe that this WILL
@@ -1163,7 +1154,7 @@ public class PersistenceManager
 	 * dropping the property and creating a new one. You probably don't want
 	 * this, but you can. This does not apply to the reference types that
 	 * directly correspond to primitive types (see above).
-	 * <p/>
+	 * <p>
 	 * 
 	 * 
 	 * 
@@ -1171,24 +1162,24 @@ public class PersistenceManager
 	 * want changed to this method. If you are changing a property from
 	 * primitive to reference or the other way, you do not even need to call
 	 * this method, just start using the new class.
-	 * <p/>
+	 * <p>
 	 * 
 	 * After calling this method the PersistenceManager should be closed and a new instance created.
 	 * Any other PersistenceManager objects should do the same - the integrity of objects that are loaded 
 	 * by other PersistenceManagers can not be guaranteed otherwise.
-	 * <p/>
+	 * <p>
 	 * 
 	 * If you wish to implement any other changes, you have to do this in a
 	 * two-step approach:
-	 * <p/>
+	 * <p>
 	 * 
 	 * 1. Create an intermediary class, and read all of the old objects into it.
 	 * Store the objects as intermediary classes.
-	 * <p/>
+	 * <p>
 	 * 
 	 * 2. Drop the old class, and copy from the intermediary class to the new
 	 * class, storing it.
-	 * <p/>
+	 * <p>
 	 * 
 	 * In this case you do not use the updateSchema method.
 	 * 

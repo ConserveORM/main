@@ -627,8 +627,6 @@ public class TableManager
 	 * 
 	 * @param objRes
 	 * @param cw
-	 * @throws SQLException
-	 * @throws SchemaPermissionException
 	 */
 	public void ensureTableExists(ConcreteObjectRepresentation objRes, ConnectionWrapper cw) throws SQLException
 	{
@@ -652,9 +650,7 @@ public class TableManager
 	/**
 	 * Make sure a table exists.
 	 * 
-	 * @param c
-	 * @throws SQLException
-	 * @throws SchemaPermissionException
+	 * @param c the class to check/create the table for.
 	 */
 	public void ensureTableExists(Class<?> c, ConnectionWrapper cw) throws SQLException
 	{

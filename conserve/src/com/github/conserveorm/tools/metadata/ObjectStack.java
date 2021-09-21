@@ -596,14 +596,16 @@ public class ObjectStack
 				if (value != null)
 				{
 					Method mutator = rep.getMutator(prop);
-					boolean oldAccess = mutator.isAccessible();
-					mutator.setAccessible(true);
-					mutator.invoke(res, value);
-					mutator.setAccessible(oldAccess);
+					if (mutator != null)
+					{
+						boolean oldAccess = mutator.isAccessible();
+						mutator.setAccessible(true);
+						mutator.invoke(res, value);
+						mutator.setAccessible(oldAccess);
+					}
 				}
 			}
 		}
-
 	}
 
 	/**
@@ -627,24 +629,26 @@ public class ObjectStack
 				for(int prop = 0;prop<rep.getPropertyCount();prop++)
 				{
 					Method mutator = rep.getMutator(prop);
-					String propName = rep.getPropertyName(prop);
-					Object value = null;
-					if(rep.getIdentityColumns().contains(propName))
+					if (mutator != null)
 					{
-						value = rep.getPropertyValue(prop);
+						String propName = rep.getPropertyName(prop);
+						Object value = null;
+						if (rep.getIdentityColumns().contains(propName))
+						{
+							value = rep.getPropertyValue(prop);
+						}
+						oldAccess = mutator.isAccessible();
+						mutator.setAccessible(true);
+						if (value == null && mutator.getParameterTypes()[0].isPrimitive())
+						{
+							// can't set a primitive to null
+						}
+						else
+						{
+							mutator.invoke(res, value);
+						}
+						mutator.setAccessible(oldAccess);
 					}
-					oldAccess = mutator.isAccessible();
-					mutator.setAccessible(true);
-					if(value == null && mutator.getParameterTypes()[0].isPrimitive())
-					{
-						//can't set a primitve to null
-						
-					}
-					else
-					{
-						mutator.invoke(res, value);
-					}
-					mutator.setAccessible(oldAccess);	
 				}
 			}
 		}

@@ -79,6 +79,7 @@ import com.github.conserveorm.objects.ClassContainingObject;
 import com.github.conserveorm.objects.ColumnNameObject;
 import com.github.conserveorm.objects.ComplexArrayObject;
 import com.github.conserveorm.objects.ComplexObject;
+import com.github.conserveorm.objects.DataParser;
 import com.github.conserveorm.objects.DateObject;
 import com.github.conserveorm.objects.EnumContainer;
 import com.github.conserveorm.objects.InfiniteRepititionCollection;
@@ -6229,4 +6230,53 @@ public abstract class PersistTest
 		assertEquals(1234f,list.get(0).getValue(),0.1f);
 		pm.close();
 	}	
+	
+	/**
+	 * Test object with static members and complex types.
+	 */
+	@Test
+	public void testStaticMembers() throws Exception
+	{
+		PersistenceManager pm = new PersistenceManager(driver, database, login, password);
+		DataParser dp = new DataParser();
+		dp.setString("2020-11-22T10:19:41Z\n"
+				+ "\n"
+				+ "RUNWAY IN USE: 19ESGP SIE 201122 AUTO\n"
+				+ "RWY 19 MET REPORT 220950Z\n"
+				+ "WIND 260/19KT MAX30 MNM13\n"
+				+ "\n"
+				+ "VIS 10KM\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "CLD FEW /// 2500FT SCT /// 3300FT BKN /// 4500FT\n"
+				+ "T09 DP04\n"
+				+ "QNH 1 0 0 6 HPA TRL 65\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "\n"
+				+ "RWY 01 M 19\n"
+				+ "MEAN02 260/20 KT 260/20 KT\n"
+				+ "VRB 250-290 250-290\n"
+				+ "MIN/MAX 12/27 12/27\n"
+				+ "COMP +04/L20 -04/R20\n"
+				+ "RVR >2000N >2000N\n"
+				+ "VIS 17 KM 18 KM\n"
+				+ "PRW\n"
+				+ "CLD1 FEW 4100 FT\n"
+				+ "CLD2\n"
+				+ "CLD3\n"
+				+ "QFETHR 1004.5 1004.8\n"
+				+ "\n"
+				+ "QNH 1006.6 TRL 65 QFE 1004.4\n"
+				+ "T 9.0 DP 3.1 RH 67METAR ESGP 220950Z AUTO 26019G30KT 9999 FEW025/// SCT033/// BKN045/// 09/04 Q1006");
+		pm.saveObject(dp);
+		pm.close();
+	}
 }

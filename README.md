@@ -20,6 +20,7 @@ ORM (Object Relational Mapping) makes it easier to use relational databases from
 * Conserve makes it difficult to inadvertently write SQL injection bugs.
 * Supports Java Generics.
 * Allow customising object representations.
+* Search by example.
 * Store, search, retrieve arbitrarily complex objects, including objects with deep inheritance hierarchies.
 
 
